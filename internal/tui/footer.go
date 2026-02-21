@@ -1,10 +1,15 @@
 package tui
 
-// renderFooter renders the key binding help footer.
-// Placeholder — full implementation in Task 8.
+// renderFooter renders the key binding help footer at full terminal width.
+// When app.showHelp is true, shows all key bindings; otherwise a brief hint.
 func renderFooter(app *App) string {
-	if app.showHelp {
-		return StyleDim.Render(helpText)
+	width := app.width
+	if width <= 0 {
+		width = 80
 	}
-	return StyleDim.Render("? for help")
+	text := "? for help"
+	if app.showHelp {
+		text = helpText
+	}
+	return StyleDim.Width(width).Render(text)
 }

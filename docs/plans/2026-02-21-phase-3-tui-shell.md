@@ -162,7 +162,7 @@ Build the Bubble Tea application skeleton with auto-refreshing poll loop, header
 
 ### Task 8: Footer renderer
 
-- [ ] create footer within `view.go` or header.go:
+- [x] create footer within `view.go` or header.go:
   - show `helpText` when `app.showHelp` is true, otherwise show brief "? for help"
   - dim/muted color
   - full width
