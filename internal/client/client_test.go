@@ -422,3 +422,17 @@ func TestTLSSkipVerify(t *testing.T) {
 		t.Errorf("Ping with InsecureSkipVerify=true: %v", err)
 	}
 }
+
+func TestInvalidJSONResponse(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"broken":`))
+	}))
+	defer srv.Close()
+
+	c := newTestClient(t, srv.URL)
+	if _, err := c.GetClusterHealth(context.Background()); err == nil {
+		t.Error("expected error for invalid JSON, got nil")
+	}
+}

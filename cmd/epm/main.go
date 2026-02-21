@@ -52,8 +52,8 @@ func main() {
 	}
 	flag.Parse()
 
-	if *interval <= 0 {
-		fmt.Fprintln(os.Stderr, "error: --interval must be positive")
+	if *interval < time.Second {
+		fmt.Fprintln(os.Stderr, "error: --interval must be at least 1s")
 		os.Exit(1)
 	}
 
@@ -82,12 +82,17 @@ func main() {
 		os.Exit(1)
 	}
 
+	requestTimeout := *interval - 500*time.Millisecond
+	if requestTimeout < time.Second {
+		requestTimeout = time.Second
+	}
+
 	cfg := client.ClientConfig{
 		BaseURL:            baseURL,
 		Username:           username,
 		Password:           password,
 		InsecureSkipVerify: *insecure,
-		RequestTimeout:     10 * time.Second,
+		RequestTimeout:     requestTimeout,
 	}
 
 	c, err := client.NewDefaultClient(cfg)
