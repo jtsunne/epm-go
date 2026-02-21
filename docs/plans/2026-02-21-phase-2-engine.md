@@ -100,7 +100,7 @@ Build the business logic layer: parallel 5-endpoint fetching, snapshot model, de
 
 ### Task 3: Sanity constants and helpers
 
-- [ ] create `internal/engine/calculator.go` with constants (ported from `performanceTracker.ts` lines 96-100):
+- [x] create `internal/engine/calculator.go` with constants (ported from `performanceTracker.ts` lines 96-100):
   ```go
   const (
       minTimeDiffSeconds = 1.0
@@ -108,7 +108,7 @@ Build the business logic layer: parallel 5-endpoint fetching, snapshot model, de
       maxLatencyMs       = 300_000.0
   )
   ```
-- [ ] implement helper functions:
+- [x] implement helper functions:
   - `clampRate(r float64) float64` — returns 0 if r > maxRatePerSec, else r
   - `clampLatency(l float64) float64` — caps at maxLatencyMs
   - `safeDivide(a, b float64) float64` — returns 0 if b==0
