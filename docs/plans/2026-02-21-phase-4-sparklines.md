@@ -52,7 +52,7 @@ Add the 4 cluster-level metric cards (Indexing Rate, Search Rate, Index Latency,
 
 ### Task 2: Single metric card renderer
 
-- [ ] create `internal/tui/metrics.go` with `renderMetricCard(title, value, unit string, sparkValues []float64, cardWidth int, color lipgloss.Color) string`:
+- [x] create `internal/tui/metrics.go` with `renderMetricCard(title, value, unit string, sparkValues []float64, cardWidth int, color lipgloss.Color) string`:
   - card structure (3 rows):
     - row 1: title in dim/muted color (e.g. "Indexing Rate")
     - row 2: large value in bold + unit (e.g. "1,204.3 /s")
