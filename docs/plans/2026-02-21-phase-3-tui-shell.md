@@ -169,9 +169,9 @@ Build the Bubble Tea application skeleton with auto-refreshing poll loop, header
 
 ### Task 9: Wire into main.go
 
-- [ ] update `cmd/epm/main.go` to create `tui.NewApp(client, interval)` and run `tea.NewProgram(app, tea.WithAltScreen())`
-- [ ] remove debug print output from Phase 2
-- [ ] verify app launches, shows header with cluster status, auto-refreshes
+- [x] update `cmd/epm/main.go` to create `tui.NewApp(client, interval)` and run `tea.NewProgram(app, tea.WithAltScreen())`
+- [x] remove debug print output from Phase 2
+- [x] verify app launches, shows header with cluster status, auto-refreshes
 
 ### Task 10: Tests for app logic
 
