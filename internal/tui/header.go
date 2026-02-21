@@ -107,7 +107,7 @@ func renderHeader(app *App) string {
 		strings.Repeat(" ", rightSpacing) +
 		right
 
-	return StyleHeader.Width(width).Render(row)
+	return StyleHeader.Width(width - 2).Render(row)
 }
 
 // formatDuration formats a poll interval as a compact string, e.g. "10s" or "2m".

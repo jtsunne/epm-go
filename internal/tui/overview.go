@@ -21,7 +21,7 @@ func renderOverview(app *App) string {
 		width = 80
 	}
 
-	cardWidth := (width - 6) / 7
+	cardWidth := (width - 14) / 7
 	if cardWidth < 8 {
 		cardWidth = 8
 	}

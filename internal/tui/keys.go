@@ -74,4 +74,4 @@ var keys = keyMap{
 }
 
 // helpText is the full help string displayed in the footer when help is toggled on.
-const helpText = "q/ctrl+c: quit  r: refresh  ?: toggle help"
+const helpText = "tab: switch table  /: search  1-9: sort col  ←→: pages  r: refresh  q: quit  ?: close help"
