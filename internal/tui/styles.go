@@ -40,13 +40,6 @@ var StyleOverviewCard = lipgloss.NewStyle().
 	Margin(0).
 	Align(lipgloss.Center)
 
-// StyleMetricCard — card for the 4 metric sparkline panels (Phase 4).
-var StyleMetricCard = lipgloss.NewStyle().
-	Background(colorAlt).
-	Foreground(colorWhite).
-	Padding(0, 1).
-	Margin(0)
-
 // Table styles.
 var (
 	StyleTableHeader = lipgloss.NewStyle().

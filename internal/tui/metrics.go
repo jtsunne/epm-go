@@ -21,8 +21,10 @@ func renderMetricCard(title, value, unit string, sparkValues []float64, cardWidt
 		cardWidth = minCardWidth
 	}
 
-	// Inner width = card width minus border (2) and padding (2 × 1 side = 2).
-	innerWidth := cardWidth - 4
+	// Inner width = card width minus border (2) and padding (2).
+	// lipgloss Width() includes padding in its measurement, so available content
+	// width = Width - padding = (cardWidth-4) - 2 = cardWidth-6.
+	innerWidth := cardWidth - 6
 	if innerWidth < 1 {
 		innerWidth = 1
 	}

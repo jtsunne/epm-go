@@ -80,13 +80,18 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		app.resources = msg.Resources
 		app.nodeRows = msg.NodeRows
 		app.indexRows = msg.IndexRows
-		app.history.Push(model.SparklinePoint{
-			Timestamp:     msg.Snapshot.FetchedAt,
-			IndexingRate:  msg.Metrics.IndexingRate,
-			SearchRate:    msg.Metrics.SearchRate,
-			IndexLatency:  msg.Metrics.IndexLatency,
-			SearchLatency: msg.Metrics.SearchLatency,
-		})
+		// Only push to history when we have a previous snapshot — the first
+		// poll has no delta, so all rate/latency metrics are zero and would
+		// corrupt the sparkline baseline.
+		if app.previous != nil {
+			app.history.Push(model.SparklinePoint{
+				Timestamp:     msg.Snapshot.FetchedAt,
+				IndexingRate:  msg.Metrics.IndexingRate,
+				SearchRate:    msg.Metrics.SearchRate,
+				IndexLatency:  msg.Metrics.IndexLatency,
+				SearchLatency: msg.Metrics.SearchLatency,
+			})
+		}
 		app.consecutiveFails = 0
 		app.lastError = nil
 		app.connState = stateConnected

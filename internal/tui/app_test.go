@@ -58,10 +58,8 @@ func TestApp_SnapshotMsgUpdatesState(t *testing.T) {
 	assert.Equal(t, msg.NodeRows, updated.nodeRows)
 	assert.Equal(t, msg.IndexRows, updated.indexRows)
 	assert.Equal(t, snap.FetchedAt, updated.lastUpdated)
-	assert.Equal(t, 1, updated.history.Len())
-	// Verify that the correct metric values were recorded in history.
-	assert.Equal(t, []float64{100}, updated.history.Values("indexingRate"))
-	assert.Equal(t, []float64{200}, updated.history.Values("searchRate"))
+	// First poll has no previous snapshot, so no history point is recorded.
+	assert.Equal(t, 0, updated.history.Len())
 	require.NotNil(t, cmd)
 }
 
@@ -236,10 +234,11 @@ func TestApp_SparklineNonEmptyAfterThreePolls(t *testing.T) {
 		app = newModel.(*App)
 	}
 
-	require.Equal(t, 3, app.history.Len())
+	// First poll is skipped (no previous snapshot), so 3 polls yield 2 history points.
+	require.Equal(t, 2, app.history.Len())
 
 	values := app.history.Values("indexingRate")
-	require.Len(t, values, 3)
+	require.Len(t, values, 2)
 
 	sparkline := plainText(RenderSparkline(values, 10, testColor))
 	assert.NotEqual(t, strings.Repeat(" ", 10), sparkline, "sparkline should contain non-space chars after 3 polls")
