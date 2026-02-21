@@ -45,7 +45,7 @@ The ES client is the most critical component: everything else depends on it bein
 
 ### Task 2: ES client interface + DefaultClient scaffold
 
-- [ ] create `internal/client/client.go` with `ESClient` interface:
+- [x] create `internal/client/client.go` with `ESClient` interface:
   ```go
   type ESClient interface {
       GetClusterHealth(ctx context.Context) (*ClusterHealth, error)
@@ -57,16 +57,16 @@ The ES client is the most critical component: everything else depends on it bein
       BaseURL() string
   }
   ```
-- [ ] create `ClientConfig` struct: `BaseURL`, `Username`, `Password`, `InsecureSkipVerify bool`, `RequestTimeout time.Duration` (default 10s)
-- [ ] create `DefaultClient` struct implementing `ESClient` with `*http.Client` and `ClientConfig`
-- [ ] implement `NewDefaultClient(cfg ClientConfig) (*DefaultClient, error)` — builds `http.Transport` with `tls.Config{InsecureSkipVerify: cfg.InsecureSkipVerify}`, sets `Timeout`
-- [ ] implement `BaseURL() string` returning configured base URL
-- [ ] implement internal `doGet(ctx, path) ([]byte, error)` — sets `Accept: application/json`, adds `Authorization: Basic` header when credentials present, returns body or error on non-2xx
-- [ ] implement `Ping(ctx)` — calls `/_cluster/health` with 1s timeout context override
+- [x] create `ClientConfig` struct: `BaseURL`, `Username`, `Password`, `InsecureSkipVerify bool`, `RequestTimeout time.Duration` (default 10s)
+- [x] create `DefaultClient` struct implementing `ESClient` with `*http.Client` and `ClientConfig`
+- [x] implement `NewDefaultClient(cfg ClientConfig) (*DefaultClient, error)` — builds `http.Transport` with `tls.Config{InsecureSkipVerify: cfg.InsecureSkipVerify}`, sets `Timeout`
+- [x] implement `BaseURL() string` returning configured base URL
+- [x] implement internal `doGet(ctx, path) ([]byte, error)` — sets `Accept: application/json`, adds `Authorization: Basic` header when credentials present, returns body or error on non-2xx
+- [x] implement `Ping(ctx)` — calls `/_cluster/health` with 1s timeout context override
 
 ### Task 3: ES response types
 
-- [ ] create `internal/client/types.go` with all response structs ported from `src/types/api.ts`:
+- [x] create `internal/client/types.go` with all response structs ported from `src/types/api.ts`:
   - `ClusterHealth`: `ClusterName`, `Status`, `NumberOfNodes`, `ActiveShards`
   - `NodeInfo`: `NodeRole` (json:`"node.role"`), `Name`, `IP`
   - `NodeStatsResponse`: `Nodes map[string]NodePerformanceStats`
@@ -75,12 +75,12 @@ The ES client is the most critical component: everything else depends on it bein
   - `IndexStatsResponse`: `Indices map[string]IndexStatEntry`
   - `IndexStatEntry`: `Primaries *IndexStatShard`, `Total *IndexStatShard`
   - `IndexStatShard`: `Indexing *struct{IndexTotal, IndexTimeInMillis}`, `Search *struct{QueryTotal, QueryTimeInMillis}`, `Store *struct{SizeInBytes}`
-- [ ] all fields use `omitempty` where optional (OS, JVM, FS sub-fields)
-- [ ] verify JSON field tags exactly match ES response field names
+- [x] all fields use `omitempty` where optional (OS, JVM, FS sub-fields)
+- [x] verify JSON field tags exactly match ES response field names
 
 ### Task 4: Endpoint path constants
 
-- [ ] create `internal/client/endpoints.go` with constants exactly matching `src/config/api.ts`:
+- [x] create `internal/client/endpoints.go` with constants exactly matching `src/config/api.ts`:
   ```go
   const (
       endpointClusterHealth = "/_cluster/health?filter_path=cluster_name,status,number_of_nodes,active_shards"
@@ -93,26 +93,26 @@ The ES client is the most critical component: everything else depends on it bein
 
 ### Task 5: Implement all 5 endpoint methods
 
-- [ ] implement `GetClusterHealth(ctx)` — calls `endpointClusterHealth`, decodes JSON into `ClusterHealth`
-- [ ] implement `GetNodes(ctx)` — calls `endpointNodes`, decodes JSON array into `[]NodeInfo`
-- [ ] implement `GetNodeStats(ctx)` — calls `endpointNodeStats`, decodes into `NodeStatsResponse`
-- [ ] implement `GetIndices(ctx)` — calls `endpointIndices`, decodes JSON array into `[]IndexInfo`
-- [ ] implement `GetIndexStats(ctx)` — calls `endpointIndexStats`, decodes into `IndexStatsResponse`
-- [ ] all methods strip trailing slash from BaseURL before building full URL
+- [x] implement `GetClusterHealth(ctx)` — calls `endpointClusterHealth`, decodes JSON into `ClusterHealth`
+- [x] implement `GetNodes(ctx)` — calls `endpointNodes`, decodes JSON array into `[]NodeInfo`
+- [x] implement `GetNodeStats(ctx)` — calls `endpointNodeStats`, decodes into `NodeStatsResponse`
+- [x] implement `GetIndices(ctx)` — calls `endpointIndices`, decodes JSON array into `[]IndexInfo`
+- [x] implement `GetIndexStats(ctx)` — calls `endpointIndexStats`, decodes into `IndexStatsResponse`
+- [x] all methods strip trailing slash from BaseURL before building full URL
 
 ### Task 6: Client tests with httptest
 
-- [ ] create `internal/client/client_test.go`
-- [ ] write `TestGetClusterHealth` — mock server returns fixture JSON, verify `Status="green"`, `NumberOfNodes=3`
-- [ ] write `TestGetNodes` — verify `NodeRole`, `Name`, `IP` parsed correctly
-- [ ] write `TestGetNodeStats` — verify nested indexing/search/OS/JVM/FS fields
-- [ ] write `TestGetIndices` — verify `Pri`, `Rep`, `DocsCount` with json field name `docs.count`
-- [ ] write `TestGetIndexStats` — verify primaries and total parsed separately
-- [ ] write `TestPing_Success` and `TestPing_Failure` (non-2xx response)
-- [ ] write `TestBasicAuth` — verify `Authorization` header sent when credentials set
-- [ ] write `TestHTTPError` — mock returns 401, verify error message contains status code
-- [ ] write `TestContextCancellation` — cancel context mid-request, verify error
-- [ ] run `go test ./internal/client/...` — all pass
+- [x] create `internal/client/client_test.go`
+- [x] write `TestGetClusterHealth` — mock server returns fixture JSON, verify `Status="green"`, `NumberOfNodes=3`
+- [x] write `TestGetNodes` — verify `NodeRole`, `Name`, `IP` parsed correctly
+- [x] write `TestGetNodeStats` — verify nested indexing/search/OS/JVM/FS fields
+- [x] write `TestGetIndices` — verify `Pri`, `Rep`, `DocsCount` with json field name `docs.count`
+- [x] write `TestGetIndexStats` — verify primaries and total parsed separately
+- [x] write `TestPing_Success` and `TestPing_Failure` (non-2xx response)
+- [x] write `TestBasicAuth` — verify `Authorization` header sent when credentials set
+- [x] write `TestHTTPError` — mock returns 401, verify error message contains status code
+- [x] write `TestContextCancellation` — cancel context mid-request, verify error
+- [x] run `go test ./internal/client/...` — all pass
 
 ### Task 7: CLI entry point
 
