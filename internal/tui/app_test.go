@@ -229,6 +229,7 @@ func TestRenderOverview_WithSnapshot(t *testing.T) {
 }
 
 // stripANSI removes ANSI escape sequences for plain-text content assertions.
+// Handles all CSI sequences (not just SGR m-terminated ones).
 func stripANSI(s string) string {
 	var out strings.Builder
 	inEscape := false
@@ -238,7 +239,8 @@ func stripANSI(s string) string {
 			continue
 		}
 		if inEscape {
-			if r == 'm' {
+			// CSI final bytes are in range 0x40–0x7E (@, A-Z, [, \, ], ^, _, `, a-z, {, |, }, ~)
+			if r >= 0x40 && r <= 0x7E {
 				inEscape = false
 			}
 			continue

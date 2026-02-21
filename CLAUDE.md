@@ -5,12 +5,12 @@ Go TUI reimplementation of the Chrome extension "Elasticsearch Performance Monit
 ## Usage
 
 ```bash
-epm <elasticsearch-uri> [--interval 10s] [--insecure]
+epm [--interval 10s] [--insecure] <elasticsearch-uri>
 
 # Examples
 epm http://localhost:9200
-epm https://elastic:changeme@prod.example.com:9200 --insecure
-epm http://localhost:9200 --interval 30s
+epm --insecure https://elastic:changeme@prod.example.com:9200
+epm --interval 30s http://localhost:9200
 ```
 
 ## Tech Stack
@@ -53,6 +53,7 @@ internal/
     styles.go                # All lipgloss styles and color constants
     thresholds.go            # Threshold severity functions for alert coloring
     header.go                # Header bar renderer
+    footer.go                # Footer bar renderer (help text / key hints)
     overview.go              # 7-stat overview bar renderer
     metrics.go               # 4 metric cards row renderer
     sparkline.go             # RenderSparkline(values, width) string
@@ -175,6 +176,7 @@ make integration ES_URI=http://localhost:9200
 - `internal/client/client_test.go` — httptest server returning fixture JSON for each of the 5 endpoints
 - `internal/engine/calculator_test.go` — table-driven tests with fixture Snapshots; highest-value tests in project
 - `internal/format/format_test.go` — table-driven tests for all formatters
+- `internal/model/history_test.go` — ring-buffer overflow and Values() correctness for SparklineHistory
 - `internal/tui/*_test.go` — test Update() logic and pure render functions; do NOT assert on lipgloss color escape codes
 - Integration tests: `//go:build integration`, skipped by default
 - Mock ESClient: `internal/engine/mock_client_test.go` (implements `client.ESClient` interface)
@@ -183,7 +185,7 @@ make integration ES_URI=http://localhost:9200
 
 - **Bubble Tea MVU**: all state in `App` struct; mutations only in `Update()`; no goroutine-level shared state
 - **Snapshot rotation**: each `SnapshotMsg` moves `current → previous`, sets new `current`
-- **fetchCmd context**: timeout = `pollInterval - 500ms`; cancelled automatically on quit
+- **fetchCmd context**: timeout = `max(pollInterval - 500ms, 500ms)`; cancelled automatically on quit
 - **Backoff**: `min(2^consecutiveFails * second, 60s)` starting at 2s
 - **`_cat` string fields**: `IndexInfo.Pri`, `Rep`, `DocsCount` are strings from the API — parse in `CalcIndexRows`, not in the client
 - **Never store credentials** beyond the lifetime of the process (in-memory `ClientConfig` only)

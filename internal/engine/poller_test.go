@@ -72,12 +72,10 @@ func TestFetchAll_ContextCancelled(t *testing.T) {
 	// ctx passed through errgroup still causes a context error when the mock
 	// explicitly checks it.
 	mc.HealthFn = func(ctx context.Context) (*client.ClusterHealth, error) {
-		select {
-		case <-ctx.Done():
+		if ctx.Err() != nil {
 			return nil, ctx.Err()
-		default:
-			return &client.ClusterHealth{Status: "green"}, nil
 		}
+		return &client.ClusterHealth{Status: "green"}, nil
 	}
 
 	snap, err := FetchAll(ctx, mc)
