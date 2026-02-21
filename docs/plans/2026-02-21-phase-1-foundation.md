@@ -116,7 +116,7 @@ The ES client is the most critical component: everything else depends on it bein
 
 ### Task 7: CLI entry point
 
-- [ ] create `cmd/epm/main.go`:
+- [x] create `cmd/epm/main.go`:
   - parse positional arg as ES URI (`flag.Args()[0]`)
   - parse flags: `--interval 10s`, `--insecure`
   - extract username/password from `url.Parse()` userinfo
@@ -124,8 +124,8 @@ The ES client is the most critical component: everything else depends on it bein
   - build `ClientConfig`, create `DefaultClient`
   - call `GetClusterHealth`, print cluster name + status as plain text
   - exit with error if URI missing
-- [ ] usage: `epm <uri> [--interval 10s] [--insecure]`
-- [ ] verify `go run ./cmd/epm http://localhost:9200` prints cluster info
+- [x] usage: `epm <uri> [--interval 10s] [--insecure]`
+- [x] verify `go run ./cmd/epm http://localhost:9200` prints cluster info
 
 ### Task 8: Verify acceptance criteria
 
