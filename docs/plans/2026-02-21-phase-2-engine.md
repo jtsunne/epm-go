@@ -164,12 +164,12 @@ Build the business logic layer: parallel 5-endpoint fetching, snapshot model, de
 
 ### Task 7: Per-node metrics calculation
 
-- [ ] implement `CalcNodeRows(prev, curr *model.Snapshot, elapsed time.Duration) []model.NodeRow`:
+- [x] implement `CalcNodeRows(prev, curr *model.Snapshot, elapsed time.Duration) []model.NodeRow`:
   - build map `nodeID → NodePerformanceStats` for curr and prev
   - build map `nodeName → NodeInfo` from `curr.Nodes` (for role/IP lookup)
   - for each node in `curr.NodeStats.Nodes`: compute delta rates using same formula
   - if node not in prev (new node), return zero rates for that node
-- [ ] write `TestCalcNodeRows`:
+- [x] write `TestCalcNodeRows`:
   - verify rates computed per node correctly
   - verify node not in prev → zero rates (no crash)
   - verify role and IP populated from Nodes list

@@ -456,3 +456,120 @@ func TestCalcIndexRows_TotalForSearch(t *testing.T) {
 	// latency: deltaTime(100ms) / deltaOps(200) = 0.5 ms
 	assert.InDelta(t, 0.5, rows[0].SearchLatency, 1e-9)
 }
+
+// makeNodeStatsWithID builds a NodeStatsResponse with a named node keyed by nodeID.
+func makeNodeStatsWithID(nodeID, nodeName string, indexOps, indexTimeMs, searchOps, searchTimeMs int64) client.NodeStatsResponse {
+	return client.NodeStatsResponse{
+		Nodes: map[string]client.NodePerformanceStats{
+			nodeID: {
+				Name: nodeName,
+				Indices: &client.NodeIndicesStats{
+					Indexing: client.NodeIndexingStats{
+						IndexTotal:        indexOps,
+						IndexTimeInMillis: indexTimeMs,
+					},
+					Search: client.NodeSearchStats{
+						QueryTotal:        searchOps,
+						QueryTimeInMillis: searchTimeMs,
+					},
+				},
+			},
+		},
+	}
+}
+
+func TestCalcNodeRows_NilCurr(t *testing.T) {
+	rows := CalcNodeRows(nil, nil, 10*time.Second)
+	assert.Nil(t, rows)
+}
+
+func TestCalcNodeRows_NilPrev(t *testing.T) {
+	// No previous snapshot → rows returned with zero rates.
+	curr := &model.Snapshot{
+		Nodes: []client.NodeInfo{
+			{Name: "node-a", NodeRole: "d", IP: "10.0.0.1"},
+		},
+		NodeStats: makeNodeStatsWithID("id1", "node-a", 1000, 500, 2000, 800),
+	}
+	rows := CalcNodeRows(nil, curr, 10*time.Second)
+	assert.Len(t, rows, 1)
+	assert.Equal(t, "id1", rows[0].ID)
+	assert.Equal(t, "node-a", rows[0].Name)
+	assert.Equal(t, 0.0, rows[0].IndexingRate)
+	assert.Equal(t, 0.0, rows[0].SearchRate)
+	assert.Equal(t, 0.0, rows[0].IndexLatency)
+	assert.Equal(t, 0.0, rows[0].SearchLatency)
+}
+
+func TestCalcNodeRows_BasicRates(t *testing.T) {
+	// prev: 1000 index ops, 500ms; 2000 search ops, 800ms
+	// curr: 2000 index ops, 700ms; 3500 search ops, 1300ms
+	// elapsed: 10s
+	// indexingRate = (2000-1000)/10 = 100 /s
+	// searchRate   = (3500-2000)/10 = 150 /s
+	// indexLatency = (700-500)/(2000-1000) = 0.2 ms
+	// searchLatency = (1300-800)/(3500-2000) = 500/1500 ≈ 0.333 ms
+	prev := &model.Snapshot{
+		NodeStats: makeNodeStatsWithID("id1", "node-a", 1000, 500, 2000, 800),
+	}
+	curr := &model.Snapshot{
+		Nodes: []client.NodeInfo{
+			{Name: "node-a", NodeRole: "d", IP: "10.0.0.1"},
+		},
+		NodeStats: makeNodeStatsWithID("id1", "node-a", 2000, 700, 3500, 1300),
+	}
+	rows := CalcNodeRows(prev, curr, 10*time.Second)
+	assert.Len(t, rows, 1)
+	assert.InDelta(t, 100.0, rows[0].IndexingRate, 1e-9)
+	assert.InDelta(t, 150.0, rows[0].SearchRate, 1e-9)
+	assert.InDelta(t, 0.2, rows[0].IndexLatency, 1e-9)
+	assert.InDelta(t, 500.0/1500.0, rows[0].SearchLatency, 1e-9)
+}
+
+func TestCalcNodeRows_NewNode(t *testing.T) {
+	// Node in curr that didn't exist in prev → zero rates, no crash.
+	prev := &model.Snapshot{
+		NodeStats: client.NodeStatsResponse{
+			Nodes: map[string]client.NodePerformanceStats{},
+		},
+	}
+	curr := &model.Snapshot{
+		Nodes: []client.NodeInfo{
+			{Name: "node-new", NodeRole: "m", IP: "10.0.0.5"},
+		},
+		NodeStats: makeNodeStatsWithID("id-new", "node-new", 500, 200, 300, 100),
+	}
+	rows := CalcNodeRows(prev, curr, 10*time.Second)
+	assert.Len(t, rows, 1)
+	assert.Equal(t, "id-new", rows[0].ID)
+	assert.Equal(t, 0.0, rows[0].IndexingRate)
+	assert.Equal(t, 0.0, rows[0].SearchRate)
+}
+
+func TestCalcNodeRows_RoleAndIPFromNodes(t *testing.T) {
+	// Role and IP must come from curr.Nodes (the _cat/nodes list), matched by name.
+	curr := &model.Snapshot{
+		Nodes: []client.NodeInfo{
+			{Name: "data-node", NodeRole: "d", IP: "192.168.1.10"},
+		},
+		NodeStats: makeNodeStatsWithID("abc123", "data-node", 0, 0, 0, 0),
+	}
+	rows := CalcNodeRows(nil, curr, 10*time.Second)
+	assert.Len(t, rows, 1)
+	assert.Equal(t, "d", rows[0].Role)
+	assert.Equal(t, "192.168.1.10", rows[0].IP)
+}
+
+func TestCalcNodeRows_TooShortInterval(t *testing.T) {
+	// elapsed < 1s → zero rates even with valid prev.
+	prev := &model.Snapshot{
+		NodeStats: makeNodeStatsWithID("id1", "node-a", 1000, 500, 2000, 800),
+	}
+	curr := &model.Snapshot{
+		NodeStats: makeNodeStatsWithID("id1", "node-a", 2000, 700, 3500, 1300),
+	}
+	rows := CalcNodeRows(prev, curr, 500*time.Millisecond)
+	assert.Len(t, rows, 1)
+	assert.Equal(t, 0.0, rows[0].IndexingRate)
+	assert.Equal(t, 0.0, rows[0].SearchRate)
+}

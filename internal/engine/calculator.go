@@ -8,6 +8,59 @@ import (
 	"github.com/dm/epm-go/internal/model"
 )
 
+// CalcNodeRows computes per-node throughput and latency metrics from two
+// consecutive snapshots. Ported from NodeTable.tsx lines 76-113.
+//
+// Role and IP are looked up from curr.Nodes by matching on node name.
+// Nodes present in curr but not in prev get zero rates.
+func CalcNodeRows(prev, curr *model.Snapshot, elapsed time.Duration) []model.NodeRow {
+	if curr == nil {
+		return nil
+	}
+
+	// Build name → NodeInfo lookup from _cat/nodes endpoint.
+	nameToNode := make(map[string]client.NodeInfo, len(curr.Nodes))
+	for _, n := range curr.Nodes {
+		nameToNode[n.Name] = n
+	}
+
+	elapsedSec := elapsed.Seconds()
+	enoughTime := prev != nil && elapsedSec >= minTimeDiffSeconds
+
+	rows := make([]model.NodeRow, 0, len(curr.NodeStats.Nodes))
+	for nodeID, node := range curr.NodeStats.Nodes {
+		row := model.NodeRow{
+			ID:   nodeID,
+			Name: node.Name,
+		}
+
+		// Populate role and IP from _cat/nodes data.
+		if info, ok := nameToNode[node.Name]; ok {
+			row.Role = info.NodeRole
+			row.IP = info.IP
+		}
+
+		if enoughTime {
+			prevNode, hasPrev := prev.NodeStats.Nodes[nodeID]
+			if hasPrev && node.Indices != nil && prevNode.Indices != nil {
+				idxOpsDelta := maxFloat64(0, float64(node.Indices.Indexing.IndexTotal-prevNode.Indices.Indexing.IndexTotal))
+				idxTimeDelta := maxFloat64(0, float64(node.Indices.Indexing.IndexTimeInMillis-prevNode.Indices.Indexing.IndexTimeInMillis))
+				srchOpsDelta := maxFloat64(0, float64(node.Indices.Search.QueryTotal-prevNode.Indices.Search.QueryTotal))
+				srchTimeDelta := maxFloat64(0, float64(node.Indices.Search.QueryTimeInMillis-prevNode.Indices.Search.QueryTimeInMillis))
+
+				row.IndexingRate = clampRate(idxOpsDelta / elapsedSec)
+				row.SearchRate = clampRate(srchOpsDelta / elapsedSec)
+				row.IndexLatency = clampLatency(safeDivide(idxTimeDelta, idxOpsDelta))
+				row.SearchLatency = clampLatency(safeDivide(srchTimeDelta, srchOpsDelta))
+			}
+		}
+
+		rows = append(rows, row)
+	}
+
+	return rows
+}
+
 // Sanity bounds ported from performanceTracker.ts lines 96-100.
 const (
 	minTimeDiffSeconds = 1.0
