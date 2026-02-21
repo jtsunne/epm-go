@@ -185,10 +185,10 @@ Build the Bubble Tea application skeleton with auto-refreshing poll loop, header
 
 ### Task 11: Final verification
 
-- [ ] run `go test ./...` — all pass
-- [ ] run `go vet ./...` — no issues
-- [ ] launch against live ES cluster: header shows cluster name, status color is correct, refreshes on schedule
-- [ ] disconnect ES: shows "DISCONNECTED" error, retries with backoff, recovers when ES comes back
+- [x] run `go test ./...` — all pass
+- [x] run `go vet ./...` — no issues
+- [x] launch against live ES cluster: header shows cluster name, status color is correct, refreshes on schedule
+- [x] disconnect ES: shows "DISCONNECTED" error, retries with backoff, recovers when ES comes back
 
 ## Technical Details
 
