@@ -86,11 +86,11 @@ Add the 4 cluster-level metric cards (Indexing Rate, Search Rate, Index Latency,
 
 ### Task 6: Tests for metric card logic
 
-- [ ] create `internal/tui/metrics_test.go`
-- [ ] `TestRenderMetricCard_ContainsValue` — output contains the formatted value string
-- [ ] `TestRenderMetricCard_ContainsTitle` — output contains the title string
-- [ ] `TestRenderMetricsRow_NilSnapshot` — returns empty string when app.current==nil
-- [ ] run `go test ./internal/tui/...` — all pass
+- [x] create `internal/tui/metrics_test.go`
+- [x] `TestRenderMetricCard_ContainsValue` — output contains the formatted value string
+- [x] `TestRenderMetricCard_ContainsTitle` — output contains the title string
+- [x] `TestRenderMetricsRow_NilSnapshot` — returns empty string when app.current==nil
+- [x] run `go test ./internal/tui/...` — all pass
 
 ### Task 7: Final verification
 
