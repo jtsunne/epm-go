@@ -68,7 +68,7 @@ Build the Bubble Tea application skeleton with auto-refreshing poll loop, header
 
 ### Task 4: Lipgloss styles
 
-- [ ] create `internal/tui/styles.go` with all style definitions:
+- [x] create `internal/tui/styles.go` with all style definitions:
   - Status colors: `colorGreen = lipgloss.Color("#10b981")`, `colorYellow = lipgloss.Color("#f59e0b")`, `colorRed = lipgloss.Color("#ef4444")`, `colorGray = lipgloss.Color("#6b7280")`
   - `StyleStatusGreen`, `StyleStatusYellow`, `StyleStatusRed` — bold + foreground
   - `StyleHeader` — full-width bar, dark background (bg `#1e293b`), white text, padding `0 1`
