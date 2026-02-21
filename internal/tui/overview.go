@@ -119,7 +119,7 @@ func renderOverview(app *App) string {
 	card7 := StyleOverviewCard.
 		Foreground(storageFg).
 		Width(cardWidth).
-		Render(fmt.Sprintf("%.1f%%", storagePct) + "\n" + storageBar + "\n" + usedStr + "/" + totalStr)
+		Render(fmt.Sprintf("%.1f%%", storagePct) + "\n" + storageBar + "\n" + usedStr + "/" + totalStr + "\nStorage")
 
 	return lipgloss.JoinHorizontal(lipgloss.Top, card1, card2, card3, card4, card5, card6, card7)
 }

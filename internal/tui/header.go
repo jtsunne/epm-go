@@ -50,6 +50,8 @@ func renderHeader(app *App) string {
 			}
 			center = StyleError.Render("● DISCONNECTED  " + errMsg)
 			right = StyleError.Render("Press r to retry")
+		} else {
+			right = StyleDim.Render("Connecting...")
 		}
 	} else {
 		// Have at least one snapshot — show cluster info.
@@ -79,10 +81,7 @@ func renderHeader(app *App) string {
 			}
 			center = StatusStyle(app.current.Health.Status).Render("● " + status)
 
-			lastStr := "Connecting..."
-			if !app.lastUpdated.IsZero() {
-				lastStr = app.lastUpdated.Format("15:04:05")
-			}
+			lastStr := app.lastUpdated.Format("15:04:05")
 			right = StyleDim.Render(fmt.Sprintf("Last: %s  Poll: %s", lastStr, formatDuration(app.pollInterval)))
 		}
 	}
