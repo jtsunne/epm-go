@@ -1,5 +1,11 @@
 package engine
 
+import (
+	"time"
+
+	"github.com/dm/epm-go/internal/model"
+)
+
 // Sanity bounds ported from performanceTracker.ts lines 96-100.
 const (
 	minTimeDiffSeconds = 1.0
@@ -38,4 +44,69 @@ func maxFloat64(a, b float64) float64 {
 		return a
 	}
 	return b
+}
+
+// CalcClusterMetrics computes cluster-level throughput and latency from the delta
+// between two consecutive snapshots. It aggregates indexing and search counters
+// across all nodes in NodeStats.
+//
+// Returns zero PerformanceMetrics when:
+//   - prev is nil (first snapshot, no baseline)
+//   - elapsed < minTimeDiffSeconds (interval too short, data unreliable)
+func CalcClusterMetrics(prev, curr *model.Snapshot, elapsed time.Duration) model.PerformanceMetrics {
+	if prev == nil || elapsed.Seconds() < minTimeDiffSeconds {
+		return model.PerformanceMetrics{}
+	}
+
+	var (
+		prevIndexOps  int64
+		prevIndexTime int64
+		prevSearchOps int64
+		prevSearchTime int64
+		currIndexOps  int64
+		currIndexTime int64
+		currSearchOps int64
+		currSearchTime int64
+	)
+
+	for _, node := range prev.NodeStats.Nodes {
+		if node.Indices == nil {
+			continue
+		}
+		prevIndexOps += node.Indices.Indexing.IndexTotal
+		prevIndexTime += node.Indices.Indexing.IndexTimeInMillis
+		prevSearchOps += node.Indices.Search.QueryTotal
+		prevSearchTime += node.Indices.Search.QueryTimeInMillis
+	}
+
+	for _, node := range curr.NodeStats.Nodes {
+		if node.Indices == nil {
+			continue
+		}
+		currIndexOps += node.Indices.Indexing.IndexTotal
+		currIndexTime += node.Indices.Indexing.IndexTimeInMillis
+		currSearchOps += node.Indices.Search.QueryTotal
+		currSearchTime += node.Indices.Search.QueryTimeInMillis
+	}
+
+	elapsedSec := elapsed.Seconds()
+
+	// Counter reset protection: clamp negative deltas to zero.
+	indexOpsDelta := maxFloat64(0, float64(currIndexOps-prevIndexOps))
+	searchOpsDelta := maxFloat64(0, float64(currSearchOps-prevSearchOps))
+	indexTimeDelta := maxFloat64(0, float64(currIndexTime-prevIndexTime))
+	searchTimeDelta := maxFloat64(0, float64(currSearchTime-prevSearchTime))
+
+	indexingRate := clampRate(indexOpsDelta / elapsedSec)
+	searchRate := clampRate(searchOpsDelta / elapsedSec)
+	// Latency: deltaTime / deltaOps (interval-based, not cumulative).
+	indexLatency := clampLatency(safeDivide(indexTimeDelta, indexOpsDelta))
+	searchLatency := clampLatency(safeDivide(searchTimeDelta, searchOpsDelta))
+
+	return model.PerformanceMetrics{
+		IndexingRate:  indexingRate,
+		SearchRate:    searchRate,
+		IndexLatency:  indexLatency,
+		SearchLatency: searchLatency,
+	}
 }

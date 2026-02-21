@@ -116,14 +116,14 @@ Build the business logic layer: parallel 5-endpoint fetching, snapshot model, de
 
 ### Task 4: Cluster-level metrics calculation
 
-- [ ] implement `CalcClusterMetrics(prev, curr *model.Snapshot, elapsed time.Duration) model.PerformanceMetrics`:
+- [x] implement `CalcClusterMetrics(prev, curr *model.Snapshot, elapsed time.Duration) model.PerformanceMetrics`:
   - if prev==nil or elapsed < minTimeDiffSeconds → return zero PerformanceMetrics
   - aggregate totals across ALL nodes in curr and prev NodeStats.Nodes
   - `indexOpsDelta = max(0, currTotalIndexOps - prevTotalIndexOps)`
   - `searchOpsDelta = max(0, currTotalSearchOps - prevTotalSearchOps)`
   - apply `clampRate` and `clampLatency`
   - latency formula: `deltaTimeMs / deltaOps` — not cumulative
-- [ ] write table-driven tests in `internal/engine/calculator_test.go`:
+- [x] write table-driven tests in `internal/engine/calculator_test.go`:
   - `TestCalcClusterMetrics_FirstSnapshot` — prev=nil → all zeros
   - `TestCalcClusterMetrics_BasicRates` — known delta, verify rate = delta/elapsed
   - `TestCalcClusterMetrics_CounterReset` — current ops < previous → rate = 0
