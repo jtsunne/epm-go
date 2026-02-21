@@ -83,8 +83,8 @@ Build the business logic layer: parallel 5-endpoint fetching, snapshot model, de
 
 ### Task 2: FetchAll parallel poller
 
-- [ ] add `golang.org/x/sync` dependency: `go get golang.org/x/sync`
-- [ ] create `internal/engine/poller.go`:
+- [x] add `golang.org/x/sync` dependency: `go get golang.org/x/sync`
+- [x] create `internal/engine/poller.go`:
   ```go
   func FetchAll(ctx context.Context, c client.ESClient) (*model.Snapshot, error)
   ```
@@ -92,11 +92,11 @@ Build the business logic layer: parallel 5-endpoint fetching, snapshot model, de
   - each goroutine calls one `ESClient` method
   - if any goroutine fails, errgroup cancels the context and `Wait()` returns the first error
   - on success, return assembled `*model.Snapshot` with `FetchedAt: time.Now()`
-- [ ] create `internal/engine/mock_client_test.go` — `MockESClient` struct implementing `ESClient` interface with configurable return values
-- [ ] write `TestFetchAll_AllSuccess` — all 5 methods return valid data, verify snapshot fields
-- [ ] write `TestFetchAll_PartialFailure` — one method returns error, verify FetchAll returns error
-- [ ] write `TestFetchAll_ContextCancelled` — pre-cancelled context, verify error
-- [ ] run `go test ./internal/engine/...` — all pass
+- [x] create `internal/engine/mock_client_test.go` — `MockESClient` struct implementing `ESClient` interface with configurable return values
+- [x] write `TestFetchAll_AllSuccess` — all 5 methods return valid data, verify snapshot fields
+- [x] write `TestFetchAll_PartialFailure` — one method returns error, verify FetchAll returns error
+- [x] write `TestFetchAll_ContextCancelled` — pre-cancelled context, verify error
+- [x] run `go test ./internal/engine/...` — all pass
 
 ### Task 3: Sanity constants and helpers
 
