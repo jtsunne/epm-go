@@ -83,49 +83,45 @@ func TestMaxFloat64(t *testing.T) {
 	}
 }
 
-// makeNodeStats builds a NodeStatsResponse with a single node for testing.
-func makeNodeStats(indexOps, indexTimeMs, searchOps, searchTimeMs int64) client.NodeStatsResponse {
-	return client.NodeStatsResponse{
-		Nodes: map[string]client.NodePerformanceStats{
-			"node1": {
-				Name: "node1",
-				Indices: &client.NodeIndicesStats{
-					Indexing: client.NodeIndexingStats{
-						IndexTotal:        indexOps,
-						IndexTimeInMillis: indexTimeMs,
-					},
-					Search: client.NodeSearchStats{
-						QueryTotal:        searchOps,
-						QueryTimeInMillis: searchTimeMs,
-					},
-				},
-			},
+// makeClusterIndexStats builds a single-index IndexStatsResponse for testing
+// CalcClusterMetrics. Indexing ops are placed in Primaries; search ops in Total.
+func makeClusterIndexStats(idxOps, idxTimeMs, srchOps, srchTimeMs int64) client.IndexStatsResponse {
+	return client.IndexStatsResponse{
+		Indices: map[string]client.IndexStatEntry{
+			"idx": makeIndexStats(idxOps, idxTimeMs, -1, -1, -1, -1, srchOps, srchTimeMs, -1, -1),
 		},
 	}
 }
 
 func TestCalcClusterMetrics_FirstSnapshot(t *testing.T) {
 	curr := &model.Snapshot{
-		NodeStats: makeNodeStats(1000, 500, 2000, 800),
-		FetchedAt: time.Now(),
+		IndexStats: makeClusterIndexStats(1000, 500, 2000, 800),
 	}
 	got := CalcClusterMetrics(nil, curr, 10*time.Second)
 	assert.Equal(t, model.PerformanceMetrics{}, got)
 }
 
+func TestCalcClusterMetrics_NilCurr(t *testing.T) {
+	prev := &model.Snapshot{
+		IndexStats: makeClusterIndexStats(1000, 500, 2000, 800),
+	}
+	got := CalcClusterMetrics(prev, nil, 10*time.Second)
+	assert.Equal(t, model.PerformanceMetrics{}, got)
+}
+
 func TestCalcClusterMetrics_BasicRates(t *testing.T) {
-	// prev: 1000 index ops, 500ms; 2000 search ops, 800ms
-	// curr: 2000 index ops, 700ms; 3500 search ops, 1300ms
+	// prev: 1000 index ops (primaries), 500ms; 2000 search ops (total), 800ms
+	// curr: 2000 index ops (primaries), 700ms; 3500 search ops (total), 1300ms
 	// elapsed: 10s
 	// indexingRate = (2000-1000)/10 = 100 /s
 	// searchRate   = (3500-2000)/10 = 150 /s
 	// indexLatency = (700-500)/(2000-1000) = 200/1000 = 0.2 ms
 	// searchLatency = (1300-800)/(3500-2000) = 500/1500 ≈ 0.333 ms
 	prev := &model.Snapshot{
-		NodeStats: makeNodeStats(1000, 500, 2000, 800),
+		IndexStats: makeClusterIndexStats(1000, 500, 2000, 800),
 	}
 	curr := &model.Snapshot{
-		NodeStats: makeNodeStats(2000, 700, 3500, 1300),
+		IndexStats: makeClusterIndexStats(2000, 700, 3500, 1300),
 	}
 	elapsed := 10 * time.Second
 	got := CalcClusterMetrics(prev, curr, elapsed)
@@ -139,10 +135,10 @@ func TestCalcClusterMetrics_BasicRates(t *testing.T) {
 func TestCalcClusterMetrics_CounterReset(t *testing.T) {
 	// curr ops < prev ops → delta is negative → clamped to 0 → rate = 0
 	prev := &model.Snapshot{
-		NodeStats: makeNodeStats(5000, 2000, 8000, 3000),
+		IndexStats: makeClusterIndexStats(5000, 2000, 8000, 3000),
 	}
 	curr := &model.Snapshot{
-		NodeStats: makeNodeStats(100, 50, 200, 80),
+		IndexStats: makeClusterIndexStats(100, 50, 200, 80),
 	}
 	got := CalcClusterMetrics(prev, curr, 10*time.Second)
 	assert.Equal(t, 0.0, got.IndexingRate)
@@ -151,10 +147,10 @@ func TestCalcClusterMetrics_CounterReset(t *testing.T) {
 
 func TestCalcClusterMetrics_TooShortInterval(t *testing.T) {
 	prev := &model.Snapshot{
-		NodeStats: makeNodeStats(1000, 500, 2000, 800),
+		IndexStats: makeClusterIndexStats(1000, 500, 2000, 800),
 	}
 	curr := &model.Snapshot{
-		NodeStats: makeNodeStats(2000, 700, 3500, 1300),
+		IndexStats: makeClusterIndexStats(2000, 700, 3500, 1300),
 	}
 	// 500ms < 1s → return zeros
 	got := CalcClusterMetrics(prev, curr, 500*time.Millisecond)
@@ -165,10 +161,10 @@ func TestCalcClusterMetrics_RateSanityCap(t *testing.T) {
 	// delta = maxRatePerSec*10+1 ops in 1 second → rate exceeds cap → clamped to 0
 	bigDelta := int64(maxRatePerSec*10 + 1)
 	prev := &model.Snapshot{
-		NodeStats: makeNodeStats(0, 0, 0, 0),
+		IndexStats: makeClusterIndexStats(0, 0, 0, 0),
 	}
 	curr := &model.Snapshot{
-		NodeStats: makeNodeStats(bigDelta, 0, bigDelta, 0),
+		IndexStats: makeClusterIndexStats(bigDelta, 0, bigDelta, 0),
 	}
 	got := CalcClusterMetrics(prev, curr, 1*time.Second)
 	assert.Equal(t, 0.0, got.IndexingRate)
@@ -179,10 +175,10 @@ func TestCalcClusterMetrics_LatencySanityCap(t *testing.T) {
 	// 1 op with enormous time → raw latency >> maxLatencyMs → capped
 	hugeTime := int64(maxLatencyMs*2 + 1)
 	prev := &model.Snapshot{
-		NodeStats: makeNodeStats(0, 0, 0, 0),
+		IndexStats: makeClusterIndexStats(0, 0, 0, 0),
 	}
 	curr := &model.Snapshot{
-		NodeStats: makeNodeStats(1, hugeTime, 1, hugeTime),
+		IndexStats: makeClusterIndexStats(1, hugeTime, 1, hugeTime),
 	}
 	got := CalcClusterMetrics(prev, curr, 10*time.Second)
 	assert.Equal(t, maxLatencyMs, got.IndexLatency)
@@ -261,6 +257,22 @@ func TestCalcClusterResources_JVMSkipsZeroHeap(t *testing.T) {
 	}
 	got := CalcClusterResources(snap)
 	assert.InDelta(t, 75.0, got.AvgJVMHeapPercent, 1e-6)
+}
+
+func TestCalcClusterResources_JVMIncludesZeroHeapUsed(t *testing.T) {
+	// node1: 0B used / 4GB max = 0%; node2: 2GB used / 4GB max = 50%
+	// Both nodes have valid heap (max > 0) so both are included → average = 25%
+	const gb = int64(1 << 30)
+	snap := &model.Snapshot{
+		NodeStats: client.NodeStatsResponse{
+			Nodes: map[string]client.NodePerformanceStats{
+				"n1": {Name: "n1", JVM: makeNodeJVM(0, 4*gb)},
+				"n2": {Name: "n2", JVM: makeNodeJVM(2*gb, 4*gb)},
+			},
+		},
+	}
+	got := CalcClusterResources(snap)
+	assert.InDelta(t, 25.0, got.AvgJVMHeapPercent, 1e-6)
 }
 
 func TestCalcClusterResources_StorageSumAndPercent(t *testing.T) {

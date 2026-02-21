@@ -102,46 +102,66 @@ func maxFloat64(a, b float64) float64 {
 }
 
 // CalcClusterMetrics computes cluster-level throughput and latency from the delta
-// between two consecutive snapshots. It aggregates indexing and search counters
-// across all nodes in NodeStats.
+// between two consecutive snapshots. Aggregates indexing ops from primaries and
+// search ops from totals across all index stats, per the spec.
 //
 // Returns zero PerformanceMetrics when:
-//   - prev is nil (first snapshot, no baseline)
+//   - prev or curr is nil (first snapshot, no baseline)
 //   - elapsed < minTimeDiffSeconds (interval too short, data unreliable)
 func CalcClusterMetrics(prev, curr *model.Snapshot, elapsed time.Duration) model.PerformanceMetrics {
-	if prev == nil || elapsed.Seconds() < minTimeDiffSeconds {
+	if prev == nil || curr == nil || elapsed.Seconds() < minTimeDiffSeconds {
 		return model.PerformanceMetrics{}
 	}
 
 	var (
-		prevIndexOps  int64
-		prevIndexTime int64
-		prevSearchOps int64
+		prevIndexOps   int64
+		prevIndexTime  int64
+		prevSearchOps  int64
 		prevSearchTime int64
-		currIndexOps  int64
-		currIndexTime int64
-		currSearchOps int64
+		currIndexOps   int64
+		currIndexTime  int64
+		currSearchOps  int64
 		currSearchTime int64
 	)
 
-	for _, node := range prev.NodeStats.Nodes {
-		if node.Indices == nil {
-			continue
+	// Aggregate indexing (primaries) and search (total) across all indices.
+	// Mirrors the primaries-vs-total rule from IndexTable.tsx lines 73-76.
+	for _, entry := range prev.IndexStats.Indices {
+		idxShard := entry.Primaries
+		if idxShard == nil {
+			idxShard = entry.Total
 		}
-		prevIndexOps += node.Indices.Indexing.IndexTotal
-		prevIndexTime += node.Indices.Indexing.IndexTimeInMillis
-		prevSearchOps += node.Indices.Search.QueryTotal
-		prevSearchTime += node.Indices.Search.QueryTimeInMillis
+		if idxShard != nil && idxShard.Indexing != nil {
+			prevIndexOps += idxShard.Indexing.IndexTotal
+			prevIndexTime += idxShard.Indexing.IndexTimeInMillis
+		}
+		srchShard := entry.Total
+		if srchShard == nil {
+			srchShard = entry.Primaries
+		}
+		if srchShard != nil && srchShard.Search != nil {
+			prevSearchOps += srchShard.Search.QueryTotal
+			prevSearchTime += srchShard.Search.QueryTimeInMillis
+		}
 	}
 
-	for _, node := range curr.NodeStats.Nodes {
-		if node.Indices == nil {
-			continue
+	for _, entry := range curr.IndexStats.Indices {
+		idxShard := entry.Primaries
+		if idxShard == nil {
+			idxShard = entry.Total
 		}
-		currIndexOps += node.Indices.Indexing.IndexTotal
-		currIndexTime += node.Indices.Indexing.IndexTimeInMillis
-		currSearchOps += node.Indices.Search.QueryTotal
-		currSearchTime += node.Indices.Search.QueryTimeInMillis
+		if idxShard != nil && idxShard.Indexing != nil {
+			currIndexOps += idxShard.Indexing.IndexTotal
+			currIndexTime += idxShard.Indexing.IndexTimeInMillis
+		}
+		srchShard := entry.Total
+		if srchShard == nil {
+			srchShard = entry.Primaries
+		}
+		if srchShard != nil && srchShard.Search != nil {
+			currSearchOps += srchShard.Search.QueryTotal
+			currSearchTime += srchShard.Search.QueryTimeInMillis
+		}
 	}
 
 	elapsedSec := elapsed.Seconds()
@@ -193,16 +213,14 @@ func CalcClusterResources(snap *model.Snapshot) model.ClusterResources {
 			}
 		}
 
-		// JVM heap: per-node used/max * 100, skip zeros.
+		// JVM heap: per-node used/max * 100, skip nodes with no heap (max=0).
 		if node.JVM != nil {
 			heapMax := node.JVM.Mem.HeapMaxInBytes
 			heapUsed := node.JVM.Mem.HeapUsedInBytes
 			if heapMax > 0 {
 				heapPercent := float64(heapUsed) / float64(heapMax) * 100
-				if heapPercent > 0 {
-					jvmSum += heapPercent
-					jvmCount++
-				}
+				jvmSum += heapPercent
+				jvmCount++
 			}
 		}
 
