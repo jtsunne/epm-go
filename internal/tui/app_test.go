@@ -59,6 +59,9 @@ func TestApp_SnapshotMsgUpdatesState(t *testing.T) {
 	assert.Equal(t, msg.IndexRows, updated.indexRows)
 	assert.Equal(t, snap.FetchedAt, updated.lastUpdated)
 	assert.Equal(t, 1, updated.history.Len())
+	// Verify that the correct metric values were recorded in history.
+	assert.Equal(t, []float64{100}, updated.history.Values("indexingRate"))
+	assert.Equal(t, []float64{200}, updated.history.Values("searchRate"))
 	require.NotNil(t, cmd)
 }
 

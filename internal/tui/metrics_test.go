@@ -74,6 +74,11 @@ func TestRenderMetricsRow_WithSnapshot(t *testing.T) {
 	assert.Contains(t, stripped, "Index Latency")
 	assert.Contains(t, stripped, "Search Latency")
 	assert.Contains(t, stripped, "Cluster Performance")
+	// Verify formatted metric values appear in the output.
+	assert.Contains(t, stripped, "1,500.0")
+	assert.Contains(t, stripped, "800.0")
+	assert.Contains(t, stripped, "2.50")
+	assert.Contains(t, stripped, "7.30")
 }
 
 func TestRenderMetricsRow_NarrowTerminal(t *testing.T) {

@@ -199,9 +199,5 @@ func backoffDuration(fails int) time.Duration {
 	if fails >= 6 {
 		return maxBackoff
 	}
-	d := time.Duration(1<<fails) * time.Second
-	if d > maxBackoff {
-		return maxBackoff
-	}
-	return d
+	return time.Duration(1<<fails) * time.Second
 }

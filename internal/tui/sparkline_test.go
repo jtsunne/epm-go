@@ -48,7 +48,11 @@ func TestRenderSparkline_EmptySlice(t *testing.T) {
 func TestRenderSparkline_AllZeros(t *testing.T) {
 	values := []float64{0, 0, 0, 0, 0}
 	result := plainText(RenderSparkline(values, 5, testColor))
-	for i, ch := range []rune(result) {
+	runes := []rune(result)
+	if len(runes) != 5 {
+		t.Fatalf("expected 5 runes, got %d: %q", len(runes), result)
+	}
+	for i, ch := range runes {
 		if ch != '▁' {
 			t.Errorf("index %d: expected '▁', got %q", i, ch)
 		}

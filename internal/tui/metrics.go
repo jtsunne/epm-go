@@ -44,7 +44,7 @@ func renderMetricCard(title, value, unit string, sparkValues []float64, cardWidt
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(colorGray).
 		Padding(0, 1).
-		Width(cardWidth)
+		Width(cardWidth - 4)
 
 	return cardStyle.Render(lipgloss.JoinVertical(lipgloss.Left,
 		titleLine,
