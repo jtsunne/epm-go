@@ -129,10 +129,10 @@ The ES client is the most critical component: everything else depends on it bein
 
 ### Task 8: Verify acceptance criteria
 
-- [ ] run `go test ./...` — all tests pass
-- [ ] run `go vet ./...` — no issues
-- [ ] run `go build -o bin/epm ./cmd/epm` — binary produced
-- [ ] binary runs against real or mock ES cluster and prints health
+- [x] run `go test ./...` — all tests pass
+- [x] run `go vet ./...` — no issues
+- [x] run `go build -o bin/epm ./cmd/epm` — binary produced
+- [x] binary runs against real or mock ES cluster and prints health
 
 ## Technical Details
 
