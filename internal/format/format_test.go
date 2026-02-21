@@ -87,6 +87,7 @@ func TestFormatNumber(t *testing.T) {
 		{"seven_digits", 1234567, "1,234,567"},
 		{"nine_digits", 12345678, "12,345,678"},
 		{"negative", -12345, "-12,345"},
+		{"min_int64", math.MinInt64, "-9,223,372,036,854,775,808"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

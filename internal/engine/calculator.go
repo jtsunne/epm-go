@@ -124,28 +124,12 @@ func CalcClusterMetrics(prev, curr *model.Snapshot, elapsed time.Duration) model
 		currSearchTime int64
 	)
 
-	// Aggregate indexing (primaries) and search (total) across all indices.
-	// Mirrors the primaries-vs-total rule from IndexTable.tsx lines 73-76.
-	for _, entry := range prev.IndexStats.Indices {
-		idxShard := entry.Primaries
-		if idxShard == nil {
-			idxShard = entry.Total
-		}
-		if idxShard != nil && idxShard.Indexing != nil {
-			prevIndexOps += idxShard.Indexing.IndexTotal
-			prevIndexTime += idxShard.Indexing.IndexTimeInMillis
-		}
-		srchShard := entry.Total
-		if srchShard == nil {
-			srchShard = entry.Primaries
-		}
-		if srchShard != nil && srchShard.Search != nil {
-			prevSearchOps += srchShard.Search.QueryTotal
-			prevSearchTime += srchShard.Search.QueryTimeInMillis
-		}
-	}
-
-	for _, entry := range curr.IndexStats.Indices {
+	// Aggregate indexing (primaries) and search (total) across indices present in
+	// curr. For each curr index we look up the matching prev entry by name so that
+	// indices deleted between snapshots do not inflate the prev aggregate and produce
+	// a spurious negative delta. Mirrors the primaries-vs-total rule from
+	// IndexTable.tsx lines 73-76.
+	for name, entry := range curr.IndexStats.Indices {
 		idxShard := entry.Primaries
 		if idxShard == nil {
 			idxShard = entry.Total
@@ -161,6 +145,25 @@ func CalcClusterMetrics(prev, curr *model.Snapshot, elapsed time.Duration) model
 		if srchShard != nil && srchShard.Search != nil {
 			currSearchOps += srchShard.Search.QueryTotal
 			currSearchTime += srchShard.Search.QueryTimeInMillis
+		}
+
+		if prevEntry, ok := prev.IndexStats.Indices[name]; ok {
+			pidxShard := prevEntry.Primaries
+			if pidxShard == nil {
+				pidxShard = prevEntry.Total
+			}
+			if pidxShard != nil && pidxShard.Indexing != nil {
+				prevIndexOps += pidxShard.Indexing.IndexTotal
+				prevIndexTime += pidxShard.Indexing.IndexTimeInMillis
+			}
+			psrchShard := prevEntry.Total
+			if psrchShard == nil {
+				psrchShard = prevEntry.Primaries
+			}
+			if psrchShard != nil && psrchShard.Search != nil {
+				prevSearchOps += psrchShard.Search.QueryTotal
+				prevSearchTime += psrchShard.Search.QueryTimeInMillis
+			}
 		}
 	}
 

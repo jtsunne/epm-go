@@ -2,10 +2,10 @@ package client
 
 // ClusterHealth represents the response from /_cluster/health.
 type ClusterHealth struct {
-	ClusterName  string `json:"cluster_name"`
-	Status       string `json:"status"`
-	NumberOfNodes int   `json:"number_of_nodes"`
-	ActiveShards int   `json:"active_shards"`
+	ClusterName   string `json:"cluster_name"`
+	Status        string `json:"status"`
+	NumberOfNodes int    `json:"number_of_nodes"`
+	ActiveShards  int    `json:"active_shards"`
 }
 
 // NodeInfo represents a single node entry from /_cat/nodes.
@@ -22,14 +22,14 @@ type NodeStatsResponse struct {
 
 // NodePerformanceStats holds per-node performance data.
 type NodePerformanceStats struct {
-	Name    string          `json:"name"`
-	Host    string          `json:"host"`
-	IP      string          `json:"ip"`
-	Roles   []string        `json:"roles"`
+	Name    string            `json:"name"`
+	Host    string            `json:"host"`
+	IP      string            `json:"ip"`
+	Roles   []string          `json:"roles"`
 	Indices *NodeIndicesStats `json:"indices,omitempty"`
 	OS      *NodeOSStats      `json:"os,omitempty"`
-	JVM     *NodeJVMStats   `json:"jvm,omitempty"`
-	FS      *NodeFSStats    `json:"fs,omitempty"`
+	JVM     *NodeJVMStats     `json:"jvm,omitempty"`
+	FS      *NodeFSStats      `json:"fs,omitempty"`
 }
 
 // NodeIndicesStats holds indexing and search counters for a node.
@@ -40,8 +40,8 @@ type NodeIndicesStats struct {
 
 // NodeIndexingStats holds indexing operation counters.
 type NodeIndexingStats struct {
-	IndexTotal         int64 `json:"index_total"`
-	IndexTimeInMillis  int64 `json:"index_time_in_millis"`
+	IndexTotal        int64 `json:"index_total"`
+	IndexTimeInMillis int64 `json:"index_time_in_millis"`
 }
 
 // NodeSearchStats holds search query counters.

@@ -9,8 +9,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/dm/epm-go/internal/engine"
 	"github.com/dm/epm-go/internal/client"
+	"github.com/dm/epm-go/internal/engine"
 	"github.com/dm/epm-go/internal/format"
 	"github.com/dm/epm-go/internal/model"
 )
@@ -37,6 +37,14 @@ func parseESURI(esURI string) (baseURL, username, password string, err error) {
 		// Remove credentials from URL stored in config
 		u.User = nil
 	}
+
+	// Strip query string and fragment so that path concatenation in doGet
+	// produces valid URLs (e.g. "http://host:9200?x=1/_cluster/health" is invalid).
+	// ForceQuery must also be cleared: url.Parse("http://host?") sets ForceQuery=true
+	// which causes u.String() to emit a trailing "?" even when RawQuery is empty.
+	u.RawQuery = ""
+	u.Fragment = ""
+	u.ForceQuery = false
 
 	return u.String(), username, password, nil
 }

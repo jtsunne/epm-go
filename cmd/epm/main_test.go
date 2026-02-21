@@ -69,6 +69,28 @@ func TestParseESURI(t *testing.T) {
 			wantUser: "",
 			wantPass: "secret",
 		},
+		{
+			name:     "URI with query string is stripped",
+			uri:      "http://localhost:9200?x=1&y=2",
+			wantBase: "http://localhost:9200",
+		},
+		{
+			name:     "bare trailing question mark is stripped",
+			uri:      "http://localhost:9200?",
+			wantBase: "http://localhost:9200",
+		},
+		{
+			name:     "URI with fragment is stripped",
+			uri:      "http://localhost:9200#section",
+			wantBase: "http://localhost:9200",
+		},
+		{
+			name:     "URI with credentials and query string",
+			uri:      "https://elastic:pw@host:9200?ssl=true",
+			wantBase: "https://host:9200",
+			wantUser: "elastic",
+			wantPass: "pw",
+		},
 	}
 
 	for _, tc := range tests {

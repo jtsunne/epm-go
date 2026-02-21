@@ -51,13 +51,14 @@ func FormatLatency(ms float64) string {
 
 // FormatNumber formats an integer with locale-style comma separators.
 // Example: 12345678 → "12,345,678".
+// Uses strconv.FormatInt directly to avoid abs64 overflow for math.MinInt64.
 func FormatNumber(n int64) string {
-	s := strconv.FormatInt(abs64(n), 10)
-	result := insertCommas(s)
+	s := strconv.FormatInt(n, 10)
 	if n < 0 {
-		return "-" + result
+		// s starts with "-"; strip it, insert commas, restore sign.
+		return "-" + insertCommas(s[1:])
 	}
-	return result
+	return insertCommas(s)
 }
 
 // FormatPercent formats a percentage with one decimal place.
@@ -142,11 +143,4 @@ func insertCommas(s string) string {
 		buf.WriteString(s[i : i+3])
 	}
 	return buf.String()
-}
-
-func abs64(n int64) int64 {
-	if n < 0 {
-		return -n
-	}
-	return n
 }

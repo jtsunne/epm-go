@@ -20,26 +20,26 @@ type ClusterResources struct {
 
 // NodeRow holds display-ready data for a single row in the node table.
 type NodeRow struct {
-	ID           string
-	Name         string
-	Role         string
-	IP           string
-	IndexingRate float64 // ops/sec
-	SearchRate   float64 // ops/sec
-	IndexLatency float64 // ms/op
+	ID            string
+	Name          string
+	Role          string
+	IP            string
+	IndexingRate  float64 // ops/sec
+	SearchRate    float64 // ops/sec
+	IndexLatency  float64 // ms/op
 	SearchLatency float64 // ms/op
 }
 
 // IndexRow holds display-ready data for a single row in the index table.
 type IndexRow struct {
-	Name          string
-	PrimaryShards int
-	TotalShards   int
+	Name           string
+	PrimaryShards  int
+	TotalShards    int
 	TotalSizeBytes int64
-	AvgShardSize  int64
-	DocCount      int64
-	IndexingRate  float64 // ops/sec (primaries)
-	SearchRate    float64 // ops/sec (total)
-	IndexLatency  float64 // ms/op (primaries)
-	SearchLatency float64 // ms/op (total)
+	AvgShardSize   int64
+	DocCount       int64
+	IndexingRate   float64 // ops/sec (primaries)
+	SearchRate     float64 // ops/sec (total)
+	IndexLatency   float64 // ms/op (primaries)
+	SearchLatency  float64 // ms/op (total)
 }

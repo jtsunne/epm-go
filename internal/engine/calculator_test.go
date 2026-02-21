@@ -171,6 +171,34 @@ func TestCalcClusterMetrics_RateSanityCap(t *testing.T) {
 	assert.Equal(t, 0.0, got.SearchRate)
 }
 
+func TestCalcClusterMetrics_IndexDisappears(t *testing.T) {
+	// prev has two indices: "big" with 100,000 ops and "small" with 200 ops.
+	// curr has only "small" with 250 ops ("big" was deleted/rolled over).
+	// Without the fix the aggregate prev total (100,200) > curr total (250), so the
+	// delta goes negative and gets clamped to 0 — masking real activity on "small".
+	// With the fix only matching indices are compared: delta = 250-200 = 50 ops.
+	prev := &model.Snapshot{
+		IndexStats: client.IndexStatsResponse{
+			Indices: map[string]client.IndexStatEntry{
+				"big":   makeIndexStats(100_000, 50_000, -1, -1, -1, -1, 200_000, 100_000, -1, -1),
+				"small": makeIndexStats(200, 100, -1, -1, -1, -1, 400, 200, -1, -1),
+			},
+		},
+	}
+	curr := &model.Snapshot{
+		IndexStats: client.IndexStatsResponse{
+			Indices: map[string]client.IndexStatEntry{
+				"small": makeIndexStats(250, 130, -1, -1, -1, -1, 500, 250, -1, -1),
+			},
+		},
+	}
+	got := CalcClusterMetrics(prev, curr, 10*time.Second)
+	// indexingRate = (250-200)/10 = 5/s
+	assert.InDelta(t, 5.0, got.IndexingRate, 1e-9)
+	// searchRate = (500-400)/10 = 10/s
+	assert.InDelta(t, 10.0, got.SearchRate, 1e-9)
+}
+
 func TestCalcClusterMetrics_LatencySanityCap(t *testing.T) {
 	// 1 op with enormous time → raw latency >> maxLatencyMs → capped
 	hugeTime := int64(maxLatencyMs*2 + 1)
