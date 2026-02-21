@@ -68,8 +68,10 @@ func renderMetricsRow(app *App) string {
 	label := StyleDim.Render("Cluster Performance")
 
 	if app.width < 80 {
-		// 2x2 grid layout for narrow terminals
-		cardWidth := (app.width - 4) / 2
+		// 2x2 grid layout for narrow terminals.
+		// Each card renders at (cardWidth-2) chars wide (lipgloss Width includes padding,
+		// border adds 2). For 2 cards to fill app.width: 2*(cardWidth-2)=app.width → cardWidth=(app.width+4)/2.
+		cardWidth := (app.width + 4) / 2
 		if cardWidth < 20 {
 			cardWidth = 20
 		}
@@ -84,8 +86,10 @@ func renderMetricsRow(app *App) string {
 		return lipgloss.JoinVertical(lipgloss.Left, label, top, bottom)
 	}
 
-	// 1x4 horizontal row for wide terminals
-	cardWidth := (app.width - 8) / 4
+	// 1x4 horizontal row for wide terminals.
+	// Each card renders at (cardWidth-2) chars wide (lipgloss Width includes padding,
+	// border adds 2). For 4 cards to fill app.width: 4*(cardWidth-2)=app.width → cardWidth=(app.width+8)/4.
+	cardWidth := (app.width + 8) / 4
 	if cardWidth < 20 {
 		cardWidth = 20
 	}

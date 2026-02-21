@@ -8,16 +8,32 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// sanitize removes ASCII control characters (including ANSI escape sequences)
-// from a string before rendering it in the terminal. This prevents a malicious
-// or misbehaving server from injecting terminal control codes.
+// sanitize removes ANSI escape sequences and ASCII control characters from a
+// string before rendering it in the terminal. This prevents a malicious or
+// misbehaving server from injecting terminal control codes via cluster names
+// or error messages.
 func sanitize(s string) string {
-	return strings.Map(func(r rune) rune {
-		if r < 0x20 || r == 0x7f || (r >= 0x80 && r <= 0x9F) {
-			return -1
+	var out strings.Builder
+	inEscape := false
+	for _, r := range s {
+		if r == '\x1b' {
+			inEscape = true
+			continue
 		}
-		return r
-	}, s)
+		if inEscape {
+			// CSI final bytes are in range 0x40–0x7E; end of escape sequence.
+			if r >= 0x40 && r <= 0x7E {
+				inEscape = false
+			}
+			continue
+		}
+		// Remove remaining control characters outside the printable ASCII range.
+		if r < 0x20 || r == 0x7f || (r >= 0x80 && r <= 0x9F) {
+			continue
+		}
+		out.WriteRune(r)
+	}
+	return out.String()
 }
 
 // renderHeader renders the top header bar with cluster name, status, and timing info.
