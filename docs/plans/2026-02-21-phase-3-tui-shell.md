@@ -30,10 +30,10 @@ Build the Bubble Tea application skeleton with auto-refreshing poll loop, header
 
 ### Task 1: Add Bubble Tea dependencies
 
-- [ ] `go get github.com/charmbracelet/bubbletea`
-- [ ] `go get github.com/charmbracelet/lipgloss`
-- [ ] `go get github.com/charmbracelet/bubbles`
-- [ ] verify `go mod tidy` succeeds
+- [x] `go get github.com/charmbracelet/bubbletea`
+- [x] `go get github.com/charmbracelet/lipgloss`
+- [x] `go get github.com/charmbracelet/bubbles`
+- [x] verify `go mod tidy` succeeds
 
 ### Task 2: Custom message types
 
