@@ -75,9 +75,9 @@ Add the 4 cluster-level metric cards (Indexing Rate, Search Rate, Index Latency,
 
 ### Task 4: Wire sparkline history into App
 
-- [ ] update `App.Update()` in `app.go`: on `SnapshotMsg`, call `app.history.Push(model.SparklinePoint{...})` with the computed metrics
-- [ ] ensure `app.history` is initialized in `NewApp()` with cap 60
-- [ ] verify that after 3+ poll cycles, sparkline renders with non-space characters
+- [x] update `App.Update()` in `app.go`: on `SnapshotMsg`, call `app.history.Push(model.SparklinePoint{...})` with the computed metrics
+- [x] ensure `app.history` is initialized in `NewApp()` with cap 60
+- [x] verify that after 3+ poll cycles, sparkline renders with non-space characters
 
 ### Task 5: Wire metrics row into View
 

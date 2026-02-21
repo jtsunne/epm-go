@@ -216,6 +216,34 @@ func TestRenderMiniBar(t *testing.T) {
 	assert.Equal(t, "", renderMiniBar(50, 0))
 }
 
+func TestApp_SparklineNonEmptyAfterThreePolls(t *testing.T) {
+	app := NewApp(nil, 10*time.Second)
+
+	// Push 3 snapshots with non-zero metrics.
+	for i := 1; i <= 3; i++ {
+		snap := makeFixtureSnapshot()
+		msg := SnapshotMsg{
+			Snapshot: snap,
+			Metrics: model.PerformanceMetrics{
+				IndexingRate: float64(i * 100),
+				SearchRate:   float64(i * 50),
+			},
+		}
+		newModel, _ := app.Update(msg)
+		app = newModel.(*App)
+	}
+
+	require.Equal(t, 3, app.history.Len())
+
+	values := app.history.Values("indexingRate")
+	require.Len(t, values, 3)
+
+	sparkline := plainText(RenderSparkline(values, 10, testColor))
+	assert.NotEqual(t, strings.Repeat(" ", 10), sparkline, "sparkline should contain non-space chars after 3 polls")
+	// With 3 values and width 10, the right side contains sparkline chars (left-padded with spaces).
+	assert.Contains(t, sparkline, "█", "sparkline should contain a max-value char")
+}
+
 func TestRenderOverview_NilSnapshot(t *testing.T) {
 	app := NewApp(nil, 10*time.Second)
 	app.width = 120
