@@ -57,14 +57,14 @@ Build the Bubble Tea application skeleton with auto-refreshing poll loop, header
 
 ### Task 3: Key bindings
 
-- [ ] create `internal/tui/keys.go`:
+- [x] create `internal/tui/keys.go`:
   - `q` / `ctrl+c` → quit
   - `r` → force refresh
   - `tab` / `shift+tab` → switch focused table (used in Phase 5)
   - `/` → open search in focused table (used in Phase 5)
   - `esc` → close search / cancel
   - `?` → toggle help text in footer
-- [ ] create `helpText` string listing all bindings shown in footer
+- [x] create `helpText` string listing all bindings shown in footer
 
 ### Task 4: Lipgloss styles
 
