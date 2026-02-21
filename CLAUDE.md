@@ -51,15 +51,15 @@ internal/
     messages.go              # SnapshotMsg, FetchErrorMsg, TickMsg
     keys.go                  # Key bindings (q, r, tab, /, 1-9, ←→)
     styles.go                # All lipgloss styles and color constants
-    thresholds.go            # Threshold severity functions for alert coloring
     header.go                # Header bar renderer
     footer.go                # Footer bar renderer (help text / key hints)
     overview.go              # 7-stat overview bar renderer
-    metrics.go               # 4 metric cards row renderer
-    sparkline.go             # RenderSparkline(values, width) string
-    table.go                 # Generic tableModel: sort, paginate, search
-    indextable.go            # IndexTableModel (9 columns)
-    nodetable.go             # NodeTableModel (7 columns)
+    metrics.go               # 4 metric cards row renderer          (Phase 4)
+    sparkline.go             # RenderSparkline(values, width) string (Phase 4)
+    table.go                 # Generic tableModel: sort, paginate, search (Phase 5)
+    indextable.go            # IndexTableModel (9 columns)           (Phase 5)
+    nodetable.go             # NodeTableModel (7 columns)            (Phase 5)
+    thresholds.go            # Threshold severity functions for alert coloring (Phase 6)
   format/
     format.go                # FormatBytes, FormatRate, FormatLatency, FormatNumber, FormatPercent
     format_test.go

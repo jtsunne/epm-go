@@ -45,8 +45,8 @@ func renderHeader(app *App) string {
 
 		if app.connState == stateDisconnected && app.lastError != nil {
 			errMsg := sanitizeErrorMsg(app.lastError.Error())
-			if len(errMsg) > 40 {
-				errMsg = errMsg[:40] + "..."
+			if len([]rune(errMsg)) > 40 {
+				errMsg = string([]rune(errMsg)[:40]) + "..."
 			}
 			center = StyleError.Render("● DISCONNECTED  " + errMsg)
 			right = StyleError.Render("Press r to retry")
@@ -64,8 +64,8 @@ func renderHeader(app *App) string {
 			errDisplay := "● DISCONNECTED"
 			if app.lastError != nil {
 				errMsg := sanitizeErrorMsg(app.lastError.Error())
-				if len(errMsg) > 40 {
-					errMsg = errMsg[:40] + "..."
+				if len([]rune(errMsg)) > 40 {
+					errMsg = string([]rune(errMsg)[:40]) + "..."
 				}
 				errDisplay += "  " + errMsg
 			}

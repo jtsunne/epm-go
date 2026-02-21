@@ -142,6 +142,25 @@ func TestApp_QuitKey(t *testing.T) {
 	assert.True(t, isQuit, "expected tea.QuitMsg, got %T", result)
 }
 
+func TestApp_RefreshKey(t *testing.T) {
+	app := NewApp(nil, 10*time.Second)
+	app.fetching = false
+
+	newModel, cmd := app.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("r")})
+	updated := newModel.(*App)
+
+	require.NotNil(t, cmd, "expected fetch command returned for 'r' key")
+	assert.True(t, updated.fetching)
+}
+
+func TestApp_RefreshKeyNoopWhileFetching(t *testing.T) {
+	app := NewApp(nil, 10*time.Second)
+	app.fetching = true
+
+	_, cmd := app.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("r")})
+	assert.Nil(t, cmd)
+}
+
 func TestApp_HelpToggle(t *testing.T) {
 	app := NewApp(nil, 10*time.Second)
 	require.False(t, app.showHelp)
