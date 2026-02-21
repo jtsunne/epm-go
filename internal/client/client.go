@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -37,7 +38,7 @@ type DefaultClient struct {
 
 // NewDefaultClient constructs a DefaultClient from the given config.
 // It configures TLS skip-verify and request timeout from the config.
-func NewDefaultClient(cfg ClientConfig) (*DefaultClient, error) {
+func NewDefaultClient(cfg ClientConfig) *DefaultClient {
 	if cfg.RequestTimeout == 0 {
 		cfg.RequestTimeout = 10 * time.Second
 	}
@@ -54,7 +55,7 @@ func NewDefaultClient(cfg ClientConfig) (*DefaultClient, error) {
 			Transport: transport,
 		},
 		config: cfg,
-	}, nil
+	}
 }
 
 // BaseURL returns the configured base URL of the Elasticsearch cluster.
@@ -66,7 +67,7 @@ func (c *DefaultClient) BaseURL() string {
 // It sets Accept: application/json and Basic Auth if credentials are configured.
 // Returns the response body bytes or an error on non-2xx status.
 func (c *DefaultClient) doGet(ctx context.Context, path string) ([]byte, error) {
-	url := stripTrailingSlash(c.config.BaseURL) + path
+	url := strings.TrimRight(c.config.BaseURL, "/") + path
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -102,15 +103,8 @@ func (c *DefaultClient) Ping(ctx context.Context) error {
 	pingCtx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
 
-	_, err := c.doGet(pingCtx, "/_cluster/health")
+	_, err := c.doGet(pingCtx, endpointClusterHealth)
 	return err
-}
-
-func stripTrailingSlash(s string) string {
-	for len(s) > 0 && s[len(s)-1] == '/' {
-		s = s[:len(s)-1]
-	}
-	return s
 }
 
 func truncate(b []byte, n int) string {

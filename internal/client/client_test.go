@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -11,18 +12,20 @@ import (
 // newTestClient creates a DefaultClient pointed at the given test server URL.
 func newTestClient(t *testing.T, baseURL string) *DefaultClient {
 	t.Helper()
-	c, err := NewDefaultClient(ClientConfig{
+	return NewDefaultClient(ClientConfig{
 		BaseURL:        baseURL,
 		RequestTimeout: 5 * time.Second,
 	})
-	if err != nil {
-		t.Fatalf("NewDefaultClient: %v", err)
-	}
-	return c
 }
 
 func TestGetClusterHealth(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(r.URL.Path, "/_cluster/health") {
+			t.Errorf("unexpected path %q", r.URL.Path)
+		}
+		if !strings.Contains(r.URL.RawQuery, "filter_path") {
+			t.Errorf("filter_path missing from query: %q", r.URL.RawQuery)
+		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"cluster_name":"test-cluster","status":"green","number_of_nodes":3,"active_shards":42}`))
@@ -50,6 +53,12 @@ func TestGetClusterHealth(t *testing.T) {
 
 func TestGetNodes(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(r.URL.Path, "/_cat/nodes") {
+			t.Errorf("unexpected path %q", r.URL.Path)
+		}
+		if !strings.Contains(r.URL.RawQuery, "format=json") {
+			t.Errorf("format=json missing from query: %q", r.URL.RawQuery)
+		}
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`[{"node.role":"m","name":"node-1","ip":"10.0.0.1"},{"node.role":"d","name":"node-2","ip":"10.0.0.2"}]`))
 	}))
@@ -94,6 +103,12 @@ func TestGetNodeStats(t *testing.T) {
 	}`
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(r.URL.Path, "/_nodes/stats") {
+			t.Errorf("unexpected path %q", r.URL.Path)
+		}
+		if !strings.Contains(r.URL.RawQuery, "filter_path") {
+			t.Errorf("filter_path missing from query: %q", r.URL.RawQuery)
+		}
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(fixture))
 	}))
@@ -110,6 +125,15 @@ func TestGetNodeStats(t *testing.T) {
 	}
 	if node.Name != "node-1" {
 		t.Errorf("Name = %q, want %q", node.Name, "node-1")
+	}
+	if node.Host != "host1" {
+		t.Errorf("Host = %q, want %q", node.Host, "host1")
+	}
+	if len(node.Roles) != 2 || node.Roles[0] != "master" || node.Roles[1] != "data" {
+		t.Errorf("Roles = %v, want [master data]", node.Roles)
+	}
+	if node.Indices == nil {
+		t.Fatal("Indices is nil")
 	}
 	if node.Indices.Indexing.IndexTotal != 1000 {
 		t.Errorf("IndexTotal = %d, want 1000", node.Indices.Indexing.IndexTotal)
@@ -134,6 +158,12 @@ func TestGetIndices(t *testing.T) {
 	]`
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(r.URL.Path, "/_cat/indices") {
+			t.Errorf("unexpected path %q", r.URL.Path)
+		}
+		if !strings.Contains(r.URL.RawQuery, "format=json") {
+			t.Errorf("format=json missing from query: %q", r.URL.RawQuery)
+		}
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(fixture))
 	}))
@@ -154,11 +184,17 @@ func TestGetIndices(t *testing.T) {
 	if idx.Pri != "1" {
 		t.Errorf("Pri = %q, want %q", idx.Pri, "1")
 	}
-	if idx.DocsCount != "5000" {
-		t.Errorf("DocsCount = %q, want %q", idx.DocsCount, "5000")
+	if idx.Rep != "1" {
+		t.Errorf("Rep = %q, want %q", idx.Rep, "1")
 	}
 	if idx.PriStoreSize != "1gb" {
 		t.Errorf("PriStoreSize = %q, want %q", idx.PriStoreSize, "1gb")
+	}
+	if idx.StoreSize != "2gb" {
+		t.Errorf("StoreSize = %q, want %q", idx.StoreSize, "2gb")
+	}
+	if idx.DocsCount != "5000" {
+		t.Errorf("DocsCount = %q, want %q", idx.DocsCount, "5000")
 	}
 }
 
@@ -179,6 +215,12 @@ func TestGetIndexStats(t *testing.T) {
 	}`
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/_stats" {
+			t.Errorf("unexpected path %q", r.URL.Path)
+		}
+		if !strings.Contains(r.URL.RawQuery, "filter_path") {
+			t.Errorf("filter_path missing from query: %q", r.URL.RawQuery)
+		}
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(fixture))
 	}))
@@ -209,6 +251,9 @@ func TestGetIndexStats(t *testing.T) {
 
 func TestPing_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(r.URL.Path, "/_cluster/health") {
+			t.Errorf("Ping: unexpected path %q", r.URL.Path)
+		}
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"status":"green"}`))
 	}))
@@ -240,14 +285,11 @@ func TestBasicAuth(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c, err := NewDefaultClient(ClientConfig{
+	c := NewDefaultClient(ClientConfig{
 		BaseURL:  srv.URL,
 		Username: "elastic",
 		Password: "secret",
 	})
-	if err != nil {
-		t.Fatalf("NewDefaultClient: %v", err)
-	}
 
 	if err := c.Ping(context.Background()); err != nil {
 		t.Fatalf("Ping: %v", err)
@@ -272,8 +314,8 @@ func TestHTTPError(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
-	if want := "401"; !contains(err.Error(), want) {
-		t.Errorf("error %q does not contain %q", err.Error(), want)
+	if !strings.Contains(err.Error(), "401") {
+		t.Errorf("error %q does not contain %q", err.Error(), "401")
 	}
 }
 
@@ -298,20 +340,12 @@ func TestContextCancellation(t *testing.T) {
 	<-started
 	cancel()
 
-	err := <-done
-	if err == nil {
-		t.Error("expected error after context cancellation, got nil")
+	select {
+	case err := <-done:
+		if err == nil {
+			t.Error("expected error after context cancellation, got nil")
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("timeout waiting for cancelled request to return")
 	}
-}
-
-func contains(s, sub string) bool {
-	return len(s) >= len(sub) && (s == sub || len(sub) == 0 ||
-		func() bool {
-			for i := 0; i <= len(s)-len(sub); i++ {
-				if s[i:i+len(sub)] == sub {
-					return true
-				}
-			}
-			return false
-		}())
 }

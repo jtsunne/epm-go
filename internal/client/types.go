@@ -26,8 +26,8 @@ type NodePerformanceStats struct {
 	Host    string          `json:"host"`
 	IP      string          `json:"ip"`
 	Roles   []string        `json:"roles"`
-	Indices NodeIndicesStats `json:"indices"`
-	OS      *NodeOSStats    `json:"os,omitempty"`
+	Indices *NodeIndicesStats `json:"indices,omitempty"`
+	OS      *NodeOSStats      `json:"os,omitempty"`
 	JVM     *NodeJVMStats   `json:"jvm,omitempty"`
 	FS      *NodeFSStats    `json:"fs,omitempty"`
 }

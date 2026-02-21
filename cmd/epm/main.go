@@ -48,21 +48,15 @@ func main() {
 		u.User = nil
 	}
 
-	skipVerify := *insecure && u.Scheme == "https"
-
 	cfg := client.ClientConfig{
 		BaseURL:            u.String(),
 		Username:           username,
 		Password:           password,
-		InsecureSkipVerify: skipVerify,
-		RequestTimeout:     *interval,
+		InsecureSkipVerify: *insecure,
+		RequestTimeout:     10 * time.Second,
 	}
 
-	c, err := client.NewDefaultClient(cfg)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: failed to create client: %v\n", err)
-		os.Exit(1)
-	}
+	c := client.NewDefaultClient(cfg)
 
 	ctx := context.Background()
 	health, err := c.GetClusterHealth(ctx)
@@ -71,6 +65,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("cluster: %s  status: %s  nodes: %d  shards: %d\n",
-		health.ClusterName, health.Status, health.NumberOfNodes, health.ActiveShards)
+	fmt.Printf("cluster: %s  status: %s  nodes: %d  shards: %d  poll: %v\n",
+		health.ClusterName, health.Status, health.NumberOfNodes, health.ActiveShards, *interval)
 }
