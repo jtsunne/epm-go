@@ -14,7 +14,7 @@ import (
 // the header display.
 func sanitizeErrorMsg(s string) string {
 	return strings.Map(func(r rune) rune {
-		if r < 0x20 || r == 0x7f {
+		if r < 0x20 || r == 0x7f || (r >= 0x80 && r <= 0x9F) {
 			return -1
 		}
 		return r

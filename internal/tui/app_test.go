@@ -49,6 +49,7 @@ func TestApp_SnapshotMsgUpdatesState(t *testing.T) {
 
 	assert.Equal(t, snap, updated.current)
 	assert.Nil(t, updated.previous)
+	assert.False(t, updated.fetching)
 	assert.Equal(t, 0, updated.consecutiveFails)
 	assert.Nil(t, updated.lastError)
 	assert.Equal(t, stateConnected, updated.connState)
