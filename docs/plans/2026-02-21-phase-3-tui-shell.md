@@ -143,7 +143,7 @@ Build the Bubble Tea application skeleton with auto-refreshing poll loop, header
 
 ### Task 7: Overview bar renderer
 
-- [ ] create `internal/tui/overview.go` with `renderOverview(app *App) string`:
+- [x] create `internal/tui/overview.go` with `renderOverview(app *App) string`:
   - returns empty string if `app.current == nil`
   - 7 cards in a horizontal row, equal width = `(app.width - 6) / 7`
   - Card 1: **Status** — colored background, large text "GREEN"/"YELLOW"/"RED"
@@ -158,7 +158,7 @@ Build the Bubble Tea application skeleton with auto-refreshing poll loop, header
   - Card 7: **Storage** — `StoragePercent` + "used/total GB" below
     - yellow if > 80%, red if > 90%
   - join all 7 cards with `lipgloss.JoinHorizontal(lipgloss.Top, cards...)`
-- [ ] implement `renderMiniBar(percent float64, width int) string` helper — fills proportionally with "█" and "░"
+- [x] implement `renderMiniBar(percent float64, width int) string` helper — fills proportionally with "█" and "░"
 
 ### Task 8: Footer renderer
 

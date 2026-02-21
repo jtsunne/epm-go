@@ -2,6 +2,7 @@ package tui
 
 import (
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -174,8 +175,75 @@ func TestBackoffDuration(t *testing.T) {
 }
 
 func TestRenderMiniBar(t *testing.T) {
-	// Since renderMiniBar is a stub in Task 5, we just verify it returns a string.
-	// Real tests will be added when Task 7 implements it.
-	result := renderMiniBar(50, 10)
-	_ = result // no assertion — stub implementation
+	cases := []struct {
+		percent  float64
+		width    int
+		wantFill int
+	}{
+		{0, 10, 0},
+		{100, 10, 10},
+		{50, 10, 5},
+		{25, 8, 2},
+		{75, 8, 6},
+	}
+	for _, tc := range cases {
+		result := renderMiniBar(tc.percent, tc.width)
+		assert.Len(t, []rune(result), tc.width, "total bar width percent=%v", tc.percent)
+		filledCount := strings.Count(result, "█")
+		assert.Equal(t, tc.wantFill, filledCount, "filled count percent=%v width=%v", tc.percent, tc.width)
+	}
+	// Zero width returns empty string.
+	assert.Equal(t, "", renderMiniBar(50, 0))
+}
+
+func TestRenderOverview_NilSnapshot(t *testing.T) {
+	app := NewApp(nil, 10*time.Second)
+	app.width = 120
+	assert.Equal(t, "", renderOverview(app))
+}
+
+func TestRenderOverview_WithSnapshot(t *testing.T) {
+	app := NewApp(nil, 10*time.Second)
+	app.width = 120
+
+	snap := makeFixtureSnapshot()
+	snap.Health.Status = "green"
+	snap.Health.NumberOfNodes = 5
+	snap.Health.ActiveShards = 42
+
+	app.current = snap
+	app.resources = model.ClusterResources{
+		AvgCPUPercent:     34.5,
+		AvgJVMHeapPercent: 67.2,
+		StoragePercent:    45.0,
+		StorageUsedBytes:  512 * 1024 * 1024,
+		StorageTotalBytes: 1024 * 1024 * 1024,
+	}
+
+	result := renderOverview(app)
+	assert.NotEmpty(t, result)
+	stripped := stripANSI(result)
+	assert.Contains(t, stripped, "GREEN")
+	assert.Contains(t, stripped, "5")
+	assert.Contains(t, stripped, "42")
+}
+
+// stripANSI removes ANSI escape sequences for plain-text content assertions.
+func stripANSI(s string) string {
+	var out strings.Builder
+	inEscape := false
+	for _, r := range s {
+		if r == '\x1b' {
+			inEscape = true
+			continue
+		}
+		if inEscape {
+			if r == 'm' {
+				inEscape = false
+			}
+			continue
+		}
+		out.WriteRune(r)
+	}
+	return out.String()
 }
