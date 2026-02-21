@@ -176,19 +176,19 @@ Build the business logic layer: parallel 5-endpoint fetching, snapshot model, de
 
 ### Task 8: Number formatters
 
-- [ ] create `internal/format/format.go`:
+- [x] create `internal/format/format.go`:
   - `FormatBytes(bytes int64) string` — B/KB/MB/GB/TB with 1 decimal place (port from `format.ts` formatBytes)
   - `FormatRate(opsPerSec float64) string` — e.g. "1,204.3 /s", "0 /s"
   - `FormatLatency(ms float64) string` — e.g. "2.34 ms", "1.50 s" (>=1000ms → seconds)
   - `FormatNumber(n int64) string` — locale-style comma separator e.g. "12,345,678"
   - `FormatPercent(p float64) string` — e.g. "34.5%"
   - `ParseHumanBytes(s string) int64` — parse "20.4gb" → bytes (for `pri.store.size` from _cat/indices)
-- [ ] create `internal/format/format_test.go` with table-driven tests for all formatters:
+- [x] create `internal/format/format_test.go` with table-driven tests for all formatters:
   - `FormatBytes`: 0, 1023, 1024, 1536, 1GB, edge cases
   - `FormatLatency`: <1000ms shows ms, >=1000ms shows seconds
   - `FormatRate`: 0, 1.0, 1204.3, large numbers with comma formatting
   - `ParseHumanBytes`: "50gb", "20.4gb", "100mb", "1.5tb"
-- [ ] run `go test ./internal/format/...` — all pass
+- [x] run `go test ./internal/format/...` — all pass
 
 ### Task 9: Wire engine into CLI for debug output
 
