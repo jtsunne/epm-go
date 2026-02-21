@@ -138,6 +138,9 @@ func (app *App) View() string {
 	if o := renderOverview(app); o != "" {
 		parts = append(parts, o)
 	}
+	if m := renderMetricsRow(app); m != "" {
+		parts = append(parts, m)
+	}
 	parts = append(parts, renderFooter(app))
 
 	return strings.Join(parts, "\n")

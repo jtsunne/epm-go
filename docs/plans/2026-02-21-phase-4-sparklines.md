@@ -81,8 +81,8 @@ Add the 4 cluster-level metric cards (Indexing Rate, Search Rate, Index Latency,
 
 ### Task 5: Wire metrics row into View
 
-- [ ] update `App.View()` in `app.go` to call `renderMetricsRow(app)` and include it between overview and content area placeholder
-- [ ] handle narrow terminals: if `app.width < 80`, render metrics in 2x2 grid instead of 1x4 row
+- [x] update `App.View()` in `app.go` to call `renderMetricsRow(app)` and include it between overview and content area placeholder
+- [x] handle narrow terminals: if `app.width < 80`, render metrics in 2x2 grid instead of 1x4 row
 
 ### Task 6: Tests for metric card logic
 
