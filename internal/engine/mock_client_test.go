@@ -59,17 +59,4 @@ func (m *MockESClient) BaseURL() string {
 	return "http://mock:9200"
 }
 
-// errOnce returns a function that returns err exactly once, then succeeds.
-// Useful for simulating transient errors.
-func errOnce(err error) func(ctx context.Context) error {
-	called := false
-	return func(_ context.Context) error {
-		if !called {
-			called = true
-			return err
-		}
-		return nil
-	}
-}
-
 var errMockFailure = errors.New("mock failure")

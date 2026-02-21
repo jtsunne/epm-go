@@ -211,7 +211,11 @@ func CalcClusterResources(snap *model.Snapshot) model.ClusterResources {
 			total := node.FS.Total.TotalInBytes
 			available := node.FS.Total.AvailableInBytes
 			storageTotalBytes += total
-			storageUsedBytes += total - available
+			used := total - available
+			if used < 0 {
+				used = 0
+			}
+			storageUsedBytes += used
 		}
 	}
 

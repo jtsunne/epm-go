@@ -19,7 +19,6 @@ type SparklineHistory struct {
 	buf  []SparklinePoint
 	head int // index of the next write position
 	size int // number of valid entries
-	cap  int // maximum capacity
 }
 
 // NewSparklineHistory creates a SparklineHistory with the given capacity.
@@ -30,15 +29,14 @@ func NewSparklineHistory(capacity int) *SparklineHistory {
 	}
 	return &SparklineHistory{
 		buf: make([]SparklinePoint, capacity),
-		cap: capacity,
 	}
 }
 
 // Push appends a new point to the history, overwriting the oldest if full.
 func (h *SparklineHistory) Push(p SparklinePoint) {
 	h.buf[h.head] = p
-	h.head = (h.head + 1) % h.cap
-	if h.size < h.cap {
+	h.head = (h.head + 1) % len(h.buf)
+	if h.size < len(h.buf) {
 		h.size++
 	}
 }
@@ -60,9 +58,9 @@ func (h *SparklineHistory) Clear() {
 func (h *SparklineHistory) Values(field string) []float64 {
 	out := make([]float64, h.size)
 	// oldest entry sits at (head - size + cap) % cap
-	start := (h.head - h.size + h.cap) % h.cap
+	start := (h.head - h.size + len(h.buf)) % len(h.buf)
 	for i := 0; i < h.size; i++ {
-		p := h.buf[(start+i)%h.cap]
+		p := h.buf[(start+i)%len(h.buf)]
 		switch field {
 		case "indexingRate":
 			out[i] = p.IndexingRate

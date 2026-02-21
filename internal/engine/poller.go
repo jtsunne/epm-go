@@ -2,6 +2,7 @@ package engine
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"golang.org/x/sync/errgroup"
@@ -55,6 +56,10 @@ func FetchAll(ctx context.Context, c client.ESClient) (*model.Snapshot, error) {
 
 	if err := g.Wait(); err != nil {
 		return nil, err
+	}
+
+	if health == nil || nodeStats == nil || indexStats == nil {
+		return nil, fmt.Errorf("FetchAll: incomplete response (unexpected nil)")
 	}
 
 	snap := &model.Snapshot{
