@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"sort"
 	"strconv"
 	"time"
 
@@ -57,6 +58,11 @@ func CalcNodeRows(prev, curr *model.Snapshot, elapsed time.Duration) []model.Nod
 
 		rows = append(rows, row)
 	}
+
+	// Sort by node name for stable display order across polls.
+	sort.Slice(rows, func(i, j int) bool {
+		return rows[i].Name < rows[j].Name
+	})
 
 	return rows
 }

@@ -26,6 +26,7 @@ type App struct {
 	pollInterval time.Duration
 
 	// Poll state
+	fetching  bool // true while a fetchCmd goroutine is in-flight
 	current   *model.Snapshot
 	previous  *model.Snapshot
 	metrics   model.PerformanceMetrics
@@ -54,6 +55,7 @@ func NewApp(c client.ESClient, interval time.Duration) *App {
 		pollInterval: interval,
 		history:      model.NewSparklineHistory(0),
 		connState:    stateDisconnected,
+		fetching:     true, // Init() always issues an immediate fetchCmd
 	}
 }
 
@@ -71,6 +73,7 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		app.height = msg.Height
 
 	case SnapshotMsg:
+		app.fetching = false
 		app.previous = app.current
 		app.current = msg.Snapshot
 		app.metrics = msg.Metrics
@@ -91,6 +94,7 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return app, tickCmd(app.pollInterval)
 
 	case FetchErrorMsg:
+		app.fetching = false
 		app.consecutiveFails++
 		app.lastError = msg.Err
 		app.connState = stateDisconnected
@@ -100,6 +104,10 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		})
 
 	case TickMsg:
+		if app.fetching {
+			return app, nil
+		}
+		app.fetching = true
 		return app, fetchCmd(app.client, app.current, app.pollInterval)
 
 	case tea.KeyMsg:
@@ -107,6 +115,10 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, keys.Quit):
 			return app, tea.Quit
 		case key.Matches(msg, keys.Refresh):
+			if app.fetching {
+				return app, nil
+			}
+			app.fetching = true
 			return app, fetchCmd(app.client, app.current, app.pollInterval)
 		case key.Matches(msg, keys.Help):
 			app.showHelp = !app.showHelp

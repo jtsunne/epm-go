@@ -92,6 +92,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Warn when credentials are sent over unencrypted HTTP.
+	if username != "" || password != "" {
+		u, _ := url.Parse(baseURL)
+		if u != nil && u.Scheme == "http" {
+			fmt.Fprintln(os.Stderr, "warning: credentials will be sent over unencrypted HTTP; use https:// for production clusters")
+		}
+	}
+
 	requestTimeout := *interval - 500*time.Millisecond
 
 	cfg := client.ClientConfig{

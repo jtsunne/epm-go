@@ -8,6 +8,19 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+// sanitizeErrorMsg removes ASCII control characters (including ANSI escape
+// sequences) from a string before rendering it in the terminal. This prevents
+// a malicious or misbehaving server from injecting terminal control codes into
+// the header display.
+func sanitizeErrorMsg(s string) string {
+	return strings.Map(func(r rune) rune {
+		if r < 0x20 || r == 0x7f {
+			return -1
+		}
+		return r
+	}, s)
+}
+
 // renderHeader renders the top header bar with cluster name, status, and timing info.
 //
 // Layout:
@@ -31,7 +44,7 @@ func renderHeader(app *App) string {
 		left = "Connecting to " + baseURL + "..."
 
 		if app.connState == stateDisconnected && app.lastError != nil {
-			errMsg := app.lastError.Error()
+			errMsg := sanitizeErrorMsg(app.lastError.Error())
 			if len(errMsg) > 40 {
 				errMsg = errMsg[:40] + "..."
 			}
@@ -50,7 +63,7 @@ func renderHeader(app *App) string {
 			// Lost connection after a successful fetch.
 			errDisplay := "● DISCONNECTED"
 			if app.lastError != nil {
-				errMsg := app.lastError.Error()
+				errMsg := sanitizeErrorMsg(app.lastError.Error())
 				if len(errMsg) > 40 {
 					errMsg = errMsg[:40] + "..."
 				}
