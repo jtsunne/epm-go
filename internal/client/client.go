@@ -43,11 +43,16 @@ func NewDefaultClient(cfg ClientConfig) (*DefaultClient, error) {
 	if cfg.BaseURL == "" {
 		return nil, fmt.Errorf("BaseURL is required")
 	}
-	if cfg.RequestTimeout == 0 {
+	if cfg.RequestTimeout <= 0 {
 		cfg.RequestTimeout = 10 * time.Second
 	}
 
-	transport := http.DefaultTransport.(*http.Transport).Clone()
+	var transport *http.Transport
+	if t, ok := http.DefaultTransport.(*http.Transport); ok {
+		transport = t.Clone()
+	} else {
+		transport = &http.Transport{}
+	}
 	transport.TLSClientConfig = &tls.Config{
 		InsecureSkipVerify: cfg.InsecureSkipVerify, //nolint:gosec
 	}

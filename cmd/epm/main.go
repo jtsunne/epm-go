@@ -16,7 +16,7 @@ import (
 func parseESURI(esURI string) (baseURL, username, password string, err error) {
 	u, err := url.Parse(esURI)
 	if err != nil {
-		return "", "", "", fmt.Errorf("invalid URI %q: %w", esURI, err)
+		return "", "", "", fmt.Errorf("invalid URI: %w", err)
 	}
 
 	if u.Scheme != "http" && u.Scheme != "https" {
@@ -24,7 +24,7 @@ func parseESURI(esURI string) (baseURL, username, password string, err error) {
 	}
 
 	if u.Hostname() == "" {
-		return "", "", "", fmt.Errorf("invalid URI %q: host is required", esURI)
+		return "", "", "", fmt.Errorf("invalid URI: host is required")
 	}
 
 	if u.User != nil {
