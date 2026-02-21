@@ -37,7 +37,7 @@ Build the Bubble Tea application skeleton with auto-refreshing poll loop, header
 
 ### Task 2: Custom message types
 
-- [ ] create `internal/tui/messages.go`:
+- [x] create `internal/tui/messages.go`:
   ```go
   // SnapshotMsg delivers successful poll results to the TUI
   type SnapshotMsg struct {
