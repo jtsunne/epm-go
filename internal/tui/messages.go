@@ -19,4 +19,8 @@ type SnapshotMsg struct {
 type FetchErrorMsg struct{ Err error }
 
 // TickMsg triggers the next scheduled poll.
-type TickMsg time.Time
+// Gen must match App.tickGen; stale ticks from superseded schedules are dropped.
+type TickMsg struct {
+	Time time.Time
+	Gen  int
+}

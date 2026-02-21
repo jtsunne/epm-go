@@ -8,11 +8,10 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// sanitizeErrorMsg removes ASCII control characters (including ANSI escape
-// sequences) from a string before rendering it in the terminal. This prevents
-// a malicious or misbehaving server from injecting terminal control codes into
-// the header display.
-func sanitizeErrorMsg(s string) string {
+// sanitize removes ASCII control characters (including ANSI escape sequences)
+// from a string before rendering it in the terminal. This prevents a malicious
+// or misbehaving server from injecting terminal control codes.
+func sanitize(s string) string {
 	return strings.Map(func(r rune) rune {
 		if r < 0x20 || r == 0x7f || (r >= 0x80 && r <= 0x9F) {
 			return -1
@@ -44,7 +43,7 @@ func renderHeader(app *App) string {
 		left = "Connecting to " + baseURL + "..."
 
 		if app.connState == stateDisconnected && app.lastError != nil {
-			errMsg := sanitizeErrorMsg(app.lastError.Error())
+			errMsg := sanitize(app.lastError.Error())
 			if len([]rune(errMsg)) > 40 {
 				errMsg = string([]rune(errMsg)[:40]) + "..."
 			}
@@ -55,7 +54,7 @@ func renderHeader(app *App) string {
 		}
 	} else {
 		// Have at least one snapshot — show cluster info.
-		clusterName := app.current.Health.ClusterName
+		clusterName := sanitize(app.current.Health.ClusterName)
 		if clusterName == "" && app.client != nil {
 			clusterName = app.client.BaseURL()
 		}
@@ -65,7 +64,7 @@ func renderHeader(app *App) string {
 			// Lost connection after a successful fetch.
 			errDisplay := "● DISCONNECTED"
 			if app.lastError != nil {
-				errMsg := sanitizeErrorMsg(app.lastError.Error())
+				errMsg := sanitize(app.lastError.Error())
 				if len([]rune(errMsg)) > 40 {
 					errMsg = string([]rune(errMsg)[:40]) + "..."
 				}

@@ -27,6 +27,7 @@ type App struct {
 
 	// Poll state
 	fetching  bool // true while a fetchCmd goroutine is in-flight
+	tickGen   int  // incremented each time a new tick is scheduled; stale ticks are dropped
 	current   *model.Snapshot
 	previous  *model.Snapshot
 	metrics   model.PerformanceMetrics
@@ -96,19 +97,21 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		app.lastError = nil
 		app.connState = stateConnected
 		app.lastUpdated = msg.Snapshot.FetchedAt
-		return app, tickCmd(app.pollInterval)
+		app.tickGen++
+		return app, tickCmd(app.pollInterval, app.tickGen)
 
 	case FetchErrorMsg:
 		app.fetching = false
 		app.consecutiveFails++
 		app.lastError = msg.Err
 		app.connState = stateDisconnected
-		backoff := backoffDuration(app.consecutiveFails)
-		return app, tea.Tick(backoff, func(t time.Time) tea.Msg {
-			return TickMsg(t)
-		})
+		app.tickGen++
+		return app, tickCmd(backoffDuration(app.consecutiveFails), app.tickGen)
 
 	case TickMsg:
+		if msg.Gen != app.tickGen {
+			return app, nil
+		}
 		if app.fetching {
 			return app, nil
 		}
@@ -123,6 +126,7 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if app.fetching {
 				return app, nil
 			}
+			app.tickGen++ // invalidate any pending tick so it doesn't trigger a double-fetch
 			app.fetching = true
 			return app, fetchCmd(app.client, app.current, app.pollInterval)
 		case key.Matches(msg, keys.Help):
@@ -151,10 +155,11 @@ func (app *App) View() string {
 	return strings.Join(parts, "\n")
 }
 
-// tickCmd schedules the next poll after duration d.
-func tickCmd(d time.Duration) tea.Cmd {
+// tickCmd schedules the next poll after duration d, embedding gen so the
+// TickMsg handler can discard ticks that belong to a superseded schedule.
+func tickCmd(d time.Duration, gen int) tea.Cmd {
 	return tea.Tick(d, func(t time.Time) tea.Msg {
-		return TickMsg(t)
+		return TickMsg{Time: t, Gen: gen}
 	})
 }
 

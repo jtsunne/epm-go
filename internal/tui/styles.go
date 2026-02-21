@@ -1,6 +1,10 @@
 package tui
 
-import "github.com/charmbracelet/lipgloss"
+import (
+	"strings"
+
+	"github.com/charmbracelet/lipgloss"
+)
 
 // Color constants — ES Performance Monitor palette.
 var (
@@ -72,9 +76,9 @@ var (
 )
 
 // StatusStyle returns the appropriate bold+foreground style for a cluster health string.
-// Accepts "green", "yellow", "red" (case-insensitive via lowercase comparison).
+// Accepts "green", "yellow", "red" (case-insensitive).
 func StatusStyle(status string) lipgloss.Style {
-	switch status {
+	switch strings.ToLower(status) {
 	case "green":
 		return StyleStatusGreen
 	case "yellow":
