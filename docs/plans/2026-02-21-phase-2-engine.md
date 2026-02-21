@@ -145,7 +145,7 @@ Build the business logic layer: parallel 5-endpoint fetching, snapshot model, de
 
 ### Task 6: Per-index metrics calculation
 
-- [ ] implement `CalcIndexRows(prev, curr *model.Snapshot, elapsed time.Duration) []model.IndexRow`:
+- [x] implement `CalcIndexRows(prev, curr *model.Snapshot, elapsed time.Duration) []model.IndexRow`:
   - iterate `curr.Indices` to build rows
   - for each index, look up `curr.IndexStats.Indices[name]` and `prev.IndexStats.Indices[name]`
   - **CRITICAL rule** (from IndexTable.tsx lines 73-76 and `types/api.ts` comment):
@@ -156,7 +156,7 @@ Build the business logic layer: parallel 5-endpoint fetching, snapshot model, de
   - `TotalShards = pri * (1 + rep)` (parse string fields `Pri`, `Rep` to int)
   - `DocCount`: parse `DocsCount` string to int64
   - apply same rate/latency/clamp formulas as cluster-level
-- [ ] write `TestCalcIndexRows`:
+- [x] write `TestCalcIndexRows`:
   - `TestCalcIndexRows_PrimariesForIndexing` — indexing uses primaries, not total
   - `TestCalcIndexRows_TotalForSearch` — search uses total, not primaries
   - `TestCalcIndexRows_NilPrev` — returns rows with zero rates

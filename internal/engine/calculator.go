@@ -1,8 +1,10 @@
 package engine
 
 import (
+	"strconv"
 	"time"
 
+	"github.com/dm/epm-go/internal/client"
 	"github.com/dm/epm-go/internal/model"
 )
 
@@ -169,4 +171,128 @@ func CalcClusterResources(snap *model.Snapshot) model.ClusterResources {
 		StorageTotalBytes: storageTotalBytes,
 		StoragePercent:    storagePercent,
 	}
+}
+
+// CalcIndexRows computes per-index throughput, latency, and size metrics from two
+// consecutive snapshots. Ported from IndexTable.tsx lines 66-131.
+//
+// Critical primaries-vs-total rule (IndexTable.tsx lines 73-76):
+//   - Indexing ops/time: use primaries (fallback to total if primaries nil)
+//   - Search ops/time:   use total     (fallback to primaries if total nil)
+func CalcIndexRows(prev, curr *model.Snapshot, elapsed time.Duration) []model.IndexRow {
+	if curr == nil {
+		return nil
+	}
+
+	// Build prev index stats lookup (nil safe).
+	var prevStats map[string]client.IndexStatEntry
+	if prev != nil {
+		prevStats = prev.IndexStats.Indices
+	}
+
+	elapsedSec := elapsed.Seconds()
+	enoughTime := prev != nil && elapsedSec >= minTimeDiffSeconds
+
+	rows := make([]model.IndexRow, 0, len(curr.Indices))
+	for _, info := range curr.Indices {
+		name := info.Index
+
+		// Parse string fields from _cat/indices response.
+		pri, _ := strconv.Atoi(info.Pri)
+		rep, _ := strconv.Atoi(info.Rep)
+		docCount, _ := strconv.ParseInt(info.DocsCount, 10, 64)
+		totalShards := pri * (1 + rep)
+
+		// Size from _stats shard data.
+		var totalSizeBytes int64
+		var primarySizeBytes int64
+		if entry, ok := curr.IndexStats.Indices[name]; ok {
+			if entry.Total != nil && entry.Total.Store != nil {
+				totalSizeBytes = entry.Total.Store.SizeInBytes
+			}
+			if entry.Primaries != nil && entry.Primaries.Store != nil {
+				primarySizeBytes = entry.Primaries.Store.SizeInBytes
+			}
+		}
+
+		priCount := int64(pri)
+		if priCount < 1 {
+			priCount = 1
+		}
+		avgShardSize := primarySizeBytes / priCount
+
+		row := model.IndexRow{
+			Name:           name,
+			PrimaryShards:  pri,
+			TotalShards:    totalShards,
+			TotalSizeBytes: totalSizeBytes,
+			AvgShardSize:   avgShardSize,
+			DocCount:       docCount,
+		}
+
+		if enoughTime {
+			var currIdxOps, currIdxTime int64
+			var prevIdxOps, prevIdxTime int64
+			var currSrchOps, currSrchTime int64
+			var prevSrchOps, prevSrchTime int64
+
+			if entry, ok := curr.IndexStats.Indices[name]; ok {
+				// Indexing: primaries preferred, fallback to total.
+				idxShard := entry.Primaries
+				if idxShard == nil {
+					idxShard = entry.Total
+				}
+				if idxShard != nil && idxShard.Indexing != nil {
+					currIdxOps = idxShard.Indexing.IndexTotal
+					currIdxTime = idxShard.Indexing.IndexTimeInMillis
+				}
+
+				// Search: total preferred, fallback to primaries.
+				srchShard := entry.Total
+				if srchShard == nil {
+					srchShard = entry.Primaries
+				}
+				if srchShard != nil && srchShard.Search != nil {
+					currSrchOps = srchShard.Search.QueryTotal
+					currSrchTime = srchShard.Search.QueryTimeInMillis
+				}
+			}
+
+			if prevStats != nil {
+				if entry, ok := prevStats[name]; ok {
+					idxShard := entry.Primaries
+					if idxShard == nil {
+						idxShard = entry.Total
+					}
+					if idxShard != nil && idxShard.Indexing != nil {
+						prevIdxOps = idxShard.Indexing.IndexTotal
+						prevIdxTime = idxShard.Indexing.IndexTimeInMillis
+					}
+
+					srchShard := entry.Total
+					if srchShard == nil {
+						srchShard = entry.Primaries
+					}
+					if srchShard != nil && srchShard.Search != nil {
+						prevSrchOps = srchShard.Search.QueryTotal
+						prevSrchTime = srchShard.Search.QueryTimeInMillis
+					}
+				}
+			}
+
+			idxOpsDelta := maxFloat64(0, float64(currIdxOps-prevIdxOps))
+			idxTimeDelta := maxFloat64(0, float64(currIdxTime-prevIdxTime))
+			srchOpsDelta := maxFloat64(0, float64(currSrchOps-prevSrchOps))
+			srchTimeDelta := maxFloat64(0, float64(currSrchTime-prevSrchTime))
+
+			row.IndexingRate = clampRate(idxOpsDelta / elapsedSec)
+			row.SearchRate = clampRate(srchOpsDelta / elapsedSec)
+			row.IndexLatency = clampLatency(safeDivide(idxTimeDelta, idxOpsDelta))
+			row.SearchLatency = clampLatency(safeDivide(srchTimeDelta, srchOpsDelta))
+		}
+
+		rows = append(rows, row)
+	}
+
+	return rows
 }

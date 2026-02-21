@@ -298,3 +298,161 @@ func TestCalcClusterResources_NilFields(t *testing.T) {
 	assert.Equal(t, int64(0), got.StorageUsedBytes)
 	assert.Equal(t, 0.0, got.StoragePercent)
 }
+
+// makeIndexStats builds an IndexStatEntry with given primaries and total values.
+// Pass -1 to omit a section (leave it nil).
+func makeIndexStats(priIdxOps, priIdxTime, priSrchOps, priSrchTime,
+	totIdxOps, totIdxTime, totSrchOps, totSrchTime, priStoreBytes, totStoreBytes int64) client.IndexStatEntry {
+	entry := client.IndexStatEntry{}
+
+	if priIdxOps >= 0 || priSrchOps >= 0 || priStoreBytes >= 0 {
+		entry.Primaries = &client.IndexStatShard{}
+		if priIdxOps >= 0 {
+			entry.Primaries.Indexing = &client.IndexingStats{
+				IndexTotal:        priIdxOps,
+				IndexTimeInMillis: priIdxTime,
+			}
+		}
+		if priSrchOps >= 0 {
+			entry.Primaries.Search = &client.SearchStats{
+				QueryTotal:        priSrchOps,
+				QueryTimeInMillis: priSrchTime,
+			}
+		}
+		if priStoreBytes >= 0 {
+			entry.Primaries.Store = &client.StoreStats{SizeInBytes: priStoreBytes}
+		}
+	}
+
+	if totIdxOps >= 0 || totSrchOps >= 0 || totStoreBytes >= 0 {
+		entry.Total = &client.IndexStatShard{}
+		if totIdxOps >= 0 {
+			entry.Total.Indexing = &client.IndexingStats{
+				IndexTotal:        totIdxOps,
+				IndexTimeInMillis: totIdxTime,
+			}
+		}
+		if totSrchOps >= 0 {
+			entry.Total.Search = &client.SearchStats{
+				QueryTotal:        totSrchOps,
+				QueryTimeInMillis: totSrchTime,
+			}
+		}
+		if totStoreBytes >= 0 {
+			entry.Total.Store = &client.StoreStats{SizeInBytes: totStoreBytes}
+		}
+	}
+
+	return entry
+}
+
+func TestCalcIndexRows_NilPrev(t *testing.T) {
+	// No previous snapshot → all rates must be zero, but rows are returned.
+	curr := &model.Snapshot{
+		Indices: []client.IndexInfo{
+			{Index: "logs", Pri: "1", Rep: "0", DocsCount: "1000"},
+		},
+		IndexStats: client.IndexStatsResponse{
+			Indices: map[string]client.IndexStatEntry{
+				"logs": makeIndexStats(500, 100, 300, 60, 600, 120, 450, 90, 1024, 2048),
+			},
+		},
+	}
+	rows := CalcIndexRows(nil, curr, 10*time.Second)
+	assert.Len(t, rows, 1)
+	assert.Equal(t, "logs", rows[0].Name)
+	assert.Equal(t, 0.0, rows[0].IndexingRate)
+	assert.Equal(t, 0.0, rows[0].SearchRate)
+	assert.Equal(t, 0.0, rows[0].IndexLatency)
+	assert.Equal(t, 0.0, rows[0].SearchLatency)
+}
+
+func TestCalcIndexRows_ShardCountParsing(t *testing.T) {
+	// pri="5", rep="1" → TotalShards = 5*(1+1) = 10
+	curr := &model.Snapshot{
+		Indices: []client.IndexInfo{
+			{Index: "myidx", Pri: "5", Rep: "1", DocsCount: "42000"},
+		},
+		IndexStats: client.IndexStatsResponse{
+			Indices: map[string]client.IndexStatEntry{
+				"myidx": makeIndexStats(0, 0, 0, 0, 0, 0, 0, 0, 500*1024*1024, 1000*1024*1024),
+			},
+		},
+	}
+	rows := CalcIndexRows(nil, curr, 10*time.Second)
+	assert.Len(t, rows, 1)
+	assert.Equal(t, 5, rows[0].PrimaryShards)
+	assert.Equal(t, 10, rows[0].TotalShards)
+	assert.Equal(t, int64(42000), rows[0].DocCount)
+	// AvgShardSize = primarySizeBytes / pri = 500MB / 5 = 100MB
+	assert.Equal(t, int64(100*1024*1024), rows[0].AvgShardSize)
+	assert.Equal(t, int64(1000*1024*1024), rows[0].TotalSizeBytes)
+}
+
+func TestCalcIndexRows_PrimariesForIndexing(t *testing.T) {
+	// Indexing should use primaries counters, not total.
+	// primaries: prev=100 ops, curr=200 ops → delta=100 → rate=10/s over 10s
+	// total indexing: prev=500, curr=1000 → delta=500 → rate would be 50/s (wrong)
+	prev := &model.Snapshot{
+		Indices: []client.IndexInfo{
+			{Index: "test", Pri: "1", Rep: "0", DocsCount: "0"},
+		},
+		IndexStats: client.IndexStatsResponse{
+			Indices: map[string]client.IndexStatEntry{
+				// priIdxOps=100, totIdxOps=500
+				"test": makeIndexStats(100, 50, -1, -1, 500, 250, 200, 40, -1, -1),
+			},
+		},
+	}
+	curr := &model.Snapshot{
+		Indices: []client.IndexInfo{
+			{Index: "test", Pri: "1", Rep: "0", DocsCount: "0"},
+		},
+		IndexStats: client.IndexStatsResponse{
+			Indices: map[string]client.IndexStatEntry{
+				// priIdxOps=200, totIdxOps=1000
+				"test": makeIndexStats(200, 100, -1, -1, 1000, 500, 400, 80, -1, -1),
+			},
+		},
+	}
+	rows := CalcIndexRows(prev, curr, 10*time.Second)
+	assert.Len(t, rows, 1)
+	// 100 primaries ops / 10s = 10 /s
+	assert.InDelta(t, 10.0, rows[0].IndexingRate, 1e-9)
+	// latency: deltaTime(50ms) / deltaOps(100) = 0.5 ms
+	assert.InDelta(t, 0.5, rows[0].IndexLatency, 1e-9)
+}
+
+func TestCalcIndexRows_TotalForSearch(t *testing.T) {
+	// Search should use total counters, not primaries.
+	// total: prev=200 ops, curr=400 ops → delta=200 → rate=20/s over 10s
+	// primaries search: prev=80, curr=160 → delta=80 → rate would be 8/s (wrong)
+	prev := &model.Snapshot{
+		Indices: []client.IndexInfo{
+			{Index: "test", Pri: "1", Rep: "0", DocsCount: "0"},
+		},
+		IndexStats: client.IndexStatsResponse{
+			Indices: map[string]client.IndexStatEntry{
+				// priSrchOps=80, totSrchOps=200
+				"test": makeIndexStats(-1, -1, 80, 40, -1, -1, 200, 100, -1, -1),
+			},
+		},
+	}
+	curr := &model.Snapshot{
+		Indices: []client.IndexInfo{
+			{Index: "test", Pri: "1", Rep: "0", DocsCount: "0"},
+		},
+		IndexStats: client.IndexStatsResponse{
+			Indices: map[string]client.IndexStatEntry{
+				// priSrchOps=160, totSrchOps=400
+				"test": makeIndexStats(-1, -1, 160, 80, -1, -1, 400, 200, -1, -1),
+			},
+		},
+	}
+	rows := CalcIndexRows(prev, curr, 10*time.Second)
+	assert.Len(t, rows, 1)
+	// 200 total search ops / 10s = 20 /s
+	assert.InDelta(t, 20.0, rows[0].SearchRate, 1e-9)
+	// latency: deltaTime(100ms) / deltaOps(200) = 0.5 ms
+	assert.InDelta(t, 0.5, rows[0].SearchLatency, 1e-9)
+}
