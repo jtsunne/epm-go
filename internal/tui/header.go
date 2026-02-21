@@ -109,10 +109,15 @@ func renderHeader(app *App) string {
 	return StyleHeader.Width(width - 2).Render(row)
 }
 
-// formatDuration formats a poll interval as a compact string, e.g. "10s" or "2m".
+// formatDuration formats a poll interval as a compact string, e.g. "10s", "1m", or "1m30s".
 func formatDuration(d time.Duration) string {
 	if d >= time.Minute {
-		return fmt.Sprintf("%dm", int(d.Minutes()))
+		mins := int(d.Minutes())
+		secs := int(d.Seconds()) % 60
+		if secs == 0 {
+			return fmt.Sprintf("%dm", mins)
+		}
+		return fmt.Sprintf("%dm%ds", mins, secs)
 	}
 	return fmt.Sprintf("%ds", int(d.Seconds()))
 }

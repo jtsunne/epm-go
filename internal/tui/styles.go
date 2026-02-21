@@ -20,9 +20,10 @@ var (
 
 // Status styles — bold foreground, used for cluster health indicator.
 var (
-	StyleStatusGreen  = lipgloss.NewStyle().Bold(true).Foreground(colorGreen)
-	StyleStatusYellow = lipgloss.NewStyle().Bold(true).Foreground(colorYellow)
-	StyleStatusRed    = lipgloss.NewStyle().Bold(true).Foreground(colorRed)
+	StyleStatusGreen   = lipgloss.NewStyle().Bold(true).Foreground(colorGreen)
+	StyleStatusYellow  = lipgloss.NewStyle().Bold(true).Foreground(colorYellow)
+	StyleStatusRed     = lipgloss.NewStyle().Bold(true).Foreground(colorRed)
+	StyleStatusUnknown = lipgloss.NewStyle().Foreground(colorGray)
 )
 
 // StyleHeader — full-width dark header bar.
@@ -88,6 +89,6 @@ func StatusStyle(status string) lipgloss.Style {
 	case "red":
 		return StyleStatusRed
 	default:
-		return lipgloss.NewStyle().Foreground(colorGray)
+		return StyleStatusUnknown
 	}
 }
