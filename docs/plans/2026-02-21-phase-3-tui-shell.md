@@ -83,7 +83,7 @@ Build the Bubble Tea application skeleton with auto-refreshing poll loop, header
 
 ### Task 5: Root App model
 
-- [ ] create `internal/tui/app.go` with `App` struct:
+- [x] create `internal/tui/app.go` with `App` struct:
   ```go
   type App struct {
       client       client.ESClient
@@ -117,16 +117,16 @@ Build the Bubble Tea application skeleton with auto-refreshing poll loop, header
       stateDisconnected
   )
   ```
-- [ ] implement `NewApp(c client.ESClient, interval time.Duration) *App`
-- [ ] implement `Init() tea.Cmd` — return `fetchCmd(app.client, nil, app.pollInterval)` (fetch immediately on start)
-- [ ] implement `Update(msg tea.Msg) (tea.Model, tea.Cmd)`:
+- [x] implement `NewApp(c client.ESClient, interval time.Duration) *App`
+- [x] implement `Init() tea.Cmd` — return `fetchCmd(app.client, nil, app.pollInterval)` (fetch immediately on start)
+- [x] implement `Update(msg tea.Msg) (tea.Model, tea.Cmd)`:
   - `tea.WindowSizeMsg` → store width/height
   - `SnapshotMsg` → rotate previous/current, store metrics/resources/rows, push sparkline point, reset fails, return `tickCmd`
   - `FetchErrorMsg` → increment fails, store error, compute backoff (min(2^fails * time.Second, 60s)), return `tea.Tick(backoff, ...)`
   - `TickMsg` → return `fetchCmd`
   - `tea.KeyMsg` → handle q/r/tab/? keys
-- [ ] implement `View() string` — calls `renderHeader() + renderOverview() + renderFooter()` joined vertically; content area placeholder for Phase 4/5
-- [ ] implement `tickCmd(d time.Duration) tea.Cmd` and `fetchCmd(c, prev, interval) tea.Cmd`
+- [x] implement `View() string` — calls `renderHeader() + renderOverview() + renderFooter()` joined vertically; content area placeholder for Phase 4/5
+- [x] implement `tickCmd(d time.Duration) tea.Cmd` and `fetchCmd(c, prev, interval) tea.Cmd`
   - `fetchCmd` calls `engine.FetchAll`, then `engine.CalcClusterMetrics/Resources/NodeRows/IndexRows`, returns `SnapshotMsg` or `FetchErrorMsg`
 
 ### Task 6: Header bar renderer

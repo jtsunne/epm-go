@@ -1,0 +1,181 @@
+package tui
+
+import (
+	"errors"
+	"testing"
+	"time"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/dm/epm-go/internal/model"
+)
+
+// makeFixtureSnapshot returns a minimal Snapshot for testing.
+func makeFixtureSnapshot() *model.Snapshot {
+	return &model.Snapshot{
+		FetchedAt: time.Now(),
+	}
+}
+
+// makeFixtureMsg builds a SnapshotMsg with the given snapshot.
+func makeFixtureMsg(snap *model.Snapshot) SnapshotMsg {
+	return SnapshotMsg{
+		Snapshot: snap,
+		Metrics: model.PerformanceMetrics{
+			IndexingRate: 100,
+			SearchRate:   200,
+		},
+		Resources: model.ClusterResources{
+			AvgCPUPercent: 42,
+		},
+		NodeRows:  []model.NodeRow{{Name: "node-1"}},
+		IndexRows: []model.IndexRow{{Name: "my-index"}},
+	}
+}
+
+func TestApp_SnapshotMsgUpdatesState(t *testing.T) {
+	app := NewApp(nil, 10*time.Second)
+	require.Nil(t, app.current)
+	require.Equal(t, 0, app.consecutiveFails)
+
+	snap := makeFixtureSnapshot()
+	msg := makeFixtureMsg(snap)
+
+	newModel, cmd := app.Update(msg)
+	updated := newModel.(*App)
+
+	assert.Equal(t, snap, updated.current)
+	assert.Nil(t, updated.previous)
+	assert.Equal(t, 0, updated.consecutiveFails)
+	assert.Nil(t, updated.lastError)
+	assert.Equal(t, stateConnected, updated.connState)
+	assert.Equal(t, msg.Metrics, updated.metrics)
+	assert.Equal(t, msg.Resources, updated.resources)
+	assert.Equal(t, msg.NodeRows, updated.nodeRows)
+	assert.Equal(t, msg.IndexRows, updated.indexRows)
+	assert.Equal(t, snap.FetchedAt, updated.lastUpdated)
+	assert.Equal(t, 1, updated.history.Len())
+	require.NotNil(t, cmd)
+}
+
+func TestApp_SnapshotMsgRotatesPreviousCurrent(t *testing.T) {
+	app := NewApp(nil, 10*time.Second)
+	snap1 := makeFixtureSnapshot()
+	snap2 := makeFixtureSnapshot()
+
+	// First snapshot
+	newModel, _ := app.Update(makeFixtureMsg(snap1))
+	app = newModel.(*App)
+
+	// Second snapshot — snap1 becomes previous
+	newModel, _ = app.Update(makeFixtureMsg(snap2))
+	app = newModel.(*App)
+
+	assert.Equal(t, snap2, app.current)
+	assert.Equal(t, snap1, app.previous)
+}
+
+func TestApp_FetchErrorIncreasesFails(t *testing.T) {
+	app := NewApp(nil, 10*time.Second)
+
+	err1 := errors.New("connection refused")
+	newModel, cmd1 := app.Update(FetchErrorMsg{Err: err1})
+	app = newModel.(*App)
+
+	assert.Equal(t, 1, app.consecutiveFails)
+	assert.Equal(t, err1, app.lastError)
+	assert.Equal(t, stateDisconnected, app.connState)
+	require.NotNil(t, cmd1)
+
+	newModel, cmd2 := app.Update(FetchErrorMsg{Err: err1})
+	app = newModel.(*App)
+
+	assert.Equal(t, 2, app.consecutiveFails)
+	require.NotNil(t, cmd2)
+}
+
+func TestApp_FetchErrorResetsOnSuccess(t *testing.T) {
+	app := NewApp(nil, 10*time.Second)
+
+	// Simulate two failures
+	newModel, _ := app.Update(FetchErrorMsg{Err: errors.New("timeout")})
+	newModel, _ = newModel.(*App).Update(FetchErrorMsg{Err: errors.New("timeout")})
+	app = newModel.(*App)
+	require.Equal(t, 2, app.consecutiveFails)
+
+	// Now a successful snapshot resets the counter
+	snap := makeFixtureSnapshot()
+	newModel, _ = app.Update(makeFixtureMsg(snap))
+	app = newModel.(*App)
+
+	assert.Equal(t, 0, app.consecutiveFails)
+	assert.Nil(t, app.lastError)
+	assert.Equal(t, stateConnected, app.connState)
+}
+
+func TestApp_WindowSizeStored(t *testing.T) {
+	app := NewApp(nil, 10*time.Second)
+
+	newModel, cmd := app.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
+	updated := newModel.(*App)
+
+	assert.Equal(t, 120, updated.width)
+	assert.Equal(t, 40, updated.height)
+	assert.Nil(t, cmd)
+}
+
+func TestApp_QuitKey(t *testing.T) {
+	app := NewApp(nil, 10*time.Second)
+
+	newModel, cmd := app.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")})
+	_ = newModel
+
+	// tea.Quit is a function — we verify a non-nil command is returned.
+	require.NotNil(t, cmd)
+	// Execute the command; it should return tea.QuitMsg.
+	result := cmd()
+	_, isQuit := result.(tea.QuitMsg)
+	assert.True(t, isQuit, "expected tea.QuitMsg, got %T", result)
+}
+
+func TestApp_HelpToggle(t *testing.T) {
+	app := NewApp(nil, 10*time.Second)
+	require.False(t, app.showHelp)
+
+	newModel, _ := app.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("?")})
+	app = newModel.(*App)
+	assert.True(t, app.showHelp)
+
+	newModel, _ = app.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("?")})
+	app = newModel.(*App)
+	assert.False(t, app.showHelp)
+}
+
+func TestBackoffDuration(t *testing.T) {
+	cases := []struct {
+		fails    int
+		expected time.Duration
+	}{
+		{0, time.Second},
+		{1, 2 * time.Second},
+		{2, 4 * time.Second},
+		{3, 8 * time.Second},
+		{4, 16 * time.Second},
+		{5, 32 * time.Second},
+		{6, 60 * time.Second},
+		{10, 60 * time.Second},
+	}
+	for _, tc := range cases {
+		got := backoffDuration(tc.fails)
+		assert.Equal(t, tc.expected, got, "fails=%d", tc.fails)
+	}
+}
+
+func TestRenderMiniBar(t *testing.T) {
+	// Since renderMiniBar is a stub in Task 5, we just verify it returns a string.
+	// Real tests will be added when Task 7 implements it.
+	result := renderMiniBar(50, 10)
+	_ = result // no assertion — stub implementation
+}
