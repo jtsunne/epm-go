@@ -1,0 +1,6 @@
+bin/
+*.test
+*.out
+
+# ralphex progress logs
+.ralphex/progress/

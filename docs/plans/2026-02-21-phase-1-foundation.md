@@ -33,15 +33,15 @@ The ES client is the most critical component: everything else depends on it bein
 
 ### Task 1: Go module + project structure
 
-- [ ] run `go mod init github.com/dm/epm-go` in `/Users/dm/dev/epm-go/`
-- [ ] create directory tree: `cmd/epm/`, `internal/client/`, `internal/model/`, `internal/engine/`, `internal/tui/`, `internal/format/`, `docs/plans/`
-- [ ] create `Makefile` with targets: `build`, `test`, `lint`, `run`
+- [x] run `go mod init github.com/dm/epm-go` in `/Users/dm/dev/epm-go/`
+- [x] create directory tree: `cmd/epm/`, `internal/client/`, `internal/model/`, `internal/engine/`, `internal/tui/`, `internal/format/`, `docs/plans/`
+- [x] create `Makefile` with targets: `build`, `test`, `lint`, `run`
   - `build`: `go build -o bin/epm ./cmd/epm`
   - `test`: `go test ./...`
   - `lint`: `go vet ./...`
   - `run`: `go run ./cmd/epm`
-- [ ] create `.gitignore` with `bin/`, `*.test`, `*.out`
-- [ ] verify `go build ./...` succeeds (empty packages)
+- [x] create `.gitignore` with `bin/`, `*.test`, `*.out`
+- [x] verify `go build ./...` succeeds (empty packages)
 
 ### Task 2: ES client interface + DefaultClient scaffold
 
