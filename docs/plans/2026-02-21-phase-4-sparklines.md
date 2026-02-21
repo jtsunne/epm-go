@@ -63,7 +63,7 @@ Add the 4 cluster-level metric cards (Indexing Rate, Search Rate, Index Latency,
 
 ### Task 3: 4-card metrics row renderer
 
-- [ ] implement `renderMetricsRow(app *App) string` in `internal/tui/metrics.go`:
+- [x] implement `renderMetricsRow(app *App) string` in `internal/tui/metrics.go`:
   - returns empty string if `app.current == nil`
   - card width = `(app.width - 8) / 4` (account for borders/gaps)
   - card 1: **Indexing Rate** — `format.FormatRate(app.metrics.IndexingRate)`, sparkline from `app.history.Values("indexingRate")`, color `#10b981`
@@ -71,7 +71,7 @@ Add the 4 cluster-level metric cards (Indexing Rate, Search Rate, Index Latency,
   - card 3: **Index Latency** — `format.FormatLatency(app.metrics.IndexLatency)`, color `#f59e0b`
   - card 4: **Search Latency** — `format.FormatLatency(app.metrics.SearchLatency)`, color `#ef4444`
   - join 4 cards horizontally with `lipgloss.JoinHorizontal(lipgloss.Top, cards...)`
-- [ ] section label "Cluster Performance" above the card row in dim text
+- [x] section label "Cluster Performance" above the card row in dim text
 
 ### Task 4: Wire sparkline history into App
 
