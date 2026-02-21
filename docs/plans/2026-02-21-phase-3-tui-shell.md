@@ -131,15 +131,15 @@ Build the Bubble Tea application skeleton with auto-refreshing poll loop, header
 
 ### Task 6: Header bar renderer
 
-- [ ] create `internal/tui/header.go` with `renderHeader(app *App) string`:
+- [x] create `internal/tui/header.go` with `renderHeader(app *App) string`:
   - left: cluster name (or "Connecting..." if no snapshot yet)
   - center: status indicator — colored dot + status text ("● GREEN", "● YELLOW", "● RED", "● UNKNOWN")
     - "DISCONNECTED" + error hint in red if `connState == stateDisconnected`
   - right: "Last: HH:MM:SS  Poll: Ns" (or "Connecting..." during first fetch)
   - full terminal width via `lipgloss.Width(app.width)`
   - dark background, white text
-- [ ] handle case: no snapshot yet (app.current == nil) → show "Connecting to <baseURL>..."
-- [ ] handle "DISCONNECTED" state: show error in red, "Press r to retry"
+- [x] handle case: no snapshot yet (app.current == nil) → show "Connecting to <baseURL>..."
+- [x] handle "DISCONNECTED" state: show error in red, "Press r to retry"
 
 ### Task 7: Overview bar renderer
 
