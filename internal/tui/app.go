@@ -54,7 +54,7 @@ func NewApp(c client.ESClient, interval time.Duration) *App {
 	return &App{
 		client:       c,
 		pollInterval: interval,
-		history:      model.NewSparklineHistory(0),
+		history:      model.NewSparklineHistory(60),
 		connState:    stateDisconnected,
 		fetching:     true, // Init() always issues an immediate fetchCmd
 	}

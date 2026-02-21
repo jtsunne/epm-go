@@ -240,7 +240,7 @@ func TestApp_SparklineNonEmptyAfterThreePolls(t *testing.T) {
 	values := app.history.Values("indexingRate")
 	require.Len(t, values, 2)
 
-	sparkline := plainText(RenderSparkline(values, 10, testColor))
+	sparkline := stripANSI(RenderSparkline(values, 10, testColor))
 	assert.NotEqual(t, strings.Repeat(" ", 10), sparkline, "sparkline should contain non-space chars after 3 polls")
 	// With 3 values and width 10, the right side contains sparkline chars (left-padded with spaces).
 	assert.Contains(t, sparkline, "█", "sparkline should contain a max-value char")
