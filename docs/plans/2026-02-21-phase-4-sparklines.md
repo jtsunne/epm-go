@@ -33,7 +33,7 @@ Add the 4 cluster-level metric cards (Indexing Rate, Search Rate, Index Latency,
 
 ### Task 1: Braille sparkline renderer
 
-- [ ] create `internal/tui/sparkline.go` with `RenderSparkline(values []float64, width int) string`:
+- [x] create `internal/tui/sparkline.go` with `RenderSparkline(values []float64, width int) string`:
   - use 8-level block chars: `var sparkBlocks = []rune{'▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'}`
   - if `len(values) == 0` → return `strings.Repeat(" ", width)`
   - take last `width` values if slice longer than width
@@ -41,14 +41,14 @@ Add the 4 cluster-level metric cards (Indexing Rate, Search Rate, Index Latency,
   - if `maxVal == 0`, return all `▁` (floor level, not blank)
   - for each value: `idx = int(value / maxVal * 7)`, clamp to [0,7], write `sparkBlocks[idx]`
   - left-pad with spaces if fewer values than width
-- [ ] apply color to the sparkline string using the metric's lipgloss color style
-- [ ] write `internal/tui/sparkline_test.go`:
+- [x] apply color to the sparkline string using the metric's lipgloss color style
+- [x] write `internal/tui/sparkline_test.go`:
   - `TestRenderSparkline_Empty` — width=10 → 10 spaces
   - `TestRenderSparkline_AllZeros` — all chars are `▁`
   - `TestRenderSparkline_Ascending` — chars increase left to right
   - `TestRenderSparkline_TruncatesLeft` — 20 values, width=10 → uses last 10
   - `TestRenderSparkline_SingleValue` — 1 value → fills with spaces left, one `█` right
-- [ ] run tests — all pass
+- [x] run tests — all pass
 
 ### Task 2: Single metric card renderer
 
