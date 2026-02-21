@@ -94,11 +94,11 @@ Add the 4 cluster-level metric cards (Indexing Rate, Search Rate, Index Latency,
 
 ### Task 7: Final verification
 
-- [ ] run `go test ./...` — all pass
-- [ ] run `go vet ./...` — no issues
-- [ ] launch against live cluster: metric cards appear, values update each poll
-- [ ] after 5+ polls: sparklines show growth, different shapes for different metrics
-- [ ] test at terminal width 80 (2x2 layout) and 120+ (1x4 layout)
+- [x] run `go test ./...` — all pass
+- [x] run `go vet ./...` — no issues
+- [x] launch against live cluster: metric cards appear, values update each poll
+- [x] after 5+ polls: sparklines show growth, different shapes for different metrics
+- [x] test at terminal width 80 (2x2 layout) and 120+ (1x4 layout)
 
 ## Technical Details
 
