@@ -47,7 +47,11 @@ func NewDefaultClient(cfg ClientConfig) (*DefaultClient, error) {
 		cfg.RequestTimeout = 10 * time.Second
 	}
 
-	transport := http.DefaultTransport.(*http.Transport).Clone()
+	baseTransport, ok := http.DefaultTransport.(*http.Transport)
+	if !ok {
+		return nil, fmt.Errorf("http.DefaultTransport is not *http.Transport")
+	}
+	transport := baseTransport.Clone()
 	transport.TLSClientConfig = &tls.Config{
 		InsecureSkipVerify: cfg.InsecureSkipVerify, //nolint:gosec
 	}

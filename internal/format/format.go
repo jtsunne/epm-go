@@ -109,13 +109,19 @@ func ParseHumanBytes(s string) int64 {
 func formatCommaFloat(f float64) string {
 	// Format with one decimal place first
 	formatted := fmt.Sprintf("%.1f", f)
+	// Strip leading minus before inserting commas, then restore it
+	sign := ""
+	if len(formatted) > 0 && formatted[0] == '-' {
+		sign = "-"
+		formatted = formatted[1:]
+	}
 	// Split on decimal point
 	parts := strings.SplitN(formatted, ".", 2)
 	intPart := insertCommas(parts[0])
 	if len(parts) == 2 {
-		return intPart + "." + parts[1]
+		return sign + intPart + "." + parts[1]
 	}
-	return intPart
+	return sign + intPart
 }
 
 // insertCommas inserts comma separators into a digit string every 3 digits from the right.

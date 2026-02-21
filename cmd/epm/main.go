@@ -87,9 +87,6 @@ func main() {
 	}
 
 	requestTimeout := *interval - 500*time.Millisecond
-	if requestTimeout < time.Second {
-		requestTimeout = time.Second
-	}
 
 	cfg := client.ClientConfig{
 		BaseURL:            baseURL,
