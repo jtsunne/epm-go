@@ -188,3 +188,113 @@ func TestCalcClusterMetrics_LatencySanityCap(t *testing.T) {
 	assert.Equal(t, maxLatencyMs, got.IndexLatency)
 	assert.Equal(t, maxLatencyMs, got.SearchLatency)
 }
+
+// makeNodeOS returns a NodeOSStats pointer with the given CPU percent.
+func makeNodeOS(cpuPercent int) *client.NodeOSStats {
+	s := &client.NodeOSStats{}
+	s.CPU.Percent = cpuPercent
+	return s
+}
+
+// makeNodeJVM returns a NodeJVMStats pointer with the given heap values.
+func makeNodeJVM(used, max int64) *client.NodeJVMStats {
+	s := &client.NodeJVMStats{}
+	s.Mem.HeapUsedInBytes = used
+	s.Mem.HeapMaxInBytes = max
+	return s
+}
+
+// makeNodeFS returns a NodeFSStats pointer with the given total/available values.
+func makeNodeFS(total, available int64) *client.NodeFSStats {
+	s := &client.NodeFSStats{}
+	s.Total.TotalInBytes = total
+	s.Total.AvailableInBytes = available
+	return s
+}
+
+func TestCalcClusterResources_NilSnapshot(t *testing.T) {
+	got := CalcClusterResources(nil)
+	assert.Equal(t, model.ClusterResources{}, got)
+}
+
+func TestCalcClusterResources_CPUAverageSkipsZeros(t *testing.T) {
+	// node1=40%, node2=0% (skipped), node3=60% → average = (40+60)/2 = 50%
+	snap := &model.Snapshot{
+		NodeStats: client.NodeStatsResponse{
+			Nodes: map[string]client.NodePerformanceStats{
+				"n1": {Name: "n1", OS: makeNodeOS(40)},
+				"n2": {Name: "n2", OS: makeNodeOS(0)},
+				"n3": {Name: "n3", OS: makeNodeOS(60)},
+			},
+		},
+	}
+	got := CalcClusterResources(snap)
+	assert.InDelta(t, 50.0, got.AvgCPUPercent, 1e-9)
+}
+
+func TestCalcClusterResources_JVMHeapPercentage(t *testing.T) {
+	// node1: 3GB used / 4GB max = 75%; node2: 1GB used / 2GB max = 50%
+	// average = (75 + 50) / 2 = 62.5%
+	const gb = int64(1 << 30)
+	snap := &model.Snapshot{
+		NodeStats: client.NodeStatsResponse{
+			Nodes: map[string]client.NodePerformanceStats{
+				"n1": {Name: "n1", JVM: makeNodeJVM(3*gb, 4*gb)},
+				"n2": {Name: "n2", JVM: makeNodeJVM(gb, 2*gb)},
+			},
+		},
+	}
+	got := CalcClusterResources(snap)
+	assert.InDelta(t, 62.5, got.AvgJVMHeapPercent, 1e-6)
+}
+
+func TestCalcClusterResources_JVMSkipsZeroHeap(t *testing.T) {
+	// node1: 75%; node2: heap_max=0 → skipped
+	const gb = int64(1 << 30)
+	snap := &model.Snapshot{
+		NodeStats: client.NodeStatsResponse{
+			Nodes: map[string]client.NodePerformanceStats{
+				"n1": {Name: "n1", JVM: makeNodeJVM(3*gb, 4*gb)},
+				"n2": {Name: "n2", JVM: makeNodeJVM(0, 0)},
+			},
+		},
+	}
+	got := CalcClusterResources(snap)
+	assert.InDelta(t, 75.0, got.AvgJVMHeapPercent, 1e-6)
+}
+
+func TestCalcClusterResources_StorageSumAndPercent(t *testing.T) {
+	// node1: 100GB total, 20GB available → 80GB used
+	// node2: 200GB total, 50GB available → 150GB used
+	// total = 300GB, used = 230GB, percent = 230/300*100 ≈ 76.67%
+	const gb = int64(1 << 30)
+	snap := &model.Snapshot{
+		NodeStats: client.NodeStatsResponse{
+			Nodes: map[string]client.NodePerformanceStats{
+				"n1": {Name: "n1", FS: makeNodeFS(100*gb, 20*gb)},
+				"n2": {Name: "n2", FS: makeNodeFS(200*gb, 50*gb)},
+			},
+		},
+	}
+	got := CalcClusterResources(snap)
+	assert.Equal(t, 300*gb, got.StorageTotalBytes)
+	assert.Equal(t, 230*gb, got.StorageUsedBytes)
+	assert.InDelta(t, 230.0/300.0*100, got.StoragePercent, 1e-9)
+}
+
+func TestCalcClusterResources_NilFields(t *testing.T) {
+	// Node with all nil fields: should not panic, all metrics stay zero.
+	snap := &model.Snapshot{
+		NodeStats: client.NodeStatsResponse{
+			Nodes: map[string]client.NodePerformanceStats{
+				"n1": {Name: "n1", OS: nil, JVM: nil, FS: nil},
+			},
+		},
+	}
+	got := CalcClusterResources(snap)
+	assert.Equal(t, 0.0, got.AvgCPUPercent)
+	assert.Equal(t, 0.0, got.AvgJVMHeapPercent)
+	assert.Equal(t, int64(0), got.StorageTotalBytes)
+	assert.Equal(t, int64(0), got.StorageUsedBytes)
+	assert.Equal(t, 0.0, got.StoragePercent)
+}

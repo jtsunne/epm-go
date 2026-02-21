@@ -110,3 +110,63 @@ func CalcClusterMetrics(prev, curr *model.Snapshot, elapsed time.Duration) model
 		SearchLatency: searchLatency,
 	}
 }
+
+// CalcClusterResources aggregates OS, JVM, and filesystem metrics across all nodes
+// in the snapshot. Ported from App.tsx lines 193-240.
+//
+// CPU and JVM averaging skips nodes that report 0 (offline or unsampled) to avoid
+// dragging the average down. Storage is always summed across all nodes.
+func CalcClusterResources(snap *model.Snapshot) model.ClusterResources {
+	if snap == nil {
+		return model.ClusterResources{}
+	}
+
+	var cpuSum float64
+	var cpuCount int
+	var jvmSum float64
+	var jvmCount int
+	var storageTotalBytes int64
+	var storageUsedBytes int64
+
+	for _, node := range snap.NodeStats.Nodes {
+		// CPU: use os.cpu.percent, skip zeros.
+		if node.OS != nil {
+			cpu := float64(node.OS.CPU.Percent)
+			if cpu > 0 {
+				cpuSum += cpu
+				cpuCount++
+			}
+		}
+
+		// JVM heap: per-node used/max * 100, skip zeros.
+		if node.JVM != nil {
+			heapMax := node.JVM.Mem.HeapMaxInBytes
+			heapUsed := node.JVM.Mem.HeapUsedInBytes
+			if heapMax > 0 {
+				heapPercent := float64(heapUsed) / float64(heapMax) * 100
+				if heapPercent > 0 {
+					jvmSum += heapPercent
+					jvmCount++
+				}
+			}
+		}
+
+		// Storage: sum total and used across all nodes.
+		if node.FS != nil {
+			total := node.FS.Total.TotalInBytes
+			available := node.FS.Total.AvailableInBytes
+			storageTotalBytes += total
+			storageUsedBytes += total - available
+		}
+	}
+
+	storagePercent := safeDivide(float64(storageUsedBytes), float64(storageTotalBytes)) * 100
+
+	return model.ClusterResources{
+		AvgCPUPercent:     safeDivide(cpuSum, float64(cpuCount)),
+		AvgJVMHeapPercent: safeDivide(jvmSum, float64(jvmCount)),
+		StorageUsedBytes:  storageUsedBytes,
+		StorageTotalBytes: storageTotalBytes,
+		StoragePercent:    storagePercent,
+	}
+}

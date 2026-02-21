@@ -133,12 +133,12 @@ Build the business logic layer: parallel 5-endpoint fetching, snapshot model, de
 
 ### Task 5: Cluster resource aggregation
 
-- [ ] implement `CalcClusterResources(snap *model.Snapshot) model.ClusterResources`:
+- [x] implement `CalcClusterResources(snap *model.Snapshot) model.ClusterResources`:
   - CPU: average `os.cpu.percent` across nodes, filtering zeros (same as App.tsx lines 193-209)
   - JVM: per-node `heap_used / heap_max * 100`, average across nodes, filtering zeros (App.tsx lines 211-222)
   - Storage: sum `total_in_bytes - available_in_bytes` across all nodes; `StoragePercent = used/total*100` (App.tsx lines 224-238)
   - handle nil OS/JVM/FS fields gracefully
-- [ ] write `TestCalcClusterResources`:
+- [x] write `TestCalcClusterResources`:
   - verify CPU average skips nodes with 0%
   - verify JVM heap percentage calculation
   - verify storage sum and percentage
