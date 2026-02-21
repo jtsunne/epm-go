@@ -192,9 +192,9 @@ Build the business logic layer: parallel 5-endpoint fetching, snapshot model, de
 
 ### Task 9: Wire engine into CLI for debug output
 
-- [ ] update `cmd/epm/main.go` to run two sequential FetchAll calls (10s apart) and print computed metrics to stdout
-- [ ] verify rates are non-zero when cluster has activity
-- [ ] verify `go build ./cmd/epm` — compiles
+- [x] update `cmd/epm/main.go` to run two sequential FetchAll calls (10s apart) and print computed metrics to stdout
+- [x] verify rates are non-zero when cluster has activity
+- [x] verify `go build ./cmd/epm` — compiles
 
 ### Task 10: Final verification
 

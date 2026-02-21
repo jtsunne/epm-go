@@ -6,9 +6,13 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"sort"
 	"time"
 
+	"github.com/dm/epm-go/internal/engine"
 	"github.com/dm/epm-go/internal/client"
+	"github.com/dm/epm-go/internal/format"
+	"github.com/dm/epm-go/internal/model"
 )
 
 // parseESURI parses an Elasticsearch URI and returns the base URL (without credentials),
@@ -102,12 +106,105 @@ func main() {
 	}
 
 	ctx := context.Background()
-	health, err := c.GetClusterHealth(ctx)
+
+	fmt.Printf("epm debug: fetching first snapshot from %s ...\n", baseURL)
+	prev, err := engine.FetchAll(ctx, c)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: failed to get cluster health: %v\n", err)
+		fmt.Fprintf(os.Stderr, "error: first fetch failed: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("cluster: %s  status: %s  nodes: %d  shards: %d  poll: %v\n",
-		health.ClusterName, health.Status, health.NumberOfNodes, health.ActiveShards, *interval)
+	printClusterSummary(prev)
+
+	waitDur := *interval
+	fmt.Printf("\nwaiting %v before second fetch ...\n", waitDur)
+	time.Sleep(waitDur)
+
+	fmt.Println("fetching second snapshot ...")
+	curr, err := engine.FetchAll(ctx, c)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: second fetch failed: %v\n", err)
+		os.Exit(1)
+	}
+
+	elapsed := curr.FetchedAt.Sub(prev.FetchedAt)
+	fmt.Printf("elapsed: %v\n\n", elapsed.Round(time.Millisecond))
+
+	metrics := engine.CalcClusterMetrics(prev, curr, elapsed)
+	resources := engine.CalcClusterResources(curr)
+	nodeRows := engine.CalcNodeRows(prev, curr, elapsed)
+	indexRows := engine.CalcIndexRows(prev, curr, elapsed)
+
+	printMetrics(metrics)
+	printResources(resources)
+	printNodeRows(nodeRows)
+	printIndexRows(indexRows)
+}
+
+func printClusterSummary(snap *model.Snapshot) {
+	h := snap.Health
+	fmt.Printf("cluster: %s  status: %s  nodes: %d  shards: %d\n",
+		h.ClusterName, h.Status, h.NumberOfNodes, h.ActiveShards)
+	fmt.Printf("fetched at: %s\n", snap.FetchedAt.Format("15:04:05"))
+}
+
+func printMetrics(m model.PerformanceMetrics) {
+	fmt.Println("--- cluster metrics ---")
+	fmt.Printf("  indexing rate:   %s\n", format.FormatRate(m.IndexingRate))
+	fmt.Printf("  search rate:     %s\n", format.FormatRate(m.SearchRate))
+	fmt.Printf("  index latency:   %s\n", format.FormatLatency(m.IndexLatency))
+	fmt.Printf("  search latency:  %s\n", format.FormatLatency(m.SearchLatency))
+}
+
+func printResources(r model.ClusterResources) {
+	fmt.Println("--- cluster resources ---")
+	fmt.Printf("  cpu:     %s\n", format.FormatPercent(r.AvgCPUPercent))
+	fmt.Printf("  jvm:     %s\n", format.FormatPercent(r.AvgJVMHeapPercent))
+	fmt.Printf("  storage: %s / %s (%s)\n",
+		format.FormatBytes(r.StorageUsedBytes),
+		format.FormatBytes(r.StorageTotalBytes),
+		format.FormatPercent(r.StoragePercent))
+}
+
+func printNodeRows(rows []model.NodeRow) {
+	if len(rows) == 0 {
+		return
+	}
+	sort.Slice(rows, func(i, j int) bool { return rows[i].Name < rows[j].Name })
+	fmt.Println("--- nodes ---")
+	fmt.Printf("  %-20s %-6s %-15s %12s %12s %10s %10s\n",
+		"name", "role", "ip", "idx/s", "srch/s", "idx-lat", "srch-lat")
+	for _, r := range rows {
+		fmt.Printf("  %-20s %-6s %-15s %12s %12s %10s %10s\n",
+			r.Name, r.Role, r.IP,
+			format.FormatRate(r.IndexingRate),
+			format.FormatRate(r.SearchRate),
+			format.FormatLatency(r.IndexLatency),
+			format.FormatLatency(r.SearchLatency))
+	}
+}
+
+func printIndexRows(rows []model.IndexRow) {
+	if len(rows) == 0 {
+		return
+	}
+	sort.Slice(rows, func(i, j int) bool { return rows[i].Name < rows[j].Name })
+	fmt.Println("--- indices (top 10 by name) ---")
+	fmt.Printf("  %-30s %6s %8s %10s %12s %12s\n",
+		"name", "shards", "docs", "size", "idx/s", "srch/s")
+	limit := 10
+	if len(rows) < limit {
+		limit = len(rows)
+	}
+	for _, r := range rows[:limit] {
+		fmt.Printf("  %-30s %6d %8s %10s %12s %12s\n",
+			r.Name, r.TotalShards,
+			format.FormatNumber(r.DocCount),
+			format.FormatBytes(r.TotalSizeBytes),
+			format.FormatRate(r.IndexingRate),
+			format.FormatRate(r.SearchRate))
+	}
+	if len(rows) > limit {
+		fmt.Printf("  ... and %d more\n", len(rows)-limit)
+	}
 }
