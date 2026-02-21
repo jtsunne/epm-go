@@ -175,13 +175,13 @@ Build the Bubble Tea application skeleton with auto-refreshing poll loop, header
 
 ### Task 10: Tests for app logic
 
-- [ ] create `internal/tui/app_test.go`
-- [ ] `TestApp_SnapshotMsgUpdatesState` — send SnapshotMsg, verify `current` set, `consecutiveFails` reset
-- [ ] `TestApp_FetchErrorIncreasesFails` — send FetchErrorMsg twice, verify `consecutiveFails == 2`
-- [ ] `TestApp_WindowSizeStored` — send WindowSizeMsg, verify width/height
-- [ ] `TestApp_QuitKey` — send KeyMsg "q", verify quit command returned
-- [ ] `TestRenderMiniBar` — verify correct fill ratio
-- [ ] run `go test ./internal/tui/...` — all pass
+- [x] create `internal/tui/app_test.go`
+- [x] `TestApp_SnapshotMsgUpdatesState` — send SnapshotMsg, verify `current` set, `consecutiveFails` reset
+- [x] `TestApp_FetchErrorIncreasesFails` — send FetchErrorMsg twice, verify `consecutiveFails == 2`
+- [x] `TestApp_WindowSizeStored` — send WindowSizeMsg, verify width/height
+- [x] `TestApp_QuitKey` — send KeyMsg "q", verify quit command returned
+- [x] `TestRenderMiniBar` — verify correct fill ratio
+- [x] run `go test ./internal/tui/...` — all pass
 
 ### Task 11: Final verification
 
