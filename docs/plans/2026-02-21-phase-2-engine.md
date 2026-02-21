@@ -34,7 +34,7 @@ Build the business logic layer: parallel 5-endpoint fetching, snapshot model, de
 
 ### Task 1: Snapshot and model types
 
-- [ ] create `internal/model/snapshot.go`:
+- [x] create `internal/model/snapshot.go`:
   ```go
   type Snapshot struct {
       Health     client.ClusterHealth
@@ -45,7 +45,7 @@ Build the business logic layer: parallel 5-endpoint fetching, snapshot model, de
       FetchedAt  time.Time
   }
   ```
-- [ ] create `internal/model/metrics.go`:
+- [x] create `internal/model/metrics.go`:
   ```go
   type PerformanceMetrics struct {
       IndexingRate  float64  // ops/sec
@@ -74,12 +74,12 @@ Build the business logic layer: parallel 5-endpoint fetching, snapshot model, de
       IndexLatency, SearchLatency float64
   }
   ```
-- [ ] create `internal/model/history.go`:
+- [x] create `internal/model/history.go`:
   - `SparklinePoint` struct: `Timestamp time.Time`, `IndexingRate`, `SearchRate`, `IndexLatency`, `SearchLatency float64`
   - `SparklineHistory` with fixed-size ring buffer (default cap 60)
   - methods: `Push(SparklinePoint)`, `Values(field string) []float64`, `Len() int`, `Clear()`
   - `Values` accepts field names `"indexingRate"`, `"searchRate"`, `"indexLatency"`, `"searchLatency"`
-- [ ] write tests for `SparklineHistory`: push beyond capacity overwrites oldest, `Values` returns correct slice
+- [x] write tests for `SparklineHistory`: push beyond capacity overwrites oldest, `Values` returns correct slice
 
 ### Task 2: FetchAll parallel poller
 
