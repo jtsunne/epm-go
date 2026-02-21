@@ -198,9 +198,9 @@ Build the business logic layer: parallel 5-endpoint fetching, snapshot model, de
 
 ### Task 10: Final verification
 
-- [ ] run `go test ./...` — all tests pass
-- [ ] run `go vet ./...` — no issues
-- [ ] given two fixture snapshots with known deltas, manually verify rates match hand calculations
+- [x] run `go test ./...` — all tests pass
+- [x] run `go vet ./...` — no issues
+- [x] given two fixture snapshots with known deltas, manually verify rates match hand calculations
 
 ## Technical Details
 
