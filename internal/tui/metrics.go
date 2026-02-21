@@ -67,7 +67,7 @@ func renderMetricsRow(app *App) string {
 
 	label := StyleDim.Render("Cluster Performance")
 
-	if app.width < 80 {
+	if app.width > 0 && app.width < 80 {
 		// 2x2 grid layout for narrow terminals.
 		// Each card renders at (cardWidth-2) chars wide (lipgloss Width includes padding,
 		// border adds 2). For 2 cards to fill app.width: 2*(cardWidth-2)=app.width → cardWidth=(app.width+4)/2.

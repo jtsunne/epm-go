@@ -36,7 +36,7 @@ func renderOverview(app *App) string {
 	res := app.resources
 
 	// Card 1: Cluster Status — colored background.
-	statusText := strings.ToUpper(health.Status)
+	statusText := strings.ToUpper(sanitize(health.Status))
 	if statusText == "" {
 		statusText = "UNKNOWN"
 	}
