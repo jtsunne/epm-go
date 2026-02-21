@@ -52,6 +52,23 @@ func TestParseESURI(t *testing.T) {
 			uri:       "",
 			wantError: true,
 		},
+		{
+			name:      "hostless URI",
+			uri:       "http://",
+			wantError: true,
+		},
+		{
+			name:      "port-only authority",
+			uri:       "http://:9200",
+			wantError: true,
+		},
+		{
+			name:     "password-only userinfo",
+			uri:      "http://:secret@localhost:9200",
+			wantBase: "http://localhost:9200",
+			wantUser: "",
+			wantPass: "secret",
+		},
 	}
 
 	for _, tc := range tests {

@@ -23,6 +23,10 @@ func parseESURI(esURI string) (baseURL, username, password string, err error) {
 		return "", "", "", fmt.Errorf("unsupported scheme %q (must be http or https)", u.Scheme)
 	}
 
+	if u.Hostname() == "" {
+		return "", "", "", fmt.Errorf("invalid URI %q: host is required", esURI)
+	}
+
 	if u.User != nil {
 		username = u.User.Username()
 		password, _ = u.User.Password()
@@ -39,11 +43,11 @@ func main() {
 		insecure = flag.Bool("insecure", false, "skip TLS certificate verification")
 	)
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "usage: epm <elasticsearch-uri> [--interval 10s] [--insecure]\n\n")
+		fmt.Fprintf(os.Stderr, "usage: epm [--interval 10s] [--insecure] <elasticsearch-uri>\n\n")
 		fmt.Fprintf(os.Stderr, "examples:\n")
 		fmt.Fprintf(os.Stderr, "  epm http://localhost:9200\n")
-		fmt.Fprintf(os.Stderr, "  epm https://elastic:changeme@prod.example.com:9200 --insecure\n")
-		fmt.Fprintf(os.Stderr, "  epm http://localhost:9200 --interval 30s\n\n")
+		fmt.Fprintf(os.Stderr, "  epm --insecure https://elastic:changeme@prod.example.com:9200\n")
+		fmt.Fprintf(os.Stderr, "  epm --interval 30s http://localhost:9200\n\n")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -56,6 +60,18 @@ func main() {
 	args := flag.Args()
 	if len(args) == 0 {
 		fmt.Fprintln(os.Stderr, "error: elasticsearch URI is required")
+		flag.Usage()
+		os.Exit(1)
+	}
+	// Reject extra positional arguments. flag.Parse stops at the first
+	// non-flag argument, so trailing --flags would also be silently ignored.
+	if len(args) > 1 {
+		extra := args[1]
+		if len(extra) > 1 && extra[0] == '-' {
+			fmt.Fprintf(os.Stderr, "error: flag %q must be placed before the URI\n", extra)
+		} else {
+			fmt.Fprintf(os.Stderr, "error: unexpected argument %q\n", extra)
+		}
 		flag.Usage()
 		os.Exit(1)
 	}

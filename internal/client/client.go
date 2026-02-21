@@ -79,7 +79,7 @@ func (c *DefaultClient) doGet(ctx context.Context, path string) ([]byte, error) 
 
 	req.Header.Set("Accept", "application/json")
 
-	if c.config.Username != "" {
+	if c.config.Username != "" || c.config.Password != "" {
 		req.SetBasicAuth(c.config.Username, c.config.Password)
 	}
 
@@ -89,7 +89,8 @@ func (c *DefaultClient) doGet(ctx context.Context, path string) ([]byte, error) 
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	const maxResponseBytes = 32 * 1024 * 1024 // 32 MB — well above any real ES response
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBytes))
 	if err != nil {
 		return nil, fmt.Errorf("read body: %w", err)
 	}

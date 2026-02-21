@@ -310,6 +310,38 @@ func TestBasicAuth(t *testing.T) {
 	}
 }
 
+func TestBasicAuthPasswordOnly(t *testing.T) {
+	var gotUser, gotPass string
+	var gotOK bool
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotUser, gotPass, gotOK = r.BasicAuth()
+		_, _ = w.Write([]byte(`{"status":"green"}`))
+	}))
+	defer srv.Close()
+
+	c, err := NewDefaultClient(ClientConfig{
+		BaseURL:  srv.URL,
+		Username: "",
+		Password: "secret",
+	})
+	if err != nil {
+		t.Fatalf("NewDefaultClient: %v", err)
+	}
+
+	if err := c.Ping(context.Background()); err != nil {
+		t.Fatalf("Ping: %v", err)
+	}
+	if !gotOK {
+		t.Error("expected Authorization header to be sent, but it was absent")
+	}
+	if gotUser != "" {
+		t.Errorf("user = %q, want %q", gotUser, "")
+	}
+	if gotPass != "secret" {
+		t.Errorf("pass = %q, want %q", gotPass, "secret")
+	}
+}
+
 func TestHTTPError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
