@@ -11,6 +11,28 @@ import (
 	"github.com/dm/epm-go/internal/client"
 )
 
+// parseESURI parses an Elasticsearch URI and returns the base URL (without credentials),
+// username, and password. Returns an error if the URI is invalid or has an unsupported scheme.
+func parseESURI(esURI string) (baseURL, username, password string, err error) {
+	u, err := url.Parse(esURI)
+	if err != nil {
+		return "", "", "", fmt.Errorf("invalid URI %q: %w", esURI, err)
+	}
+
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return "", "", "", fmt.Errorf("unsupported scheme %q (must be http or https)", u.Scheme)
+	}
+
+	if u.User != nil {
+		username = u.User.Username()
+		password, _ = u.User.Password()
+		// Remove credentials from URL stored in config
+		u.User = nil
+	}
+
+	return u.String(), username, password, nil
+}
+
 func main() {
 	var (
 		interval = flag.Duration("interval", 10*time.Second, "polling interval (e.g. 10s, 30s)")
@@ -26,6 +48,11 @@ func main() {
 	}
 	flag.Parse()
 
+	if *interval <= 0 {
+		fmt.Fprintln(os.Stderr, "error: --interval must be positive")
+		os.Exit(1)
+	}
+
 	args := flag.Args()
 	if len(args) == 0 {
 		fmt.Fprintln(os.Stderr, "error: elasticsearch URI is required")
@@ -33,30 +60,25 @@ func main() {
 		os.Exit(1)
 	}
 
-	esURI := args[0]
-	u, err := url.Parse(esURI)
+	baseURL, username, password, err := parseESURI(args[0])
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: invalid URI %q: %v\n", esURI, err)
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
 
-	var username, password string
-	if u.User != nil {
-		username = u.User.Username()
-		password, _ = u.User.Password()
-		// Remove credentials from URL stored in config
-		u.User = nil
-	}
-
 	cfg := client.ClientConfig{
-		BaseURL:            u.String(),
+		BaseURL:            baseURL,
 		Username:           username,
 		Password:           password,
 		InsecureSkipVerify: *insecure,
 		RequestTimeout:     10 * time.Second,
 	}
 
-	c := client.NewDefaultClient(cfg)
+	c, err := client.NewDefaultClient(cfg)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
 
 	ctx := context.Background()
 	health, err := c.GetClusterHealth(ctx)

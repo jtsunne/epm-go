@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -12,10 +13,14 @@ import (
 // newTestClient creates a DefaultClient pointed at the given test server URL.
 func newTestClient(t *testing.T, baseURL string) *DefaultClient {
 	t.Helper()
-	return NewDefaultClient(ClientConfig{
+	c, err := NewDefaultClient(ClientConfig{
 		BaseURL:        baseURL,
 		RequestTimeout: 5 * time.Second,
 	})
+	if err != nil {
+		t.Fatalf("NewDefaultClient: %v", err)
+	}
+	return c
 }
 
 func TestGetClusterHealth(t *testing.T) {
@@ -285,11 +290,14 @@ func TestBasicAuth(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := NewDefaultClient(ClientConfig{
+	c, err := NewDefaultClient(ClientConfig{
 		BaseURL:  srv.URL,
 		Username: "elastic",
 		Password: "secret",
 	})
+	if err != nil {
+		t.Fatalf("NewDefaultClient: %v", err)
+	}
 
 	if err := c.Ping(context.Background()); err != nil {
 		t.Fatalf("Ping: %v", err)
@@ -321,8 +329,9 @@ func TestHTTPError(t *testing.T) {
 
 func TestContextCancellation(t *testing.T) {
 	started := make(chan struct{})
+	var once sync.Once
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		close(started)
+		once.Do(func() { close(started) })
 		// Block until the client disconnects
 		<-r.Context().Done()
 	}))
@@ -347,5 +356,37 @@ func TestContextCancellation(t *testing.T) {
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("timeout waiting for cancelled request to return")
+	}
+}
+
+func TestTLSSkipVerify(t *testing.T) {
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"status":"green"}`))
+	}))
+	defer srv.Close()
+
+	// Without InsecureSkipVerify, TLS handshake should fail (self-signed cert).
+	c, err := NewDefaultClient(ClientConfig{
+		BaseURL:        srv.URL,
+		RequestTimeout: 5 * time.Second,
+	})
+	if err != nil {
+		t.Fatalf("NewDefaultClient: %v", err)
+	}
+	if err := c.Ping(context.Background()); err == nil {
+		t.Error("expected TLS certificate error without InsecureSkipVerify, got nil")
+	}
+
+	// With InsecureSkipVerify=true, the request should succeed.
+	c2, err := NewDefaultClient(ClientConfig{
+		BaseURL:            srv.URL,
+		RequestTimeout:     5 * time.Second,
+		InsecureSkipVerify: true,
+	})
+	if err != nil {
+		t.Fatalf("NewDefaultClient: %v", err)
+	}
+	if err := c2.Ping(context.Background()); err != nil {
+		t.Errorf("Ping with InsecureSkipVerify=true: %v", err)
 	}
 }

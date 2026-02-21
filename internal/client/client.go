@@ -38,15 +38,18 @@ type DefaultClient struct {
 
 // NewDefaultClient constructs a DefaultClient from the given config.
 // It configures TLS skip-verify and request timeout from the config.
-func NewDefaultClient(cfg ClientConfig) *DefaultClient {
+// Returns an error if BaseURL is empty.
+func NewDefaultClient(cfg ClientConfig) (*DefaultClient, error) {
+	if cfg.BaseURL == "" {
+		return nil, fmt.Errorf("BaseURL is required")
+	}
 	if cfg.RequestTimeout == 0 {
 		cfg.RequestTimeout = 10 * time.Second
 	}
 
-	transport := &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: cfg.InsecureSkipVerify, //nolint:gosec
-		},
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.TLSClientConfig = &tls.Config{
+		InsecureSkipVerify: cfg.InsecureSkipVerify, //nolint:gosec
 	}
 
 	return &DefaultClient{
@@ -55,7 +58,7 @@ func NewDefaultClient(cfg ClientConfig) *DefaultClient {
 			Transport: transport,
 		},
 		config: cfg,
-	}
+	}, nil
 }
 
 // BaseURL returns the configured base URL of the Elasticsearch cluster.
