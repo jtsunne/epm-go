@@ -41,9 +41,9 @@
 **Файл**: `.gitignore`
 
 ### Task 3: Создать `.goreleaser.yaml`
-- [ ] Создать файл `.goreleaser.yaml` в корне проекта (содержимое ниже в Technical Details)
-- [ ] Установить goreleaser локально: `go install github.com/goreleaser/goreleaser/v2@latest`
-- [ ] Выполнить `goreleaser check` — валидация конфига должна пройти
+- [x] Создать файл `.goreleaser.yaml` в корне проекта (содержимое ниже в Technical Details)
+- [x] Установить goreleaser локально: `go install github.com/goreleaser/goreleaser/v2@latest`
+- [x] Выполнить `goreleaser check` — валидация конфига должна пройти
 
 ### Task 4: Создать GitHub Actions CI workflow
 - [ ] Создать директорию `.github/workflows/`

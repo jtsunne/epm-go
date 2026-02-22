@@ -1,0 +1,63 @@
+version: 2
+project_name: epm
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: epm
+    main: ./cmd/epm
+    binary: epm
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+archives:
+  - id: default
+    formats:
+      - tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - README.md
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - "^chore:"
+
+release:
+  github:
+    owner: jtsunne
+    name: epm-go
+
+brews:
+  - repository:
+      owner: jtsunne
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    directory: Formula
+    name: epm
+    homepage: "https://github.com/jtsunne/epm-go"
+    description: "Terminal dashboard for Elasticsearch cluster performance monitoring"
+    license: "MIT"
+    install: |
+      bin.install "epm"
+    test: |
+      system "#{bin}/epm", "--version"
+    commit_msg_template: "chore: update epm formula to {{ .Tag }}"
