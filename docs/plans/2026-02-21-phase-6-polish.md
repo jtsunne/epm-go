@@ -70,7 +70,7 @@ Final phase: production-quality error states, threshold-based visual alerts on o
 
 ### Task 3: Apply thresholds to metric cards
 
-- [ ] update `renderMetricsRow()` in `metrics.go`:
+- [x] update `renderMetricsRow()` in `metrics.go`:
   - Index Latency card: apply `indexLatSeverity(app.metrics.IndexLatency)` → title turns yellow on warning
   - Search Latency card: apply `searchLatSeverity(app.metrics.SearchLatency)` → title turns red on critical
   - Normal state: title in dim/muted color (as before)

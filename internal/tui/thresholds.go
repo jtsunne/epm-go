@@ -98,3 +98,12 @@ func severityCardStyle(s severity) lipgloss.Style {
 	}
 	return StyleOverviewCard
 }
+
+// latencyTitleStyle returns StyleDim for normal severity, or the appropriate
+// alert style for warning/critical. Used for metric card titles in metrics.go.
+func latencyTitleStyle(s severity) lipgloss.Style {
+	if s == severityNormal {
+		return StyleDim
+	}
+	return severityToStyle(s)
+}

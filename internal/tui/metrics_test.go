@@ -12,34 +12,34 @@ import (
 
 func TestRenderMetricCard_ContainsTitle(t *testing.T) {
 	title := "Indexing Rate"
-	result := renderMetricCard(title, "1,234.5", "/s", []float64{1, 2, 3}, 30, colorGreen)
+	result := renderMetricCard(title, "1,234.5", "/s", []float64{1, 2, 3}, 30, colorGreen, StyleDim)
 	stripped := stripANSI(result)
 	assert.Contains(t, stripped, title)
 }
 
 func TestRenderMetricCard_ContainsValue(t *testing.T) {
 	value := "987.6"
-	result := renderMetricCard("Search Rate", value, "/s", []float64{5, 4, 3}, 30, colorCyan)
+	result := renderMetricCard("Search Rate", value, "/s", []float64{5, 4, 3}, 30, colorCyan, StyleDim)
 	stripped := stripANSI(result)
 	assert.Contains(t, stripped, value)
 }
 
 func TestRenderMetricCard_ContainsUnit(t *testing.T) {
-	result := renderMetricCard("Index Latency", "3.21", "ms", []float64{1, 2}, 30, colorYellow)
+	result := renderMetricCard("Index Latency", "3.21", "ms", []float64{1, 2}, 30, colorYellow, StyleDim)
 	stripped := stripANSI(result)
 	assert.Contains(t, stripped, "ms")
 }
 
 func TestRenderMetricCard_NoUnit(t *testing.T) {
 	// When unit is empty the value should still appear without trailing space issues.
-	result := renderMetricCard("Search Latency", "5.00", "", nil, 30, colorRed)
+	result := renderMetricCard("Search Latency", "5.00", "", nil, 30, colorRed, StyleDim)
 	stripped := stripANSI(result)
 	assert.Contains(t, stripped, "5.00")
 }
 
 func TestRenderMetricCard_MinWidthEnforced(t *testing.T) {
 	// Card width below 20 should still render without panicking.
-	result := renderMetricCard("Rate", "1.0", "", nil, 5, colorGreen)
+	result := renderMetricCard("Rate", "1.0", "", nil, 5, colorGreen, StyleDim)
 	require.NotEmpty(t, result)
 	stripped := stripANSI(result)
 	assert.Contains(t, stripped, "Rate")

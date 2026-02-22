@@ -11,11 +11,11 @@ import (
 // Layout (3 rows inside a rounded border):
 //
 //	╭──────────────────╮
-//	│ Title            │   ← dim/muted color
+//	│ Title            │   ← titleStyle (normally dim/muted; yellow/red when threshold exceeded)
 //	│ 1,204.3 /s       │   ← bold, metric color
 //	│ ▁▂▃▅▇█▇▅▃▂       │   ← colored sparkline
 //	╰──────────────────╯
-func renderMetricCard(title, value, unit string, sparkValues []float64, cardWidth int, color lipgloss.Color) string {
+func renderMetricCard(title, value, unit string, sparkValues []float64, cardWidth int, color lipgloss.Color, titleStyle lipgloss.Style) string {
 	const minCardWidth = 20
 	if cardWidth < minCardWidth {
 		cardWidth = minCardWidth
@@ -31,7 +31,7 @@ func renderMetricCard(title, value, unit string, sparkValues []float64, cardWidt
 
 	valueStyle := lipgloss.NewStyle().Bold(true).Foreground(color)
 
-	titleLine := StyleDim.Render(title)
+	titleLine := titleStyle.Render(title)
 
 	var valueLine string
 	if unit != "" {
@@ -67,6 +67,11 @@ func renderMetricsRow(app *App) string {
 
 	label := StyleDim.Render("Cluster Performance")
 
+	// Compute threshold-based title styles for latency cards.
+	// Normal severity keeps the standard dim/muted style; warning/critical apply alert colors.
+	idxLatTitleStyle := latencyTitleStyle(indexLatSeverity(app.metrics.IndexLatency))
+	srchLatTitleStyle := latencyTitleStyle(searchLatSeverity(app.metrics.SearchLatency))
+
 	if app.width > 0 && app.width < 80 {
 		// 2x2 grid layout for narrow terminals.
 		// Each card renders at (cardWidth-2) chars wide (lipgloss Width includes padding,
@@ -76,12 +81,12 @@ func renderMetricsRow(app *App) string {
 			cardWidth = 20
 		}
 		top := lipgloss.JoinHorizontal(lipgloss.Top,
-			renderMetricCard("Indexing Rate", format.FormatRate(app.metrics.IndexingRate), "", app.history.Values("indexingRate"), cardWidth, colorGreen),
-			renderMetricCard("Search Rate", format.FormatRate(app.metrics.SearchRate), "", app.history.Values("searchRate"), cardWidth, colorCyan),
+			renderMetricCard("Indexing Rate", format.FormatRate(app.metrics.IndexingRate), "", app.history.Values("indexingRate"), cardWidth, colorGreen, StyleDim),
+			renderMetricCard("Search Rate", format.FormatRate(app.metrics.SearchRate), "", app.history.Values("searchRate"), cardWidth, colorCyan, StyleDim),
 		)
 		bottom := lipgloss.JoinHorizontal(lipgloss.Top,
-			renderMetricCard("Index Latency", format.FormatLatency(app.metrics.IndexLatency), "", app.history.Values("indexLatency"), cardWidth, colorYellow),
-			renderMetricCard("Search Latency", format.FormatLatency(app.metrics.SearchLatency), "", app.history.Values("searchLatency"), cardWidth, colorRed),
+			renderMetricCard("Index Latency", format.FormatLatency(app.metrics.IndexLatency), "", app.history.Values("indexLatency"), cardWidth, colorYellow, idxLatTitleStyle),
+			renderMetricCard("Search Latency", format.FormatLatency(app.metrics.SearchLatency), "", app.history.Values("searchLatency"), cardWidth, colorRed, srchLatTitleStyle),
 		)
 		return lipgloss.JoinVertical(lipgloss.Left, label, top, bottom)
 	}
@@ -95,10 +100,10 @@ func renderMetricsRow(app *App) string {
 	}
 
 	cards := []string{
-		renderMetricCard("Indexing Rate", format.FormatRate(app.metrics.IndexingRate), "", app.history.Values("indexingRate"), cardWidth, colorGreen),
-		renderMetricCard("Search Rate", format.FormatRate(app.metrics.SearchRate), "", app.history.Values("searchRate"), cardWidth, colorCyan),
-		renderMetricCard("Index Latency", format.FormatLatency(app.metrics.IndexLatency), "", app.history.Values("indexLatency"), cardWidth, colorYellow),
-		renderMetricCard("Search Latency", format.FormatLatency(app.metrics.SearchLatency), "", app.history.Values("searchLatency"), cardWidth, colorRed),
+		renderMetricCard("Indexing Rate", format.FormatRate(app.metrics.IndexingRate), "", app.history.Values("indexingRate"), cardWidth, colorGreen, StyleDim),
+		renderMetricCard("Search Rate", format.FormatRate(app.metrics.SearchRate), "", app.history.Values("searchRate"), cardWidth, colorCyan, StyleDim),
+		renderMetricCard("Index Latency", format.FormatLatency(app.metrics.IndexLatency), "", app.history.Values("indexLatency"), cardWidth, colorYellow, idxLatTitleStyle),
+		renderMetricCard("Search Latency", format.FormatLatency(app.metrics.SearchLatency), "", app.history.Values("searchLatency"), cardWidth, colorRed, srchLatTitleStyle),
 	}
 
 	row := lipgloss.JoinHorizontal(lipgloss.Top, cards...)
