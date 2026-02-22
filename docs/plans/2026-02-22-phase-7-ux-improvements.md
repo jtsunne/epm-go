@@ -260,13 +260,13 @@ Two UX issues found during testing of the completed Phase 1-6 implementation:
 **Files:**
 - Modify: `internal/tui/app.go`
 
-- [ ] update `computeTablePageSizes()`: change comment and constant from 3 to 4 overhead lines:
+- [x] update `computeTablePageSizes()`: change comment and constant from 3 to 4 overhead lines:
   ```go
   // Each rendered table section costs:
   //   1 title bar line  +  1 column-header row  +  1 separator line  +  1 detail line = 4 overhead lines.
   const tableOverhead = 4
   ```
-- [ ] run `go test ./internal/tui/...` — all pass
+- [x] run `go test ./internal/tui/...` — all pass
 
 ### Task 9: Final verification
 

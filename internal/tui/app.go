@@ -327,9 +327,9 @@ func (app *App) computeTablePageSizes() {
 		renderedHeight(renderFooter(app))
 
 	// Each rendered table section costs:
-	//   1 title bar line  +  1 column-header row  +  1 separator line = 3 overhead lines.
+	//   1 title bar line  +  1 column-header row  +  1 separator line  +  1 detail line = 4 overhead lines.
 	// The remaining lines are available for data rows (pageSize).
-	const tableOverhead = 3
+	const tableOverhead = 4
 
 	totalAvailable := app.height - fixedH
 
