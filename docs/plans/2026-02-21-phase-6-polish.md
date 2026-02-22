@@ -38,7 +38,7 @@ Final phase: production-quality error states, threshold-based visual alerts on o
 
 ### Task 1: Threshold helper functions
 
-- [ ] create `internal/tui/thresholds.go`:
+- [x] create `internal/tui/thresholds.go`:
   ```go
   type severity int
   const (
@@ -54,10 +54,10 @@ Final phase: production-quality error states, threshold-based visual alerts on o
   func indexLatSeverity(ms float64) severity   // >500 → warning
   func severityToStyle(s severity) lipgloss.Style
   ```
-- [ ] write `internal/tui/thresholds_test.go`:
+- [x] write `internal/tui/thresholds_test.go`:
   - table-driven tests for each function with boundary values (79/80, 84/85, 89/90)
   - verify exactly the right severity at each threshold
-- [ ] run tests — all pass
+- [x] run tests — all pass
 
 ### Task 2: Apply thresholds to overview cards
 
