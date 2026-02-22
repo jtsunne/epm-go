@@ -125,7 +125,13 @@ func main() {
 		}
 	}
 
+	// Mirror the fetchCmd context timeout: interval-500ms, capped at 10s.
+	// The 10s cap ensures the HTTP transport also releases promptly on quit,
+	// consistent with the context cancellation guarantee in tui.fetchTimeout.
 	requestTimeout := *interval - 500*time.Millisecond
+	if requestTimeout > 10*time.Second {
+		requestTimeout = 10 * time.Second
+	}
 
 	cfg := client.ClientConfig{
 		BaseURL:            baseURL,

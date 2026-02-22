@@ -88,14 +88,11 @@ func severityFg(s severity) lipgloss.Color {
 	}
 }
 
-// severityCardStyle returns the base StyleOverviewCard with a red rounded border
-// added for critical severity, otherwise returns the base style unchanged.
+// severityCardStyle returns the base StyleOverviewCard for any severity.
+// Visual alert differentiation uses severityFg (foreground color) and the
+// "!" suffix added by the caller — adding a border only for critical would
+// make critical cards larger than normal cards, breaking horizontal layout.
 func severityCardStyle(s severity) lipgloss.Style {
-	if s == severityCritical {
-		return StyleOverviewCard.
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(colorRed)
-	}
 	return StyleOverviewCard
 }
 
