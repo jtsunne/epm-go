@@ -57,9 +57,10 @@ internal/
     metrics.go               # 4 metric cards row renderer          (Phase 4)
     sparkline.go             # RenderSparkline(values, width) string (Phase 4)
     table.go                 # Generic tableModel: sort, paginate, search (Phase 5)
+    sort.go                  # sortIndexRows, sortNodeRows, filterIndexRows, filterNodeRows (Phase 5)
     indextable.go            # IndexTableModel (9 columns)           (Phase 5)
     nodetable.go             # NodeTableModel (7 columns)            (Phase 5)
-    thresholds.go            # Threshold severity functions for alert coloring (Phase 6, not yet implemented)
+    thresholds.go            # Threshold severity functions for alert coloring (Phase 6)
   format/
     format.go                # FormatBytes, FormatRate, FormatLatency, FormatNumber, FormatPercent
     format_test.go
@@ -198,7 +199,7 @@ make integration ES_URI=http://localhost:9200
 
 - **Bubble Tea MVU**: all state in `App` struct; mutations only in `Update()`; no goroutine-level shared state
 - **Snapshot rotation**: each `SnapshotMsg` moves `current → previous`, sets new `current`
-- **fetchCmd context**: timeout = `max(pollInterval - 500ms, 500ms)`; cancelled automatically on quit
+- **fetchCmd context**: timeout = `clamp(pollInterval - 500ms, 500ms, 10s)`; the 10s cap ensures fast process exit on quit regardless of poll interval
 - **Backoff**: `min(2^consecutiveFails * second, 60s)` starting at 2s
 - **`_cat` string fields**: `IndexInfo.Pri`, `Rep`, `DocsCount` are strings from the API — parse in `CalcIndexRows`, not in the client
 - **Never store credentials** beyond the lifetime of the process (in-memory `ClientConfig` only)

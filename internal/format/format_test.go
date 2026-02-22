@@ -115,27 +115,3 @@ func TestFormatPercent(t *testing.T) {
 	}
 }
 
-func TestParseHumanBytes(t *testing.T) {
-	tests := []struct {
-		name  string
-		input string
-		want  int64
-	}{
-		{"bytes", "512b", 512},
-		{"kb_exact", "1kb", 1024},
-		{"mb_exact", "100mb", 100 * 1024 * 1024},
-		{"gb_exact", "50gb", 50 * 1024 * 1024 * 1024},
-		{"gb_decimal", "20.4gb", int64(math.Round(20.4 * 1024 * 1024 * 1024))},
-		{"tb_decimal", "1.5tb", int64(math.Round(1.5 * 1024 * 1024 * 1024 * 1024))},
-		{"uppercase", "10GB", 10 * 1024 * 1024 * 1024},
-		{"mixed_case", "5Mb", 5 * 1024 * 1024},
-		{"empty", "", 0},
-		{"invalid", "notanumber", 0},
-		{"plain_int", "1024", 1024},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, ParseHumanBytes(tc.input))
-		})
-	}
-}

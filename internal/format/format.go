@@ -2,7 +2,6 @@ package format
 
 import (
 	"fmt"
-	"math"
 	"strconv"
 	"strings"
 )
@@ -65,45 +64,6 @@ func FormatNumber(n int64) string {
 // Example: 34.5 → "34.5%".
 func FormatPercent(p float64) string {
 	return fmt.Sprintf("%.1f%%", p)
-}
-
-// ParseHumanBytes parses a human-readable byte string (e.g. "20.4gb", "100mb", "1.5tb")
-// into the equivalent number of bytes. Returns 0 on parse failure.
-// Supported suffixes (case-insensitive): b, kb, mb, gb, tb.
-func ParseHumanBytes(s string) int64 {
-	s = strings.TrimSpace(strings.ToLower(s))
-	if s == "" {
-		return 0
-	}
-
-	suffixes := []struct {
-		suffix string
-		mult   float64
-	}{
-		{"tb", 1024 * 1024 * 1024 * 1024},
-		{"gb", 1024 * 1024 * 1024},
-		{"mb", 1024 * 1024},
-		{"kb", 1024},
-		{"b", 1},
-	}
-
-	for _, entry := range suffixes {
-		if strings.HasSuffix(s, entry.suffix) {
-			numStr := strings.TrimSuffix(s, entry.suffix)
-			numStr = strings.TrimSpace(numStr)
-			val, err := strconv.ParseFloat(numStr, 64)
-			if err != nil {
-				return 0
-			}
-			return int64(math.Round(val * entry.mult))
-		}
-	}
-	// No suffix — try plain integer
-	val, err := strconv.ParseInt(s, 10, 64)
-	if err != nil {
-		return 0
-	}
-	return val
 }
 
 // formatCommaFloat formats a float with comma-separated thousands and one decimal place.

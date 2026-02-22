@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/charmbracelet/lipgloss"
 	ltable "github.com/charmbracelet/lipgloss/table"
@@ -72,6 +73,14 @@ func (m *NodeTableModel) renderTable(app *App) string {
 	pc := pageCount(len(m.displayRows), m.pageSize)
 	hdr := m.renderHeader("Node Statistics", m.page+1, pc, m.searching, m.search)
 
+	// Compute proportional column widths for the current terminal width.
+	// Padding headers to these widths guides the table's natural column layout
+	// toward our preferred proportions rather than the library's even distribution.
+	var colWidths []int
+	if app != nil && app.width > 0 {
+		colWidths = columnWidths(app.width, m.columns)
+	}
+
 	// Build column header strings, appending a sort direction arrow to the
 	// active sort column.
 	headers := make([]string, len(m.columns))
@@ -84,6 +93,16 @@ func (m *NodeTableModel) renderTable(app *App) string {
 			headers[i] = c.Title + arrow
 		} else {
 			headers[i] = c.Title
+		}
+	}
+
+	// Pad headers to target column widths so the table allocates proportional space.
+	if len(colWidths) == len(m.columns) {
+		for i, h := range headers {
+			runes := []rune(h)
+			if len(runes) < colWidths[i] {
+				headers[i] = h + strings.Repeat(" ", colWidths[i]-len(runes))
+			}
 		}
 	}
 
@@ -203,9 +222,10 @@ func nodeCellValue(r model.NodeRow, col int) string {
 func abbreviateRole(role string) string {
 	// ES reports roles as a concatenation of abbreviation letters, e.g. "dimr".
 	// Return it directly if it already looks abbreviated (≤6 chars).
-	if len(role) <= 6 {
+	runes := []rune(role)
+	if len(runes) <= 6 {
 		return role
 	}
 	// Truncate long role strings to fit the column.
-	return role[:6]
+	return string(runes[:6])
 }
