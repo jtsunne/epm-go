@@ -163,9 +163,9 @@ Add the two sortable, paginated, searchable data tables: Index Statistics (9 col
 
 ### Task 8: Final verification
 
-- [ ] run `go test ./...` — all pass
-- [ ] run `go vet ./...` — no issues
-- [ ] launch against live cluster:
+- [x] run `go test ./...` — all pass
+- [x] run `go vet ./...` — no issues
+- [x] launch against live cluster:
   - index table shows correct data for all indices
   - press `5` → sort by indexing rate descending
   - press `1` → sort by name ascending
