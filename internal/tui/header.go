@@ -195,25 +195,49 @@ func renderHeader(app *App) string {
 
 	// Build row: left + padding + center + padding + right, filling innerWidth.
 	// StyleHeader has Padding(0, 1) so inner content width = total width - 2.
+	// Progressive truncation prevents overflow: truncate left first, then right,
+	// then hard-truncate center as last resort.
+	const minGap = 1 // minimum spaces between header segments
 	innerWidth := width - 2
-	leftVW := lipgloss.Width(left)
 	centerVW := lipgloss.Width(center)
 	rightVW := lipgloss.Width(right)
 
-	spacing := innerWidth - leftVW - centerVW - rightVW
-	if spacing < 0 {
-		spacing = 0
+	// Step 1: truncate left (plain text: cluster name or URL) to fit alongside
+	// center + right with minGap between each pair of segments.
+	availLeft := innerWidth - centerVW - rightVW - 2*minGap
+	left = truncateName(left, availLeft)
+	leftVW := lipgloss.Width(left)
+
+	var row string
+	if availLeft >= 0 {
+		// All three segments fit (left may be truncated or empty).
+		spacing := innerWidth - leftVW - centerVW - rightVW
+		if spacing < 0 {
+			spacing = 0
+		}
+		leftSpacing := spacing / 2
+		rightSpacing := spacing - leftSpacing
+		row = left +
+			strings.Repeat(" ", leftSpacing) +
+			center +
+			strings.Repeat(" ", rightSpacing) +
+			right
+	} else if centerVW+rightVW+minGap <= innerWidth {
+		// Step 2: left dropped; truncate right via MaxWidth to fit alongside center.
+		availRight := innerWidth - centerVW - minGap
+		right = lipgloss.NewStyle().MaxWidth(availRight).Render(right)
+		rightVW = lipgloss.Width(right)
+		spacing := innerWidth - centerVW - rightVW
+		if spacing < 0 {
+			spacing = 0
+		}
+		row = center + strings.Repeat(" ", spacing) + right
+	} else {
+		// Step 3: terminal too narrow for center + right; show center only.
+		row = lipgloss.NewStyle().MaxWidth(innerWidth).Render(center)
 	}
-	leftSpacing := spacing / 2
-	rightSpacing := spacing - leftSpacing
 
-	row := left +
-		strings.Repeat(" ", leftSpacing) +
-		center +
-		strings.Repeat(" ", rightSpacing) +
-		right
-
-	return StyleHeader.Width(width - 2).Render(row)
+	return StyleHeader.Width(width).Render(row)
 }
 
 // formatDuration formats a poll interval as a compact string, e.g. "10s", "1m", or "1m30s".

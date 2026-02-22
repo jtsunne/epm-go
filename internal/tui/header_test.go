@@ -2,9 +2,11 @@ package tui
 
 import (
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -152,6 +154,62 @@ func TestSanitize(t *testing.T) {
 			assert.Equal(t, tc.want, sanitize(tc.input))
 		})
 	}
+}
+
+// headerLineCount returns the number of lines in a rendered header string
+// (ANSI-stripped), treating a single-line result as count=1.
+func headerLineCount(rendered string) int {
+	stripped := stripANSI(rendered)
+	return strings.Count(stripped, "\n") + 1
+}
+
+func TestRenderHeader_LongClusterNameWidth60(t *testing.T) {
+	app := NewApp(nil, 10*time.Second)
+	app.width = 60
+	app.connState = stateConnected
+	app.lastUpdated = time.Date(2024, 1, 1, 14, 32, 5, 0, time.UTC)
+
+	snap := makeFixtureSnapshot()
+	snap.Health.ClusterName = "my-very-very-long-cluster-name-that-would-normally-overflow"
+	snap.Health.Status = "green"
+	app.current = snap
+
+	result := renderHeader(app)
+	assert.Equal(t, 1, headerLineCount(result), "header must be single line at width=60 with long cluster name")
+	assert.LessOrEqual(t, lipgloss.Width(result), 60, "rendered header must not exceed terminal width")
+}
+
+func TestRenderHeader_VeryNarrowWidth30(t *testing.T) {
+	app := NewApp(nil, 10*time.Second)
+	app.width = 30
+	app.connState = stateConnected
+	app.lastUpdated = time.Date(2024, 1, 1, 14, 32, 5, 0, time.UTC)
+
+	snap := makeFixtureSnapshot()
+	snap.Health.ClusterName = "production-cluster"
+	snap.Health.Status = "green"
+	app.current = snap
+
+	result := renderHeader(app)
+	assert.Equal(t, 1, headerLineCount(result), "header must be single line at width=30")
+	assert.LessOrEqual(t, lipgloss.Width(result), 30, "rendered header must not exceed terminal width")
+}
+
+func TestRenderHeader_DisconnectedWidth60(t *testing.T) {
+	app := NewApp(nil, 10*time.Second)
+	app.width = 60
+	app.connState = stateDisconnected
+	app.lastError = errors.New("connection refused")
+	app.nextRetryAt = time.Now().Add(15 * time.Second)
+
+	snap := makeFixtureSnapshot()
+	snap.Health.ClusterName = "prod-cluster"
+	snap.Health.Status = "green"
+	app.current = snap
+
+	result := renderHeader(app)
+	assert.Equal(t, 1, headerLineCount(result), "disconnected header must be single line at width=60")
+	assert.LessOrEqual(t, lipgloss.Width(result), 60, "disconnected header must not exceed terminal width")
 }
 
 func TestFormatDuration(t *testing.T) {
