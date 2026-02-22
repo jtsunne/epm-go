@@ -60,12 +60,12 @@
 - [x] Проверить что CI workflow запустился и прошёл в GitHub Actions
 
 ### Task 7: Верификация
-- [ ] `goreleaser check` — валидация конфига
-- [ ] `goreleaser release --snapshot --clean` — локальный dry-run
-- [ ] Проверить что в `dist/` есть 4 архива: `epm_*_darwin_amd64`, `epm_*_darwin_arm64`, `epm_*_linux_amd64`, `epm_*_linux_arm64`
-- [ ] Каждый архив содержит: `epm` (бинарник), `LICENSE`, `README.md`
-- [ ] Выполнить `make test` — финальная проверка
-- [ ] Выполнить `make lint` — все чисто
+- [x] `goreleaser check` — валидация конфига
+- [x] `goreleaser release --snapshot --clean` — локальный dry-run
+- [x] Проверить что в `dist/` есть 4 архива: `epm_*_darwin_amd64`, `epm_*_darwin_arm64`, `epm_*_linux_amd64`, `epm_*_linux_arm64`
+- [x] Каждый архив содержит: `epm` (бинарник), `LICENSE`, `README.md`
+- [x] Выполнить `make test` — финальная проверка
+- [x] Выполнить `make lint` — все чисто
 
 ## Technical Details
 
