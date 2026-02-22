@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/dm/epm-go/internal/client"
-	"github.com/dm/epm-go/internal/model"
+	"github.com/jtsunne/epm-go/internal/client"
+	"github.com/jtsunne/epm-go/internal/model"
 )
 
 // CalcNodeRows computes per-node throughput and latency metrics from two

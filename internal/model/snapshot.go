@@ -3,7 +3,7 @@ package model
 import (
 	"time"
 
-	"github.com/dm/epm-go/internal/client"
+	"github.com/jtsunne/epm-go/internal/client"
 )
 
 // Snapshot holds the raw results of a single poll cycle across all 5 ES endpoints.

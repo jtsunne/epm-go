@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/dm/epm-go/internal/model"
+	"github.com/jtsunne/epm-go/internal/model"
 )
 
 func TestFormatBytes(t *testing.T) {

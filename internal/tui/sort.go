@@ -4,7 +4,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/dm/epm-go/internal/model"
+	"github.com/jtsunne/epm-go/internal/model"
 )
 
 // sortIndexRows returns a sorted copy of rows.

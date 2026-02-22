@@ -27,19 +27,19 @@ Terminal dashboard for Elasticsearch cluster performance monitoring. A standalon
 **Go install (recommended):**
 
 ```bash
-go install github.com/dm/epm-go/cmd/epm@latest
+go install github.com/jtsunne/epm-go/cmd/epm@latest
 ```
 
 **Build from source:**
 
 ```bash
-git clone https://github.com/dm/epm-go
+git clone https://github.com/jtsunne/epm-go
 cd epm-go
 make build
 # binary at bin/epm
 ```
 
-**Download binary:** pre-built binaries for macOS and Linux will be available on the [Releases](https://github.com/dm/epm-go/releases) page.
+**Download binary:** pre-built binaries for macOS and Linux will be available on the [Releases](https://github.com/jtsunne/epm-go/releases) page.
 
 ## Usage
 

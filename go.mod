@@ -1,4 +1,4 @@
-module github.com/dm/epm-go
+module github.com/jtsunne/epm-go
 
 go 1.25.0
 

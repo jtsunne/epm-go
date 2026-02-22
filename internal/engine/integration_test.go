@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/dm/epm-go/internal/client"
-	"github.com/dm/epm-go/internal/engine"
+	"github.com/jtsunne/epm-go/internal/client"
+	"github.com/jtsunne/epm-go/internal/engine"
 )
 
 // esClient creates a DefaultClient from $ES_URI or skips the test if unset.

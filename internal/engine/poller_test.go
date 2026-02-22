@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/dm/epm-go/internal/client"
+	"github.com/jtsunne/epm-go/internal/client"
 )
 
 func TestFetchAll_AllSuccess(t *testing.T) {

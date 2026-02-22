@@ -7,8 +7,8 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/dm/epm-go/internal/client"
-	"github.com/dm/epm-go/internal/model"
+	"github.com/jtsunne/epm-go/internal/client"
+	"github.com/jtsunne/epm-go/internal/model"
 )
 
 // FetchAll calls all 5 Elasticsearch endpoints concurrently.

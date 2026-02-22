@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/dm/epm-go/internal/client"
+	"github.com/jtsunne/epm-go/internal/client"
 )
 
 // MockESClient implements client.ESClient for testing.

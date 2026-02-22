@@ -155,7 +155,7 @@ Final phase: production-quality error states, threshold-based visual alerts on o
 - [x] create `README.md` at project root:
   - Project title + brief description ("Terminal dashboard for Elasticsearch cluster performance monitoring")
   - Screenshot/demo section (ASCII art placeholder or actual terminal screenshot)
-  - **Installation**: `go install github.com/dm/epm-go/cmd/epm@latest`, or Homebrew (future), or download binary
+  - **Installation**: `go install github.com/jtsunne/epm-go/cmd/epm@latest`, or Homebrew (future), or download binary
   - **Usage**: `epm <uri> [flags]` with examples for all scenarios
   - **Keyboard shortcuts**: table of all keybindings (from `keys.go`)
   - **Metrics explained**: what each metric means (indexing rate, search rate, latency)

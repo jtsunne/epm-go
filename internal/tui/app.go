@@ -9,9 +9,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/dm/epm-go/internal/client"
-	"github.com/dm/epm-go/internal/engine"
-	"github.com/dm/epm-go/internal/model"
+	"github.com/jtsunne/epm-go/internal/client"
+	"github.com/jtsunne/epm-go/internal/engine"
+	"github.com/jtsunne/epm-go/internal/model"
 )
 
 type connState int

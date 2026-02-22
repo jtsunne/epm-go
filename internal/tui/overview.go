@@ -6,7 +6,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/dm/epm-go/internal/format"
+	"github.com/jtsunne/epm-go/internal/format"
 )
 
 // maxCardHeight is the tallest card content in wide mode.

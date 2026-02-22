@@ -33,7 +33,7 @@ The ES client is the most critical component: everything else depends on it bein
 
 ### Task 1: Go module + project structure
 
-- [x] run `go mod init github.com/dm/epm-go` in `/Users/dm/dev/epm-go/`
+- [x] run `go mod init github.com/jtsunne/epm-go` in `/Users/dm/dev/epm-go/`
 - [x] create directory tree: `cmd/epm/`, `internal/client/`, `internal/model/`, `internal/engine/`, `internal/tui/`, `internal/format/`, `docs/plans/`
 - [x] create `Makefile` with targets: `build`, `test`, `lint`, `run`
   - `build`: `go build -o bin/epm ./cmd/epm`

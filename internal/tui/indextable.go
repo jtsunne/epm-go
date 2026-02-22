@@ -8,8 +8,8 @@ import (
 	ltable "github.com/charmbracelet/lipgloss/table"
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/dm/epm-go/internal/format"
-	"github.com/dm/epm-go/internal/model"
+	"github.com/jtsunne/epm-go/internal/format"
+	"github.com/jtsunne/epm-go/internal/model"
 )
 
 // IndexTableModel is a sortable, paginated, searchable table of index statistics.

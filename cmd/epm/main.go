@@ -11,8 +11,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/dm/epm-go/internal/client"
-	"github.com/dm/epm-go/internal/tui"
+	"github.com/jtsunne/epm-go/internal/client"
+	"github.com/jtsunne/epm-go/internal/tui"
 )
 
 // version is set at build time via -ldflags="-X main.version=..."

@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/dm/epm-go/internal/model"
+	"github.com/jtsunne/epm-go/internal/model"
 )
 
 // makeFixtureSnapshot returns a minimal Snapshot for testing.

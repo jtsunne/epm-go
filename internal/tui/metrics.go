@@ -3,7 +3,7 @@ package tui
 import (
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/dm/epm-go/internal/format"
+	"github.com/jtsunne/epm-go/internal/format"
 )
 
 // renderMetricCard renders a single metric card with title, value, and sparkline.
