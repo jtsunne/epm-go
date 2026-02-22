@@ -389,6 +389,15 @@ func CalcIndexRows(prev, curr *model.Snapshot, elapsed time.Duration) []model.In
 					prevSrchOps = srchShard.Search.QueryTotal
 					prevSrchTime = srchShard.Search.QueryTimeInMillis
 				}
+			} else {
+				// prev exists but its IndexStats.Indices is nil (e.g. ES returned
+				// "indices": null): no valid previous baseline, mark unavailable.
+				row.IndexingRate = model.MetricNotAvailable
+				row.SearchRate = model.MetricNotAvailable
+				row.IndexLatency = model.MetricNotAvailable
+				row.SearchLatency = model.MetricNotAvailable
+				rows = append(rows, row)
+				continue
 			}
 
 			idxOpsDelta := maxFloat64(0, float64(currIdxOps-prevIdxOps))
