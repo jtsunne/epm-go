@@ -32,9 +32,9 @@ Add the two sortable, paginated, searchable data tables: Index Statistics (9 col
 
 ### Task 1: Generic table model
 
-- [ ] add `github.com/charmbracelet/lipgloss` table import (already added in Phase 3, but verify `lipgloss/table` subpackage)
-- [ ] `go get github.com/charmbracelet/bubbles` (verify textinput available)
-- [ ] create `internal/tui/table.go` with `tableModel` struct:
+- [x] add `github.com/charmbracelet/lipgloss` table import (already added in Phase 3, but verify `lipgloss/table` subpackage)
+- [x] `go get github.com/charmbracelet/bubbles` (verify textinput available)
+- [x] create `internal/tui/table.go` with `tableModel` struct:
   ```go
   type tableModel struct {
       columns   []columnDef
@@ -55,7 +55,7 @@ Add the two sortable, paginated, searchable data tables: Index Statistics (9 col
       Key      string  // sort key
   }
   ```
-- [ ] implement `tableModel.Update(msg tea.Msg) (tableModel, tea.Cmd)`:
+- [x] implement `tableModel.Update(msg tea.Msg) (tableModel, tea.Cmd)`:
   - digit keys `1`-`9` → set sort column; if same column, toggle direction
   - `←`/`h` → previous page
   - `→`/`l` → next page
@@ -63,8 +63,8 @@ Add the two sortable, paginated, searchable data tables: Index Statistics (9 col
   - `esc` → exit search, clear search term if empty
   - `enter` in search → apply filter, exit input
   - while `searching`: delegate key events to `textinput.Update()`
-- [ ] implement `pageCount(totalRows, pageSize int) int` helper
-- [ ] implement `currentPageRows(allRows []int, page, pageSize int) []int` — returns slice of indices
+- [x] implement `pageCount(totalRows, pageSize int) int` helper
+- [x] implement `currentPageRows(allRows []int, page, pageSize int) []int` — returns slice of indices
 
 ### Task 2: Sorting and filtering helpers
 
