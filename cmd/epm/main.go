@@ -154,20 +154,14 @@ func main() {
 	)
 
 	// Warn when credentials are sent over unencrypted HTTP.
-	if finalUser != "" || finalPass != "" {
-		u, _ := url.Parse(baseURL)
-		if u != nil && u.Scheme == "http" {
-			fmt.Fprintln(os.Stderr, "warning: credentials will be sent over unencrypted HTTP; use https:// for production clusters")
-		}
+	if (finalUser != "" || finalPass != "") && strings.HasPrefix(baseURL, "http://") {
+		fmt.Fprintln(os.Stderr, "warning: credentials will be sent over unencrypted HTTP; use https:// for production clusters")
 	}
 
 	// Hint: connecting to https:// without --insecure may fail if the cluster
 	// uses a self-signed certificate. Print once before the TUI starts.
-	{
-		u, _ := url.Parse(baseURL)
-		if u != nil && u.Scheme == "https" && !*insecure {
-			fmt.Fprintln(os.Stderr, "note: connecting to https:// — if the cluster uses a self-signed certificate, add --insecure")
-		}
+	if strings.HasPrefix(baseURL, "https://") && !*insecure {
+		fmt.Fprintln(os.Stderr, "note: connecting to https:// — if the cluster uses a self-signed certificate, add --insecure")
 	}
 
 	// Mirror the fetchCmd context timeout: interval-500ms, capped at 10s.

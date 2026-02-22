@@ -113,14 +113,6 @@ func TestParseESURI(t *testing.T) {
 			uri:      "http://localhost:65535",
 			wantBase: "http://localhost:65535",
 		},
-		// Plan-specified edge cases
-		{
-			name:     "plain http no credentials",
-			uri:      "http://localhost:9200",
-			wantBase: "http://localhost:9200",
-			wantUser: "",
-			wantPass: "",
-		},
 		{
 			name:     "https with credentials and fqdn",
 			uri:      "https://elastic:changeme@es.prod.example.com:9200",
@@ -253,6 +245,23 @@ func TestCredentialResolution(t *testing.T) {
 			envUser: "envonly",
 			wantUser: "envonly",
 			wantPass: "",
+		},
+		{
+			// Key acceptance criteria example: ES_PASSWORD=... epm --user root https://host:9200
+			name:     "flag user + env pass (cross-source mix)",
+			envPass:  "envpass##",
+			flagUser: "root",
+			wantUser: "root",
+			wantPass: "envpass##",
+		},
+		{
+			// envPass overrides uriPass even when envUser is empty
+			name:    "env pass only overrides URI pass, URI user retained",
+			uriUser: "uriuser",
+			uriPass: "uripass",
+			envPass: "envpass",
+			wantUser: "uriuser",
+			wantPass: "envpass",
 		},
 	}
 

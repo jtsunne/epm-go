@@ -56,6 +56,16 @@ epm http://localhost:9200
 # Remote cluster with basic auth
 epm https://elastic:changeme@es.prod.example.com:9200
 
+# Passwords with special characters (#, ?, %) — use flags to bypass URL parsing
+epm --user root --password "op0107##" https://host:9200
+epm --insecure --user root --password "s3cr#t!" https://prod.example.com:9200
+
+# Credentials via environment variables
+ES_USER=elastic ES_PASSWORD=changeme epm http://localhost:9200
+ES_PASSWORD="op0107##" epm --user root https://host:9200
+
+# Credential priority: --user/--password flags > ES_USER/ES_PASSWORD env vars > URI-embedded
+
 # Custom poll interval (5s–300s)
 epm --interval 30s http://localhost:9200
 
@@ -72,7 +82,16 @@ epm --version
 |------|---------|-------------|
 | `--interval` | `10s` | Poll interval (5s–300s) |
 | `--insecure` | false | Skip TLS certificate verification |
+| `--user` | — | Elasticsearch username (overrides URI credentials and `ES_USER`) |
+| `--password` | — | Elasticsearch password (overrides URI credentials and `ES_PASSWORD`) |
 | `--version` | — | Print version and exit |
+
+### Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `ES_USER` | Elasticsearch username. Overridden by `--user` flag. |
+| `ES_PASSWORD` | Elasticsearch password. Overridden by `--password` flag. |
 
 ## Keyboard Shortcuts
 
@@ -157,7 +176,7 @@ internal/engine/       parallel fetch and metric calculation
 internal/model/        snapshot, metrics, and sparkline history
 internal/tui/          Bubble Tea model, renderers, and styles
 internal/format/       number/byte/latency formatters
-docs/plans/            implementation plans (phases 1–6)
+docs/plans/completed/  implementation plans (phases 1–7)
 ```
 
 ### Contributing
