@@ -180,7 +180,7 @@ func (m *IndexTableModel) renderTable(app *App) string {
 	// Detail line: show the full untruncated name of the selected row when focused.
 	var detailLine string
 	if m.focused && len(pageIdx) > 0 && m.cursor < len(pageIdx) {
-		detailLine = StyleDim.Render("  " + m.displayRows[pageIdx[m.cursor]].Name)
+		detailLine = StyleDim.Render("  " + sanitize(m.displayRows[pageIdx[m.cursor]].Name))
 	}
 	if detailLine != "" {
 		return lipgloss.JoinVertical(lipgloss.Left, hdr, t.String(), detailLine)

@@ -147,11 +147,15 @@ func CalcClusterMetrics(prev, curr *model.Snapshot, elapsed time.Duration) model
 	)
 
 	// Aggregate indexing (primaries) and search (total) across indices present in
-	// curr. For each curr index we look up the matching prev entry by name so that
-	// indices deleted between snapshots do not inflate the prev aggregate and produce
-	// a spurious negative delta. Mirrors the primaries-vs-total rule from
-	// IndexTable.tsx lines 73-76.
+	// both curr and prev. Indices absent from prev are skipped entirely so their
+	// cumulative counters are not treated as interval deltas, preventing spurious
+	// rate/latency spikes when a new index appears between polls.
 	for name, entry := range curr.IndexStats.Indices {
+		prevEntry, ok := prev.IndexStats.Indices[name]
+		if !ok {
+			continue // new index — no baseline, cannot compute a valid delta
+		}
+
 		idxShard := entry.Primaries
 		if idxShard == nil {
 			idxShard = entry.Total
@@ -169,23 +173,21 @@ func CalcClusterMetrics(prev, curr *model.Snapshot, elapsed time.Duration) model
 			currSearchTime += srchShard.Search.QueryTimeInMillis
 		}
 
-		if prevEntry, ok := prev.IndexStats.Indices[name]; ok {
-			pidxShard := prevEntry.Primaries
-			if pidxShard == nil {
-				pidxShard = prevEntry.Total
-			}
-			if pidxShard != nil && pidxShard.Indexing != nil {
-				prevIndexOps += pidxShard.Indexing.IndexTotal
-				prevIndexTime += pidxShard.Indexing.IndexTimeInMillis
-			}
-			psrchShard := prevEntry.Total
-			if psrchShard == nil {
-				psrchShard = prevEntry.Primaries
-			}
-			if psrchShard != nil && psrchShard.Search != nil {
-				prevSearchOps += psrchShard.Search.QueryTotal
-				prevSearchTime += psrchShard.Search.QueryTimeInMillis
-			}
+		pidxShard := prevEntry.Primaries
+		if pidxShard == nil {
+			pidxShard = prevEntry.Total
+		}
+		if pidxShard != nil && pidxShard.Indexing != nil {
+			prevIndexOps += pidxShard.Indexing.IndexTotal
+			prevIndexTime += pidxShard.Indexing.IndexTimeInMillis
+		}
+		psrchShard := prevEntry.Total
+		if psrchShard == nil {
+			psrchShard = prevEntry.Primaries
+		}
+		if psrchShard != nil && psrchShard.Search != nil {
+			prevSearchOps += psrchShard.Search.QueryTotal
+			prevSearchTime += psrchShard.Search.QueryTimeInMillis
 		}
 	}
 
@@ -359,24 +361,33 @@ func CalcIndexRows(prev, curr *model.Snapshot, elapsed time.Duration) []model.In
 			}
 
 			if prevStats != nil {
-				if entry, ok := prevStats[name]; ok {
-					idxShard := entry.Primaries
-					if idxShard == nil {
-						idxShard = entry.Total
-					}
-					if idxShard != nil && idxShard.Indexing != nil {
-						prevIdxOps = idxShard.Indexing.IndexTotal
-						prevIdxTime = idxShard.Indexing.IndexTimeInMillis
-					}
+				prevEntry, prevOk := prevStats[name]
+				if !prevOk {
+					// New index: no previous baseline, cannot compute a valid delta.
+					row.IndexingRate = model.MetricNotAvailable
+					row.SearchRate = model.MetricNotAvailable
+					row.IndexLatency = model.MetricNotAvailable
+					row.SearchLatency = model.MetricNotAvailable
+					rows = append(rows, row)
+					continue
+				}
 
-					srchShard := entry.Total
-					if srchShard == nil {
-						srchShard = entry.Primaries
-					}
-					if srchShard != nil && srchShard.Search != nil {
-						prevSrchOps = srchShard.Search.QueryTotal
-						prevSrchTime = srchShard.Search.QueryTimeInMillis
-					}
+				idxShard := prevEntry.Primaries
+				if idxShard == nil {
+					idxShard = prevEntry.Total
+				}
+				if idxShard != nil && idxShard.Indexing != nil {
+					prevIdxOps = idxShard.Indexing.IndexTotal
+					prevIdxTime = idxShard.Indexing.IndexTimeInMillis
+				}
+
+				srchShard := prevEntry.Total
+				if srchShard == nil {
+					srchShard = prevEntry.Primaries
+				}
+				if srchShard != nil && srchShard.Search != nil {
+					prevSrchOps = srchShard.Search.QueryTotal
+					prevSrchTime = srchShard.Search.QueryTimeInMillis
 				}
 			}
 

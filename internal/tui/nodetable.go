@@ -181,7 +181,7 @@ func (m *NodeTableModel) renderTable(app *App) string {
 	var detailLine string
 	if m.focused && len(pageIdx) > 0 && m.cursor < len(pageIdx) {
 		r := m.displayRows[pageIdx[m.cursor]]
-		detailLine = StyleDim.Render("  " + r.Name + "  " + r.Role + "  " + r.IP)
+		detailLine = StyleDim.Render("  " + sanitize(r.Name) + "  " + sanitize(r.Role) + "  " + sanitize(r.IP))
 	}
 	if detailLine != "" {
 		return lipgloss.JoinVertical(lipgloss.Left, hdr, t.String(), detailLine)

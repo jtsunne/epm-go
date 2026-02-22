@@ -110,18 +110,14 @@ func (t tableModel) Update(msg tea.Msg) (tableModel, tea.Cmd) {
 		default:
 			// Digit keys 1-9 → set sort column.
 			col := digitToCol(msg.String())
-			if col >= 0 {
+			if col >= 0 && col < len(t.columns) {
 				if col == t.sortCol {
 					t.sortDesc = !t.sortDesc
 				} else {
 					t.sortCol = col
 					// Use per-column default direction: descending for numeric
 					// columns, ascending for text columns (name, role, IP).
-					if col < len(t.columns) {
-						t.sortDesc = t.columns[col].SortDesc
-					} else {
-						t.sortDesc = true
-					}
+					t.sortDesc = t.columns[col].SortDesc
 				}
 				t.page = 0
 				t.cursor = 0
