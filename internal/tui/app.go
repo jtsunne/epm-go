@@ -99,10 +99,10 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		app.indexTable.SetData(msg.IndexRows)
 		app.nodeTable.SetData(msg.NodeRows)
 		app.computeTablePageSizes()
-		// Only push to history when we have a previous snapshot — the first
-		// poll has no delta, so all rate/latency metrics are MetricNotAvailable
-		// (-1.0) and must not be pushed into the sparkline history.
-		if app.previous != nil {
+		// Only push to history when we have a previous snapshot with valid deltas.
+		// Guard against MetricNotAvailable (-1.0) which is returned when prev is nil
+		// or elapsed < 1s (two polls completed too quickly).
+		if app.previous != nil && msg.Metrics.IndexingRate != model.MetricNotAvailable {
 			app.history.Push(model.SparklinePoint{
 				Timestamp:     msg.Snapshot.FetchedAt,
 				IndexingRate:  msg.Metrics.IndexingRate,
@@ -358,9 +358,11 @@ func (app *App) computeTablePageSizes() {
 		app.nodeTable.pageSize = nodeRows
 	}
 
-	// Clamp pages so they stay in range after a resize.
+	// Clamp pages and cursors so they stay in range after a resize.
 	app.indexTable.clampPage(len(app.indexTable.displayRows))
 	app.nodeTable.clampPage(len(app.nodeTable.displayRows))
+	app.indexTable.clampCursor(app.indexTable.currentPageRowCount(len(app.indexTable.displayRows)))
+	app.nodeTable.clampCursor(app.nodeTable.currentPageRowCount(len(app.nodeTable.displayRows)))
 }
 
 // LastError returns the most recent fetch error, or nil if the last fetch
