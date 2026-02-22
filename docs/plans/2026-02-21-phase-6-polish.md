@@ -77,14 +77,14 @@ Final phase: production-quality error states, threshold-based visual alerts on o
 
 ### Task 4: Improved error display
 
-- [ ] update `renderHeader()` in `header.go` for disconnected state:
+- [x] update `renderHeader()` in `header.go` for disconnected state:
   - show error type distinctly: "Connection refused", "Authentication failed (401)", "Timeout", "TLS error"
   - extract error classification in `classifyError(err error) string`
   - if err contains "certificate" or "tls" → add SSL hint: "Try --insecure for self-signed certs"
   - show countdown to next retry: "Retrying in Ns... (r to retry now)"
   - implement countdown via `time.Until(app.nextRetryAt)` stored in App struct
-- [ ] add `nextRetryAt time.Time` to `App` struct, set it when scheduling backoff retry
-- [ ] update `App.Update()` to send a 1-second `tea.Tick` when disconnected (to update countdown display)
+- [x] add `nextRetryAt time.Time` to `App` struct, set it when scheduling backoff retry
+- [x] update `App.Update()` to send a 1-second `tea.Tick` when disconnected (to update countdown display)
 
 ### Task 5: Terminal resize handling
 

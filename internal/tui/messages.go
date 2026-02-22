@@ -24,3 +24,8 @@ type TickMsg struct {
 	Time time.Time
 	Gen  int
 }
+
+// CountdownTickMsg triggers a 1-second display refresh while disconnected so
+// the "Retrying in Ns..." countdown in the header stays current.
+// Gen must match App.countdownGen; stale ticks are dropped.
+type CountdownTickMsg struct{ Gen int }

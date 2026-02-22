@@ -72,6 +72,62 @@ func sanitize(s string) string {
 	return out.String()
 }
 
+// classifyError returns a short, human-readable description of the connection
+// error. Falls back to a truncated raw error string for unrecognised errors.
+func classifyError(err error) string {
+	if err == nil {
+		return ""
+	}
+	msg := strings.ToLower(err.Error())
+	switch {
+	case strings.Contains(msg, "connection refused"):
+		return "Connection refused"
+	case strings.Contains(msg, "401") || strings.Contains(msg, "unauthorized"):
+		return "Authentication failed (401)"
+	case strings.Contains(msg, "403") || strings.Contains(msg, "forbidden"):
+		return "Authentication failed (403)"
+	case strings.Contains(msg, "context deadline exceeded") || strings.Contains(msg, "timeout"):
+		return "Timeout"
+	case strings.Contains(msg, "certificate") || strings.Contains(msg, "tls") || strings.Contains(msg, "x509"):
+		return "TLS error"
+	default:
+		raw := sanitize(err.Error())
+		if len([]rune(raw)) > 40 {
+			return string([]rune(raw)[:40]) + "..."
+		}
+		return raw
+	}
+}
+
+// isTLSError reports whether err looks like a TLS/certificate error, in which
+// case the UI should show a hint about the --insecure flag.
+func isTLSError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "certificate") ||
+		strings.Contains(msg, "tls") ||
+		strings.Contains(msg, "x509")
+}
+
+// retryCountdown returns the right-side text shown in the header when
+// disconnected: a live countdown to the next automatic retry attempt.
+func retryCountdown(nextRetryAt time.Time) string {
+	if nextRetryAt.IsZero() {
+		return "Press r to retry"
+	}
+	remaining := time.Until(nextRetryAt)
+	if remaining <= 0 {
+		return "Retrying..."
+	}
+	secs := int(remaining.Seconds() + 0.5)
+	if secs < 1 {
+		secs = 1
+	}
+	return fmt.Sprintf("Retrying in %ds... (r: retry now)", secs)
+}
+
 // renderHeader renders the top header bar with cluster name, status, and timing info.
 //
 // Layout:
@@ -95,12 +151,12 @@ func renderHeader(app *App) string {
 		left = "Connecting to " + baseURL + "..."
 
 		if app.connState == stateDisconnected && app.lastError != nil {
-			errMsg := sanitize(app.lastError.Error())
-			if len([]rune(errMsg)) > 40 {
-				errMsg = string([]rune(errMsg)[:40]) + "..."
+			errLabel := classifyError(app.lastError)
+			if isTLSError(app.lastError) {
+				errLabel += "  (Try --insecure)"
 			}
-			center = StyleError.Render("● DISCONNECTED  " + errMsg)
-			right = StyleError.Render("Press r to retry")
+			center = StyleError.Render("● DISCONNECTED  " + errLabel)
+			right = StyleError.Render(retryCountdown(app.nextRetryAt))
 		} else {
 			right = StyleDim.Render("Connecting...")
 		}
@@ -116,14 +172,14 @@ func renderHeader(app *App) string {
 			// Lost connection after a successful fetch.
 			errDisplay := "● DISCONNECTED"
 			if app.lastError != nil {
-				errMsg := sanitize(app.lastError.Error())
-				if len([]rune(errMsg)) > 40 {
-					errMsg = string([]rune(errMsg)[:40]) + "..."
+				errLabel := classifyError(app.lastError)
+				if isTLSError(app.lastError) {
+					errLabel += "  (Try --insecure)"
 				}
-				errDisplay += "  " + errMsg
+				errDisplay += "  " + errLabel
 			}
 			center = StyleError.Render(errDisplay)
-			right = StyleError.Render("Press r to retry")
+			right = StyleError.Render(retryCountdown(app.nextRetryAt))
 		} else {
 			// Normal connected state.
 			status := strings.ToUpper(sanitize(app.current.Health.Status))

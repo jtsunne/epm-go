@@ -42,6 +42,8 @@ type App struct {
 	consecutiveFails int
 	lastError        error
 	lastUpdated      time.Time
+	nextRetryAt      time.Time // when the next backoff retry is scheduled
+	countdownGen     int       // incremented to invalidate stale CountdownTickMsgs
 
 	// Layout
 	width, height int
@@ -113,6 +115,8 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		app.lastError = nil
 		app.connState = stateConnected
 		app.lastUpdated = msg.Snapshot.FetchedAt
+		app.nextRetryAt = time.Time{}
+		app.countdownGen++ // invalidate any pending countdown tick
 		app.tickGen++
 		return app, tickCmd(app.pollInterval, app.tickGen)
 
@@ -121,8 +125,23 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		app.consecutiveFails++
 		app.lastError = msg.Err
 		app.connState = stateDisconnected
+		delay := backoffDuration(app.consecutiveFails)
+		app.nextRetryAt = time.Now().Add(delay)
 		app.tickGen++
-		return app, tickCmd(backoffDuration(app.consecutiveFails), app.tickGen)
+		app.countdownGen++
+		return app, tea.Batch(
+			tickCmd(delay, app.tickGen),
+			countdownTickCmd(time.Second, app.countdownGen),
+		)
+
+	case CountdownTickMsg:
+		if msg.Gen != app.countdownGen {
+			return app, nil
+		}
+		if app.connState == stateConnected {
+			return app, nil
+		}
+		return app, countdownTickCmd(time.Second, app.countdownGen)
 
 	case TickMsg:
 		if msg.Gen != app.tickGen {
@@ -217,6 +236,14 @@ func (app *App) View() string {
 func tickCmd(d time.Duration, gen int) tea.Cmd {
 	return tea.Tick(d, func(t time.Time) tea.Msg {
 		return TickMsg{Time: t, Gen: gen}
+	})
+}
+
+// countdownTickCmd schedules a CountdownTickMsg after duration d with the given
+// gen so the header countdown display updates every second while disconnected.
+func countdownTickCmd(d time.Duration, gen int) tea.Cmd {
+	return tea.Tick(d, func(time.Time) tea.Msg {
+		return CountdownTickMsg{Gen: gen}
 	})
 }
 
