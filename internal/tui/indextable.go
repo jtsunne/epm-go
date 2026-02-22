@@ -189,16 +189,11 @@ func (m *IndexTableModel) renderHeader(title string, page, pageCount int, search
 	return StyleDim.Render(title + "  " + right)
 }
 
-// renderFooter returns a brief column legend for display when help is shown.
-func (m *IndexTableModel) renderFooter() string {
-	return StyleDim.Render("  1=Name  2=P/T  3=Size  4=ShardSz  5=Docs  6=Idx/s  7=Srch/s  8=IdxLat  9=SrchLat")
-}
-
 // indexCellValue formats an IndexRow field for a given column index.
 func indexCellValue(r model.IndexRow, col int) string {
 	switch col {
 	case 0:
-		return r.Name
+		return sanitize(r.Name)
 	case 1:
 		return fmt.Sprintf("%d/%d", r.PrimaryShards, r.TotalShards)
 	case 2:

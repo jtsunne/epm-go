@@ -189,20 +189,15 @@ func (m *NodeTableModel) renderHeader(title string, page, pageCount int, searchi
 	return StyleDim.Render(title + "  " + right)
 }
 
-// renderFooter returns a brief column legend for display when help is shown.
-func (m *NodeTableModel) renderFooter() string {
-	return StyleDim.Render("  1=Name  2=Role  3=IP  4=Idx/s  5=Srch/s  6=IdxLat  7=SrchLat")
-}
-
 // nodeCellValue formats a NodeRow field for a given column index.
 func nodeCellValue(r model.NodeRow, col int) string {
 	switch col {
 	case 0:
-		return r.Name
+		return sanitize(r.Name)
 	case 1:
-		return abbreviateRole(r.Role)
+		return sanitize(abbreviateRole(r.Role))
 	case 2:
-		return r.IP
+		return sanitize(r.IP)
 	case 3:
 		return format.FormatRate(r.IndexingRate)
 	case 4:

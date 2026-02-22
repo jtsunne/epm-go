@@ -91,6 +91,27 @@ func TestParseESURI(t *testing.T) {
 			wantUser: "elastic",
 			wantPass: "pw",
 		},
+		// Port range validation
+		{
+			name:      "port zero",
+			uri:       "http://localhost:0",
+			wantError: true,
+		},
+		{
+			name:      "port too high",
+			uri:       "http://localhost:70000",
+			wantError: true,
+		},
+		{
+			name:      "port 65536",
+			uri:       "http://localhost:65536",
+			wantError: true,
+		},
+		{
+			name:     "port 65535 accepted",
+			uri:      "http://localhost:65535",
+			wantBase: "http://localhost:65535",
+		},
 		// Plan-specified edge cases
 		{
 			name:     "plain http no credentials",

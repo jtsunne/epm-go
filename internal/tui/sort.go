@@ -28,7 +28,11 @@ func sortIndexRows(rows []model.IndexRow, col int, desc bool) []model.IndexRow {
 		var less bool
 		switch col {
 		case 0:
-			less = strings.ToLower(a.Name) < strings.ToLower(b.Name)
+			la, lb := strings.ToLower(a.Name), strings.ToLower(b.Name)
+			if la == lb {
+				return false
+			}
+			less = la < lb
 		case 1:
 			if a.PrimaryShards != b.PrimaryShards {
 				less = a.PrimaryShards < b.PrimaryShards
@@ -78,7 +82,11 @@ func sortIndexRows(rows []model.IndexRow, col int, desc bool) []model.IndexRow {
 				return strings.ToLower(a.Name) < strings.ToLower(b.Name)
 			}
 		default:
-			less = strings.ToLower(a.Name) < strings.ToLower(b.Name)
+			la, lb := strings.ToLower(a.Name), strings.ToLower(b.Name)
+			if la == lb {
+				return false
+			}
+			less = la < lb
 		}
 		if desc {
 			return !less
@@ -107,7 +115,11 @@ func sortNodeRows(rows []model.NodeRow, col int, desc bool) []model.NodeRow {
 		var less bool
 		switch col {
 		case 0:
-			less = strings.ToLower(a.Name) < strings.ToLower(b.Name)
+			la, lb := strings.ToLower(a.Name), strings.ToLower(b.Name)
+			if la == lb {
+				return false
+			}
+			less = la < lb
 		case 1:
 			if a.Role != b.Role {
 				less = strings.ToLower(a.Role) < strings.ToLower(b.Role)
@@ -145,7 +157,11 @@ func sortNodeRows(rows []model.NodeRow, col int, desc bool) []model.NodeRow {
 				return strings.ToLower(a.Name) < strings.ToLower(b.Name)
 			}
 		default:
-			less = strings.ToLower(a.Name) < strings.ToLower(b.Name)
+			la, lb := strings.ToLower(a.Name), strings.ToLower(b.Name)
+			if la == lb {
+				return false
+			}
+			less = la < lb
 		}
 		if desc {
 			return !less

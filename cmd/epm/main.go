@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -31,6 +32,16 @@ func parseESURI(esURI string) (baseURL, username, password string, err error) {
 
 	if u.Hostname() == "" {
 		return "", "", "", fmt.Errorf("invalid URI: host is required")
+	}
+
+	if port := u.Port(); port != "" {
+		portNum, err := strconv.Atoi(port)
+		if err != nil {
+			return "", "", "", fmt.Errorf("invalid port %q: must be a number", port)
+		}
+		if portNum < 1 || portNum > 65535 {
+			return "", "", "", fmt.Errorf("invalid port %d: must be between 1 and 65535", portNum)
+		}
 	}
 
 	if u.User != nil {
