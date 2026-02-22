@@ -31,7 +31,11 @@ func FormatBytes(bytes int64) string {
 
 // FormatRate formats an ops/sec rate with comma-separated thousands and one decimal place.
 // Example: 1204.3 → "1,204.3 /s", 0 → "0 /s".
+// Negative values (sentinel MetricNotAvailable) return "---".
 func FormatRate(opsPerSec float64) string {
+	if opsPerSec < 0 {
+		return "---"
+	}
 	if opsPerSec == 0 {
 		return "0 /s"
 	}
@@ -41,7 +45,11 @@ func FormatRate(opsPerSec float64) string {
 // FormatLatency formats a latency value in milliseconds.
 // Values >= 1000 ms are shown as seconds with 2 decimal places.
 // Values < 1000 ms are shown as ms with 2 decimal places.
+// Negative values (sentinel MetricNotAvailable) return "---".
 func FormatLatency(ms float64) string {
+	if ms < 0 {
+		return "---"
+	}
 	if ms >= 1000 {
 		return fmt.Sprintf("%.2f s", ms/1000)
 	}

@@ -86,7 +86,7 @@ Two UX issues found during testing of the completed Phase 1-6 implementation:
 - Modify: `internal/format/format.go`
 - Modify: `internal/format/format_test.go`
 
-- [ ] update `FormatRate()`: add sentinel guard before existing logic:
+- [x] update `FormatRate()`: add sentinel guard before existing logic:
   ```go
   func FormatRate(opsPerSec float64) string {
       if opsPerSec < 0 {
@@ -95,7 +95,7 @@ Two UX issues found during testing of the completed Phase 1-6 implementation:
       // ... existing code unchanged
   }
   ```
-- [ ] update `FormatLatency()`: same guard:
+- [x] update `FormatLatency()`: same guard:
   ```go
   func FormatLatency(ms float64) string {
       if ms < 0 {
@@ -105,9 +105,9 @@ Two UX issues found during testing of the completed Phase 1-6 implementation:
   }
   ```
   Rationale: engine already clamps real values to `>= 0`; negative is unreachable without the sentinel.
-- [ ] add tests: `FormatRate(-1)` → `"---"`, `FormatLatency(-1)` → `"---"`
-- [ ] verify existing tests unchanged: `FormatRate(0)` → `"0 /s"`, `FormatLatency(0)` → `"0.00 ms"`
-- [ ] run `go test ./internal/format/...` — all pass
+- [x] add tests: `FormatRate(-1)` → `"---"`, `FormatLatency(-1)` → `"---"`
+- [x] verify existing tests unchanged: `FormatRate(0)` → `"0 /s"`, `FormatLatency(0)` → `"0.00 ms"`
+- [x] run `go test ./internal/format/...` — all pass
 
 ### Task 4: Add truncateName helper to table.go
 
