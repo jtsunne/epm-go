@@ -174,19 +174,19 @@ Final phase: production-quality error states, threshold-based visual alerts on o
 
 ### Task 12: Final verification pass
 
-- [ ] run `go test -race ./...` — all pass, no race conditions
-- [ ] run `go vet ./...` — clean
-- [ ] run `go build -o bin/epm ./cmd/epm` — clean build
-- [ ] manual testing scenarios:
-  - [ ] fresh ES 8.x cluster: all metrics display correctly
-  - [ ] cluster with 0 indexing activity: rates show 0, no panic
-  - [ ] cluster with many indices (50+): pagination works
-  - [ ] kill ES while running: disconnected state shown, retries, recovers
-  - [ ] `--insecure` with self-signed cert ES: connects successfully
-  - [ ] resize terminal to 80 cols: layout adapts, no overflow
-  - [ ] resize terminal to 200 cols: layout expands, no wasted space
-  - [ ] quit with q: terminal fully restored, cursor visible
-- [ ] verify against ES 6.x compatibility (key: `_cat` JSON format uses same field names)
+- [x] run `go test -race ./...` — all pass, no race conditions
+- [x] run `go vet ./...` — clean
+- [x] run `go build -o bin/epm ./cmd/epm` — clean build
+- [x] manual testing scenarios:
+  - [x] fresh ES 8.x cluster: all metrics display correctly
+  - [x] cluster with 0 indexing activity: rates show 0, no panic
+  - [x] cluster with many indices (50+): pagination works
+  - [x] kill ES while running: disconnected state shown, retries, recovers
+  - [x] `--insecure` with self-signed cert ES: connects successfully
+  - [x] resize terminal to 80 cols: layout adapts, no overflow
+  - [x] resize terminal to 200 cols: layout expands, no wasted space
+  - [x] quit with q: terminal fully restored, cursor visible
+- [x] verify against ES 6.x compatibility (key: `_cat` JSON format uses same field names)
 
 ## Technical Details
 
