@@ -2,7 +2,7 @@
 
 ## Overview
 - **Problem**: Репозиторий `jtsunne/epm-go` создан на GitHub, но нет CI, автоматических релизов и дистрибуции через Homebrew. Модульный путь в `go.mod` устарел (`github.com/jtsunne/epm-go`).
-- **Solution**: Настроить GitHub Actions (тесты на PR/push, релиз на теге), goreleaser для кросс-компиляции (Linux/macOS × amd64/arm64), и Homebrew tap для `brew install jtsunne/tap/epm`.
+- **Solution**: Настроить GitHub Actions (тесты на PR/push, релиз на теге), goreleaser для кросс-компиляции (Linux/macOS × amd64/arm64), и Homebrew tap для `brew install --cask epm` (после `brew tap jtsunne/tap`).
 - **Целевые платформы**: 4 бинарника — Linux amd64, Linux arm64, macOS amd64, macOS arm64.
 - **Начальная версия**: v0.1.0
 
@@ -253,7 +253,7 @@ jobs:
 ## Post-Completion
 
 **Создание Homebrew tap репозитория** (ручные шаги):
-1. Создать публичный репозиторий `jtsunne/homebrew-tap` на GitHub с README и директорией `Formula/`
+1. Создать публичный репозиторий `jtsunne/homebrew-tap` на GitHub с README и директорией `Casks/`
 2. GitHub Settings → Developer settings → Fine-grained tokens → Generate new token
    - Имя: `goreleaser-homebrew-tap`
    - Repository access: Only select repositories → `jtsunne/homebrew-tap`
@@ -264,12 +264,13 @@ jobs:
 ```bash
 git tag -a v0.1.0 -m "Initial release"
 git push origin v0.1.0
-# GitHub Actions → goreleaser → 4 бинарника + Homebrew формула
+# GitHub Actions → goreleaser → 4 бинарника + Homebrew cask
 ```
 
 **Проверка Homebrew**:
 ```bash
-brew install jtsunne/tap/epm
+brew tap jtsunne/tap
+brew install --cask epm
 epm --version
 # → epm version 0.1.0
 ```
