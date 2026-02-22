@@ -151,15 +151,15 @@ Add the two sortable, paginated, searchable data tables: Index Statistics (9 col
 
 ### Task 7: Tests for table rendering
 
-- [ ] create `internal/tui/indextable_test.go`:
+- [x] create `internal/tui/indextable_test.go`:
   - `TestIndexTableSetData_AppliesDefaultSort` — after SetData, rows ordered by IndexingRate desc
   - `TestIndexTableSearch` — after search="logs", only "logs-*" indices returned
   - `TestIndexTablePagination` — 25 rows, pageSize=10 → pageCount=3
   - `TestIndexTableRender_ContainsIndexName` — rendered string contains first index name
-- [ ] create `internal/tui/nodetable_test.go`:
+- [x] create `internal/tui/nodetable_test.go`:
   - `TestNodeTableSetData_SortByRate`
   - `TestNodeTableSearch_ByIP`
-- [ ] run `go test ./internal/tui/...` — all pass
+- [x] run `go test ./internal/tui/...` — all pass
 
 ### Task 8: Final verification
 
