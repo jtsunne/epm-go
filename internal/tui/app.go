@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 
 	"github.com/dm/epm-go/internal/client"
 	"github.com/dm/epm-go/internal/engine"
@@ -83,6 +84,7 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		app.width = msg.Width
 		app.height = msg.Height
+		app.computeTablePageSizes()
 
 	case SnapshotMsg:
 		app.fetching = false
@@ -94,6 +96,7 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		app.indexRows = msg.IndexRows
 		app.indexTable.SetData(msg.IndexRows)
 		app.nodeTable.SetData(msg.NodeRows)
+		app.computeTablePageSizes()
 		// Only push to history when we have a previous snapshot — the first
 		// poll has no delta, so all rate/latency metrics are zero and would
 		// corrupt the sparkline baseline.
@@ -192,8 +195,18 @@ func (app *App) View() string {
 	if m := renderMetricsRow(app); m != "" {
 		parts = append(parts, m)
 	}
-	parts = append(parts, app.indexTable.renderTable(app))
-	parts = append(parts, app.nodeTable.renderTable(app))
+	// Compact mode: terminal height < 40 — show only the active table to
+	// maximise the visible rows on small screens.
+	if app.height > 0 && app.height < 40 {
+		if app.activeTable == 0 {
+			parts = append(parts, app.indexTable.renderTable(app))
+		} else {
+			parts = append(parts, app.nodeTable.renderTable(app))
+		}
+	} else {
+		parts = append(parts, app.indexTable.renderTable(app))
+		parts = append(parts, app.nodeTable.renderTable(app))
+	}
 	parts = append(parts, renderFooter(app))
 
 	return strings.Join(parts, "\n")
@@ -241,6 +254,72 @@ func fetchCmd(c client.ESClient, prev *model.Snapshot, interval time.Duration) t
 			IndexRows: indexRows,
 		}
 	}
+}
+
+// computeTablePageSizes updates the pageSize of both tables to fill the
+// available terminal height after the fixed UI sections (header, overview,
+// metrics, footer) are accounted for.
+//
+// In compact mode (height < 40), only the active table is visible and receives
+// all the available vertical space. In normal mode the available space is split
+// 60 % to the index table and 40 % to the node table.
+func (app *App) computeTablePageSizes() {
+	if app.height <= 0 {
+		return
+	}
+
+	// Measure rendered heights of the non-table sections.
+	// renderedHeight returns 0 for empty strings (overview and metrics return
+	// empty before the first successful fetch).
+	fixedH := renderedHeight(renderHeader(app)) +
+		renderedHeight(renderOverview(app)) +
+		renderedHeight(renderMetricsRow(app)) +
+		renderedHeight(renderFooter(app))
+
+	// Each rendered table section costs:
+	//   1 title bar line  +  1 column-header row  +  1 separator line = 3 overhead lines.
+	// The remaining lines are available for data rows (pageSize).
+	const tableOverhead = 3
+
+	totalAvailable := app.height - fixedH
+
+	if app.height < 40 {
+		// Compact mode: a single table fills the remaining space.
+		rows := totalAvailable - tableOverhead
+		if rows < 1 {
+			rows = 1
+		}
+		app.indexTable.pageSize = rows
+		app.nodeTable.pageSize = rows
+	} else {
+		// Normal mode: 60 % to index table, 40 % to node table.
+		idxH := totalAvailable * 60 / 100
+		nodeH := totalAvailable - idxH
+
+		idxRows := idxH - tableOverhead
+		nodeRows := nodeH - tableOverhead
+		if idxRows < 1 {
+			idxRows = 1
+		}
+		if nodeRows < 1 {
+			nodeRows = 1
+		}
+		app.indexTable.pageSize = idxRows
+		app.nodeTable.pageSize = nodeRows
+	}
+
+	// Clamp pages so they stay in range after a resize.
+	app.indexTable.clampPage(len(app.indexTable.displayRows))
+	app.nodeTable.clampPage(len(app.nodeTable.displayRows))
+}
+
+// renderedHeight returns the number of terminal lines a rendered section
+// occupies. Returns 0 for empty strings (sections absent before data arrives).
+func renderedHeight(s string) int {
+	if s == "" {
+		return 0
+	}
+	return lipgloss.Height(s)
 }
 
 // backoffDuration returns min(2^fails * time.Second, 60*time.Second).

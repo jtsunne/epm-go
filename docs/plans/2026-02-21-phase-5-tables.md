@@ -144,10 +144,10 @@ Add the two sortable, paginated, searchable data tables: Index Statistics (9 col
 
 ### Task 6: Layout with height budget
 
-- [ ] calculate available height for tables: `app.height - headerH - overviewH - metricsH - footerH`
-- [ ] split remaining height between index table and node table (60%/40% or configurable)
-- [ ] ensure tables truncate rows to fit available height rather than scrolling the whole screen
-- [ ] if terminal height < 40, show only one table at a time (toggle with tab)
+- [x] calculate available height for tables: `app.height - headerH - overviewH - metricsH - footerH`
+- [x] split remaining height between index table and node table (60%/40% or configurable)
+- [x] ensure tables truncate rows to fit available height rather than scrolling the whole screen
+- [x] if terminal height < 40, show only one table at a time (toggle with tab)
 
 ### Task 7: Tests for table rendering
 
