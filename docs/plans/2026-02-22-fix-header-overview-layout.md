@@ -68,13 +68,13 @@ In `renderHeader()` (`header.go:196-216`), replace the spacing logic with progre
 
 In `renderOverview()` (`overview.go:28-40`), fix the width formula to fill full terminal width:
 
-- [ ] Replace `(width - 14) / 7` with `width / 7` + remainder distribution: first `width % 7` cards get +1 width
-- [ ] Use `cardWidths []int` slice (len 7) instead of single `cardWidth` variable
-- [ ] Update each card render (card1-card7) to use `cardWidths[i]` instead of `cardWidth`
-- [ ] Calculate `barWidth` per-card for cards 5-7 (progress bars) as `cardWidths[i] - 4`
-- [ ] For narrow mode: use `width / 2` with remainder to first card in each row; card7 alone gets full `width`
-- [ ] Write test: verify total rendered width of overview in wide mode matches `app.width`
-- [ ] Run `make test` — must pass before task 3
+- [x] Replace `(width - 14) / 7` with `width / 7` + remainder distribution: first `width % 7` cards get +1 width
+- [x] Use `cardWidths []int` slice (len 7) instead of single `cardWidth` variable
+- [x] Update each card render (card1-card7) to use `cardWidths[i]` instead of `cardWidth`
+- [x] Calculate `barWidth` per-card for cards 5-7 (progress bars) as `cardWidths[i] - 4`
+- [x] For narrow mode: use `width / 2` with remainder to first card in each row; card7 alone gets full `width`
+- [x] Write test: verify total rendered width of overview in wide mode matches `app.width`
+- [x] Run `make test` — must pass before task 3
 
 ### Task 3: Fix overview card height consistency
 

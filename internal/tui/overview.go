@@ -25,24 +25,53 @@ func renderOverview(app *App) string {
 
 	narrowMode := width < 80
 
-	var cardWidth int
+	// Build per-card width slice (7 elements, indices 0-6).
+	// Width() in lipgloss sets the outer rendered width (including padding),
+	// so 7 cards each with Width(w) sum to exactly sum(w).
+	cardWidths := make([]int, 7)
 	if narrowMode {
-		// 2 cards per row: split width evenly between 2 cards.
-		cardWidth = (width - 4) / 2
-		if cardWidth < 10 {
-			cardWidth = 10
+		// 2 cards per row; remainder (+1) goes to first card of each pair.
+		// Card 7 (index 6) spans the full row alone.
+		narrowBase := width / 2
+		narrowRem := width % 2
+		for i := range cardWidths {
+			switch {
+			case i == 6:
+				cardWidths[i] = width
+			case i%2 == 0:
+				cardWidths[i] = narrowBase + narrowRem
+			default:
+				cardWidths[i] = narrowBase
+			}
+			// Enforce minimum card width for paired cards.
+			if i < 6 && cardWidths[i] < 10 {
+				cardWidths[i] = 10
+			}
 		}
 	} else {
-		cardWidth = (width - 14) / 7
-		if cardWidth < 8 {
-			cardWidth = 8
+		// Wide mode: distribute width evenly across 7 cards.
+		// First (width % 7) cards each get +1 to absorb the remainder.
+		base := width / 7
+		rem := width % 7
+		for i := range cardWidths {
+			if i < rem {
+				cardWidths[i] = base + 1
+			} else {
+				cardWidths[i] = base
+			}
+			if cardWidths[i] < 8 {
+				cardWidths[i] = 8
+			}
 		}
 	}
 
-	// Mini bar inner width: card width minus padding (1 char each side).
-	barWidth := cardWidth - 4
-	if barWidth < 4 {
-		barWidth = 4
+	// barWidthFor returns the mini-bar inner width for card at index i.
+	barWidthFor := func(i int) int {
+		bw := cardWidths[i] - 4
+		if bw < 4 {
+			bw = 4
+		}
+		return bw
 	}
 
 	health := app.current.Health
@@ -68,26 +97,26 @@ func renderOverview(app *App) string {
 		Background(statusBg).
 		Foreground(colorDark).
 		Bold(true).
-		Width(cardWidth).
+		Width(cardWidths[0]).
 		Render(statusText + "\nStatus")
 
 	// Card 2: Node count — blue foreground.
 	card2 := StyleOverviewCard.
 		Foreground(colorBlue).
-		Width(cardWidth).
+		Width(cardWidths[1]).
 		Render(fmt.Sprintf("%d", health.NumberOfNodes) + "\nNodes")
 
 	// Card 3: Index count — purple foreground.
 	indexCount := len(app.current.Indices)
 	card3 := StyleOverviewCard.
 		Foreground(colorPurple).
-		Width(cardWidth).
+		Width(cardWidths[2]).
 		Render(fmt.Sprintf("%d", indexCount) + "\nIndices")
 
 	// Card 4: Active shards — indigo foreground.
 	card4 := StyleOverviewCard.
 		Foreground(colorIndigo).
-		Width(cardWidth).
+		Width(cardWidths[3]).
 		Render(fmt.Sprintf("%d", health.ActiveShards) + "\nActive Shards")
 
 	// Card 5: CPU% with mini bar — threshold-colored via cpuSeverity.
@@ -97,10 +126,10 @@ func renderOverview(app *App) string {
 	if cpuSev == severityCritical {
 		cpuVal += "!"
 	}
-	cpuBar := renderMiniBar(cpuPct, barWidth)
+	cpuBar := renderMiniBar(cpuPct, barWidthFor(4))
 	card5 := severityCardStyle().
 		Foreground(severityFg(cpuSev)).
-		Width(cardWidth).
+		Width(cardWidths[4]).
 		Render(cpuVal + "\n" + cpuBar + "\nCPU")
 
 	// Card 6: JVM heap% with mini bar — threshold-colored via jvmSeverity.
@@ -110,10 +139,10 @@ func renderOverview(app *App) string {
 	if jvmSev == severityCritical {
 		jvmVal += "!"
 	}
-	jvmBar := renderMiniBar(jvmPct, barWidth)
+	jvmBar := renderMiniBar(jvmPct, barWidthFor(5))
 	card6 := severityCardStyle().
 		Foreground(severityFg(jvmSev)).
-		Width(cardWidth).
+		Width(cardWidths[5]).
 		Render(jvmVal + "\n" + jvmBar + "\nJVM Heap")
 
 	// Card 7: Storage% with mini bar — threshold-colored via storageSeverity.
@@ -123,12 +152,12 @@ func renderOverview(app *App) string {
 	if storageSev == severityCritical {
 		storageVal += "!"
 	}
-	storageBar := renderMiniBar(storagePct, barWidth)
+	storageBar := renderMiniBar(storagePct, barWidthFor(6))
 	usedStr := format.FormatBytes(res.StorageUsedBytes)
 	totalStr := format.FormatBytes(res.StorageTotalBytes)
 	card7 := severityCardStyle().
 		Foreground(severityFg(storageSev)).
-		Width(cardWidth).
+		Width(cardWidths[6]).
 		Render(storageVal + "\n" + storageBar + "\n" + usedStr + "/" + totalStr + "\nStorage")
 
 	if narrowMode {

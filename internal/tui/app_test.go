@@ -2,11 +2,13 @@ package tui
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -270,6 +272,36 @@ func TestRenderOverview_NilSnapshot(t *testing.T) {
 	app := NewApp(nil, 10*time.Second)
 	app.width = 120
 	assert.Equal(t, "", renderOverview(app))
+}
+
+func TestRenderOverview_WidthFillsTerminal(t *testing.T) {
+	widths := []int{80, 100, 120, 140, 160, 200}
+	for _, w := range widths {
+		t.Run(fmt.Sprintf("width=%d", w), func(t *testing.T) {
+			app := NewApp(nil, 10*time.Second)
+			app.width = w
+
+			snap := makeFixtureSnapshot()
+			snap.Health.Status = "green"
+			snap.Health.NumberOfNodes = 3
+			snap.Health.ActiveShards = 10
+			app.current = snap
+			app.resources = model.ClusterResources{
+				AvgCPUPercent:     50.0,
+				AvgJVMHeapPercent: 60.0,
+				StoragePercent:    70.0,
+				StorageUsedBytes:  1024 * 1024 * 1024,
+				StorageTotalBytes: 2 * 1024 * 1024 * 1024,
+			}
+
+			result := renderOverview(app)
+			// Wide mode: the single-line overview row must be exactly app.width wide.
+			// lipgloss.Width measures visual column count (ANSI-stripped).
+			firstLine := strings.SplitN(result, "\n", 2)[0]
+			got := lipgloss.Width(firstLine)
+			assert.Equal(t, w, got, "overview first line width should equal terminal width")
+		})
+	}
 }
 
 func TestRenderOverview_WithSnapshot(t *testing.T) {
