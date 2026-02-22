@@ -74,3 +74,27 @@ func severityToStyle(s severity) lipgloss.Style {
 		return lipgloss.NewStyle()
 	}
 }
+
+// severityFg returns the foreground color for a severity level.
+// Normal → white, Warning → yellow, Critical → red.
+func severityFg(s severity) lipgloss.Color {
+	switch s {
+	case severityWarning:
+		return colorYellow
+	case severityCritical:
+		return colorRed
+	default:
+		return colorWhite
+	}
+}
+
+// severityCardStyle returns the base StyleOverviewCard with a red rounded border
+// added for critical severity, otherwise returns the base style unchanged.
+func severityCardStyle(s severity) lipgloss.Style {
+	if s == severityCritical {
+		return StyleOverviewCard.
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(colorRed)
+	}
+	return StyleOverviewCard
+}

@@ -77,49 +77,46 @@ func renderOverview(app *App) string {
 		Width(cardWidth).
 		Render(fmt.Sprintf("%d", health.ActiveShards) + "\nActive Shards")
 
-	// Card 5: CPU% with mini bar — yellow >80%, red >90%.
+	// Card 5: CPU% with mini bar — threshold-colored via cpuSeverity.
 	cpuPct := res.AvgCPUPercent
-	cpuFg := colorWhite
-	if cpuPct > 90 {
-		cpuFg = colorRed
-	} else if cpuPct > 80 {
-		cpuFg = colorYellow
+	cpuSev := cpuSeverity(cpuPct)
+	cpuVal := fmt.Sprintf("%.1f%%", cpuPct)
+	if cpuSev == severityCritical {
+		cpuVal += "!"
 	}
 	cpuBar := renderMiniBar(cpuPct, barWidth)
-	card5 := StyleOverviewCard.
-		Foreground(cpuFg).
+	card5 := severityCardStyle(cpuSev).
+		Foreground(severityFg(cpuSev)).
 		Width(cardWidth).
-		Render(fmt.Sprintf("%.1f%%", cpuPct) + "\n" + cpuBar + "\nCPU")
+		Render(cpuVal + "\n" + cpuBar + "\nCPU")
 
-	// Card 6: JVM heap% with mini bar — yellow >75%, red >85%.
+	// Card 6: JVM heap% with mini bar — threshold-colored via jvmSeverity.
 	jvmPct := res.AvgJVMHeapPercent
-	jvmFg := colorWhite
-	if jvmPct > 85 {
-		jvmFg = colorRed
-	} else if jvmPct > 75 {
-		jvmFg = colorYellow
+	jvmSev := jvmSeverity(jvmPct)
+	jvmVal := fmt.Sprintf("%.1f%%", jvmPct)
+	if jvmSev == severityCritical {
+		jvmVal += "!"
 	}
 	jvmBar := renderMiniBar(jvmPct, barWidth)
-	card6 := StyleOverviewCard.
-		Foreground(jvmFg).
+	card6 := severityCardStyle(jvmSev).
+		Foreground(severityFg(jvmSev)).
 		Width(cardWidth).
-		Render(fmt.Sprintf("%.1f%%", jvmPct) + "\n" + jvmBar + "\nJVM Heap")
+		Render(jvmVal + "\n" + jvmBar + "\nJVM Heap")
 
-	// Card 7: Storage% with mini bar — yellow >80%, red >90%.
+	// Card 7: Storage% with mini bar — threshold-colored via storageSeverity.
 	storagePct := res.StoragePercent
-	storageFg := colorWhite
-	if storagePct > 90 {
-		storageFg = colorRed
-	} else if storagePct > 80 {
-		storageFg = colorYellow
+	storageSev := storageSeverity(storagePct)
+	storageVal := fmt.Sprintf("%.1f%%", storagePct)
+	if storageSev == severityCritical {
+		storageVal += "!"
 	}
 	storageBar := renderMiniBar(storagePct, barWidth)
 	usedStr := format.FormatBytes(res.StorageUsedBytes)
 	totalStr := format.FormatBytes(res.StorageTotalBytes)
-	card7 := StyleOverviewCard.
-		Foreground(storageFg).
+	card7 := severityCardStyle(storageSev).
+		Foreground(severityFg(storageSev)).
 		Width(cardWidth).
-		Render(fmt.Sprintf("%.1f%%", storagePct) + "\n" + storageBar + "\n" + usedStr + "/" + totalStr + "\nStorage")
+		Render(storageVal + "\n" + storageBar + "\n" + usedStr + "/" + totalStr + "\nStorage")
 
 	return lipgloss.JoinHorizontal(lipgloss.Top, card1, card2, card3, card4, card5, card6, card7)
 }

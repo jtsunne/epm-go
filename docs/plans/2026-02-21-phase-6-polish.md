@@ -61,7 +61,7 @@ Final phase: production-quality error states, threshold-based visual alerts on o
 
 ### Task 2: Apply thresholds to overview cards
 
-- [ ] update `renderOverview()` in `overview.go`:
+- [x] update `renderOverview()` in `overview.go`:
   - CPU card: apply `cpuSeverity(app.resources.AvgCPUPercent)` → color the percentage value
   - JVM card: apply `jvmSeverity(app.resources.AvgJVMHeapPercent)` → color the value
   - Storage card: apply `storageSeverity(app.resources.StoragePercent)` → color the percentage
