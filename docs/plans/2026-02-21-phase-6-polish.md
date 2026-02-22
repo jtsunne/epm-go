@@ -152,7 +152,7 @@ Final phase: production-quality error states, threshold-based visual alerts on o
 
 ### Task 10: README.md
 
-- [ ] create `README.md` at project root:
+- [x] create `README.md` at project root:
   - Project title + brief description ("Terminal dashboard for Elasticsearch cluster performance monitoring")
   - Screenshot/demo section (ASCII art placeholder or actual terminal screenshot)
   - **Installation**: `go install github.com/dm/epm-go/cmd/epm@latest`, or Homebrew (future), or download binary
