@@ -175,6 +175,26 @@ func TestApp_HelpToggle(t *testing.T) {
 	assert.False(t, app.showHelp)
 }
 
+func TestFetchTimeout(t *testing.T) {
+	cases := []struct {
+		interval time.Duration
+		expected time.Duration
+	}{
+		{100 * time.Millisecond, 500 * time.Millisecond},  // below min → clamp to 500ms
+		{500 * time.Millisecond, 500 * time.Millisecond},  // 0ms after subtraction → min
+		{1 * time.Second, 500 * time.Millisecond},         // 500ms → min
+		{5 * time.Second, 4500 * time.Millisecond},        // normal
+		{10 * time.Second, 9500 * time.Millisecond},       // default interval
+		{10500 * time.Millisecond, 10 * time.Second},      // exactly at cap
+		{30 * time.Second, 10 * time.Second},              // large interval → capped at 10s
+		{300 * time.Second, 10 * time.Second},             // max interval → capped at 10s
+	}
+	for _, tc := range cases {
+		got := fetchTimeout(tc.interval)
+		assert.Equal(t, tc.expected, got, "interval=%v", tc.interval)
+	}
+}
+
 func TestBackoffDuration(t *testing.T) {
 	cases := []struct {
 		fails    int

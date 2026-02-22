@@ -97,11 +97,11 @@ Final phase: production-quality error states, threshold-based visual alerts on o
 
 ### Task 6: Context cancellation and clean shutdown
 
-- [ ] update `fetchCmd` to create a context with `app.pollInterval - 500ms` timeout
-- [ ] when `tea.Quit` is sent (q key): Bubble Tea automatically cancels any pending commands
-- [ ] verify no goroutine leak: all `FetchAll` goroutines respect context cancellation
-- [ ] add graceful shutdown: if fetch is in-flight when quit pressed, it cancels within 10s max
-- [ ] verify terminal is fully restored after quit (no leftover alternate screen artifacts)
+- [x] update `fetchCmd` to create a context with `app.pollInterval - 500ms` timeout
+- [x] when `tea.Quit` is sent (q key): Bubble Tea automatically cancels any pending commands
+- [x] verify no goroutine leak: all `FetchAll` goroutines respect context cancellation
+- [x] add graceful shutdown: if fetch is in-flight when quit pressed, it cancels within 10s max
+- [x] verify terminal is fully restored after quit (no leftover alternate screen artifacts)
 
 ### Task 7: `--insecure` auto-suggestion
 

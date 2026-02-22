@@ -247,14 +247,37 @@ func countdownTickCmd(d time.Duration, gen int) tea.Cmd {
 	})
 }
 
+// fetchTimeout returns the context timeout for a fetch command.
+// It is interval - 500ms, clamped to [500ms, 10s].
+// The 10s upper bound ensures that any in-flight fetch cancels promptly
+// when the user quits, regardless of how large the poll interval is.
+func fetchTimeout(interval time.Duration) time.Duration {
+	const (
+		minTimeout = 500 * time.Millisecond
+		maxTimeout = 10 * time.Second
+	)
+	t := interval - 500*time.Millisecond
+	if t < minTimeout {
+		t = minTimeout
+	}
+	if t > maxTimeout {
+		t = maxTimeout
+	}
+	return t
+}
+
 // fetchCmd is a Bubble Tea command that calls all 5 ES endpoints, computes
 // derived metrics, and returns a SnapshotMsg or FetchErrorMsg.
+//
+// The fetch context timeout is capped at 10s so that any in-flight HTTP
+// request is always cancelled promptly when the user quits — Bubble Tea
+// stops dispatching messages immediately on tea.Quit, but goroutines
+// spawned by commands run until their own contexts expire.  The errgroup
+// in FetchAll propagates cancellation to all 5 concurrent goroutines, and
+// the HTTP client respects context cancellation via NewRequestWithContext.
 func fetchCmd(c client.ESClient, prev *model.Snapshot, interval time.Duration) tea.Cmd {
 	return func() tea.Msg {
-		timeout := interval - 500*time.Millisecond
-		if timeout < 500*time.Millisecond {
-			timeout = 500 * time.Millisecond
-		}
+		timeout := fetchTimeout(interval)
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 
