@@ -91,6 +91,28 @@ func TestParseESURI(t *testing.T) {
 			wantUser: "elastic",
 			wantPass: "pw",
 		},
+		// Plan-specified edge cases
+		{
+			name:     "plain http no credentials",
+			uri:      "http://localhost:9200",
+			wantBase: "http://localhost:9200",
+			wantUser: "",
+			wantPass: "",
+		},
+		{
+			name:     "https with credentials and fqdn",
+			uri:      "https://elastic:changeme@es.prod.example.com:9200",
+			wantBase: "https://es.prod.example.com:9200",
+			wantUser: "elastic",
+			wantPass: "changeme",
+		},
+		{
+			name:     "URL-encoded password p%40ss",
+			uri:      "http://user:p%40ss@host:9200",
+			wantBase: "http://host:9200",
+			wantUser: "user",
+			wantPass: "p@ss",
+		},
 	}
 
 	for _, tc := range tests {

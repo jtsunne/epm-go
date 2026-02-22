@@ -14,6 +14,9 @@ import (
 	"github.com/dm/epm-go/internal/tui"
 )
 
+// version is set at build time via -ldflags="-X main.version=..."
+var version = "dev"
+
 // parseESURI parses an Elasticsearch URI and returns the base URL (without credentials),
 // username, and password. Returns an error if the URI is invalid or has an unsupported scheme.
 func parseESURI(esURI string) (baseURL, username, password string, err error) {
@@ -50,21 +53,33 @@ func parseESURI(esURI string) (baseURL, username, password string, err error) {
 
 func main() {
 	var (
-		interval = flag.Duration("interval", 10*time.Second, "polling interval (e.g. 10s, 30s)")
-		insecure = flag.Bool("insecure", false, "skip TLS certificate verification")
+		interval    = flag.Duration("interval", 10*time.Second, "polling interval, between 5s and 300s (e.g. 10s, 30s)")
+		insecure    = flag.Bool("insecure", false, "skip TLS certificate verification (for self-signed certs)")
+		showVersion = flag.Bool("version", false, "print version and exit")
 	)
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "usage: epm [--interval 10s] [--insecure] <elasticsearch-uri>\n\n")
+		fmt.Fprintf(os.Stderr, "epm %s — Elasticsearch Performance Monitor\n\n", version)
+		fmt.Fprintf(os.Stderr, "usage:\n")
+		fmt.Fprintf(os.Stderr, "  epm [--interval <duration>] [--insecure] [--version] <elasticsearch-uri>\n\n")
 		fmt.Fprintf(os.Stderr, "examples:\n")
 		fmt.Fprintf(os.Stderr, "  epm http://localhost:9200\n")
 		fmt.Fprintf(os.Stderr, "  epm --insecure https://elastic:changeme@prod.example.com:9200\n")
-		fmt.Fprintf(os.Stderr, "  epm --interval 30s http://localhost:9200\n\n")
+		fmt.Fprintf(os.Stderr, "  epm --interval 30s http://localhost:9200\n")
+		fmt.Fprintf(os.Stderr, "  epm --version\n\n")
+		fmt.Fprintf(os.Stderr, "flags:\n")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
 
-	if *interval < time.Second {
-		fmt.Fprintln(os.Stderr, "error: --interval must be at least 1s")
+	if *showVersion {
+		fmt.Printf("epm version %s\n", version)
+		os.Exit(0)
+	}
+
+	const minInterval = 5 * time.Second
+	const maxInterval = 300 * time.Second
+	if *interval < minInterval || *interval > maxInterval {
+		fmt.Fprintf(os.Stderr, "error: --interval must be between 5s and 300s (got %s)\n", *interval)
 		os.Exit(1)
 	}
 

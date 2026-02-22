@@ -112,15 +112,15 @@ Final phase: production-quality error states, threshold-based visual alerts on o
 
 ### Task 8: CLI flag refinements
 
-- [ ] add `--version` flag: prints `epm version 0.1.0` and exits
-- [ ] improve usage message: show full example with all flags
-- [ ] validate `--interval`: must be between 5s and 300s; exit with error if out of range
-- [ ] if URI missing: show usage + "Error: ES URI is required" and exit 1
-- [ ] test URI parsing edge cases:
+- [x] add `--version` flag: prints `epm version 0.1.0` and exits
+- [x] improve usage message: show full example with all flags
+- [x] validate `--interval`: must be between 5s and 300s; exit with error if out of range
+- [x] if URI missing: show usage + "Error: ES URI is required" and exit 1
+- [x] test URI parsing edge cases:
   - `http://localhost:9200` — no credentials
   - `https://elastic:changeme@es.prod.example.com:9200` — with credentials
   - `http://user:p%40ss@host:9200` — URL-encoded password (% escaping)
-- [ ] write `TestParseURI` table-driven test covering these cases
+- [x] write `TestParseURI` table-driven test covering these cases
 
 ### Task 9: Makefile finalization
 
