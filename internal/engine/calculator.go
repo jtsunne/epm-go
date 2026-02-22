@@ -53,6 +53,12 @@ func CalcNodeRows(prev, curr *model.Snapshot, elapsed time.Duration) []model.Nod
 				row.SearchRate = clampRate(srchOpsDelta / elapsedSec)
 				row.IndexLatency = clampLatency(safeDivide(idxTimeDelta, idxOpsDelta))
 				row.SearchLatency = clampLatency(safeDivide(srchTimeDelta, srchOpsDelta))
+			} else {
+				// Node not in prev (newly appeared) — delta cannot be computed.
+				row.IndexingRate = model.MetricNotAvailable
+				row.SearchRate = model.MetricNotAvailable
+				row.IndexLatency = model.MetricNotAvailable
+				row.SearchLatency = model.MetricNotAvailable
 			}
 		} else {
 			row.IndexingRate = model.MetricNotAvailable

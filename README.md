@@ -81,6 +81,8 @@ epm --version
 | `q` / `Ctrl+C` | Quit |
 | `r` | Force refresh immediately |
 | `Tab` / `Shift+Tab` | Switch focused table |
+| `↑` / `k` | Move cursor up in focused table |
+| `↓` / `j` | Move cursor down in focused table |
 | `1`–`9` | Sort by column N |
 | `/` | Search in focused table |
 | `Esc` | Close search |
@@ -103,7 +105,7 @@ epm --version
 
 **Storage %** — cluster-wide ratio of used disk space to total disk capacity across all nodes.
 
-All rate and latency metrics are interval-based (delta between two consecutive polls), not cumulative totals.
+All rate and latency metrics are interval-based (delta between two consecutive polls), not cumulative totals. On the first poll cycle, rate and latency values display as `---` because a delta requires two consecutive snapshots; real values appear after the second poll.
 
 ## Alert Thresholds
 

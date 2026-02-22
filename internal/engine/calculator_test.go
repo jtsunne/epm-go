@@ -601,9 +601,11 @@ func TestCalcNodeRows_NewNode(t *testing.T) {
 	rows := CalcNodeRows(prev, curr, 10*time.Second)
 	assert.Len(t, rows, 1)
 	assert.Equal(t, "id-new", rows[0].ID)
-	// enoughTime is true (prev != nil, elapsed >= 1s) but node not in prev → rates are 0
-	assert.Equal(t, 0.0, rows[0].IndexingRate)
-	assert.Equal(t, 0.0, rows[0].SearchRate)
+	// enoughTime is true (prev != nil, elapsed >= 1s) but node not in prev → sentinel
+	assert.Equal(t, model.MetricNotAvailable, rows[0].IndexingRate)
+	assert.Equal(t, model.MetricNotAvailable, rows[0].SearchRate)
+	assert.Equal(t, model.MetricNotAvailable, rows[0].IndexLatency)
+	assert.Equal(t, model.MetricNotAvailable, rows[0].SearchLatency)
 }
 
 func TestCalcNodeRows_RoleAndIPFromNodes(t *testing.T) {

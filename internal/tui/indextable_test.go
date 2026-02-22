@@ -178,3 +178,28 @@ func TestIndexTableDetailLine_UnfocusedAbsent(t *testing.T) {
 	assert.Greater(t, len(outFocused), len(outUnfocused),
 		"focused table output should be longer than unfocused (has detail line)")
 }
+
+// TestIndexTableDetailLine_CursorNonZero verifies that the detail line shows
+// the name of the row under the cursor, not always the first row.
+func TestIndexTableDetailLine_CursorNonZero(t *testing.T) {
+	m := NewIndexTable()
+	m.focused = true
+	rows := []model.IndexRow{
+		{Name: "alpha-index", IndexingRate: 300.0},
+		{Name: "beta-index", IndexingRate: 200.0},
+		{Name: "gamma-index", IndexingRate: 100.0},
+	}
+	m.SetData(rows)
+	// After SetData, default sort is by IndexingRate desc: alpha, beta, gamma.
+
+	down := tea.KeyMsg{Type: tea.KeyDown}
+	m, _ = m.Update(down)
+	m, _ = m.Update(down)
+	// cursor is now at row 2 → "gamma-index"
+
+	out := m.renderTable(nil)
+	assert.True(t, strings.Contains(out, "gamma-index"),
+		"detail line should show the name of the row at cursor position 2")
+	assert.False(t, strings.HasPrefix(strings.TrimSpace(out), "alpha-index"),
+		"detail line should not show the first row name when cursor is elsewhere")
+}

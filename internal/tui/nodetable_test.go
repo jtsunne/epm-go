@@ -123,6 +123,29 @@ func TestNodeTableDetailLine_UnfocusedAbsent(t *testing.T) {
 		"focused table output should be longer than unfocused (has detail line)")
 }
 
+// TestNodeTableDetailLine_CursorNonZero verifies that the detail line shows
+// the name of the row under the cursor, not always the first row.
+func TestNodeTableDetailLine_CursorNonZero(t *testing.T) {
+	m := NewNodeTable()
+	m.focused = true
+	rows := []model.NodeRow{
+		{Name: "node-alpha", Role: "m", IP: "10.0.0.1", IndexingRate: 300.0},
+		{Name: "node-beta", Role: "d", IP: "10.0.0.2", IndexingRate: 200.0},
+		{Name: "node-gamma", Role: "d", IP: "10.0.0.3", IndexingRate: 100.0},
+	}
+	m.SetData(rows)
+	// Default sort: by IndexingRate desc → node-alpha, node-beta, node-gamma.
+
+	down := tea.KeyMsg{Type: tea.KeyDown}
+	m, _ = m.Update(down)
+	m, _ = m.Update(down)
+	// cursor is now at row 2 → "node-gamma"
+
+	out := m.renderTable(nil)
+	assert.True(t, strings.Contains(out, "node-gamma"),
+		"detail line should show the name of the row at cursor position 2")
+}
+
 // TestAbbreviateRole verifies that role strings are returned as-is when ≤6
 // bytes, and truncated when longer.
 func TestAbbreviateRole(t *testing.T) {

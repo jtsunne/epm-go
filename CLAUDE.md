@@ -49,14 +49,14 @@ internal/
   tui/
     app.go                   # Root bubbletea Model: Init/Update/View
     messages.go              # SnapshotMsg, FetchErrorMsg, TickMsg
-    keys.go                  # Key bindings (q, r, tab, /, 1-9, ←→)
+    keys.go                  # Key bindings (q, r, tab, /, 1-9, ←→, ↑↓/j/k)
     styles.go                # All lipgloss styles and color constants
     header.go                # Header bar renderer
     footer.go                # Footer bar renderer (help text / key hints)
     overview.go              # 7-stat overview bar renderer
     metrics.go               # 4 metric cards row renderer          (Phase 4)
     sparkline.go             # RenderSparkline(values, width) string (Phase 4)
-    table.go                 # Generic tableModel: sort, paginate, search (Phase 5)
+    table.go                 # Generic tableModel: sort, paginate, search, cursor navigation, name truncation (Phase 5, 7)
     sort.go                  # sortIndexRows, sortNodeRows, filterIndexRows, filterNodeRows (Phase 5)
     indextable.go            # IndexTableModel (9 columns)           (Phase 5)
     nodetable.go             # NodeTableModel (7 columns)            (Phase 5)
@@ -64,7 +64,7 @@ internal/
   format/
     format.go                # FormatBytes, FormatRate, FormatLatency, FormatNumber, FormatPercent
     format_test.go
-docs/plans/                  # Ralphex implementation plans (phases 1-6)
+docs/plans/completed/        # Completed implementation plans (phases 1-7)
 Makefile
 ```
 
@@ -142,6 +142,8 @@ Overview cards change color when thresholds are exceeded — no alert history or
 | `q` / `ctrl+c` | Quit |
 | `r` | Force refresh now |
 | `tab` / `shift+tab` | Switch focused table |
+| `↑` / `k` | Move cursor up in focused table |
+| `↓` / `j` | Move cursor down in focused table |
 | `1`–`9` | Sort by column N |
 | `/` | Search in focused table |
 | `esc` | Close search |
@@ -203,6 +205,7 @@ make integration ES_URI=http://localhost:9200
 - **Backoff**: `min(2^consecutiveFails * second, 60s)` starting at 2s
 - **`_cat` string fields**: `IndexInfo.Pri`, `Rep`, `DocsCount` are strings from the API — parse in `CalcIndexRows`, not in the client
 - **Never store credentials** beyond the lifetime of the process (in-memory `ClientConfig` only)
+- **MetricNotAvailable sentinel**: `model.MetricNotAvailable = -1.0` is returned by all calculator functions when `prev == nil` or elapsed < 1s (delta not computable). `FormatRate` and `FormatLatency` treat any value `< 0` as sentinel and display `"---"`. Safe because the engine clamps all real metrics to `>= 0`. Sparkline history guard in `app.go` prevents sentinel values from entering the history buffer.
 
 ## ES Version Compatibility
 

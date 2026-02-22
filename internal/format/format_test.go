@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/dm/epm-go/internal/model"
 )
 
 func TestFormatBytes(t *testing.T) {
@@ -54,8 +56,8 @@ func TestFormatLatency(t *testing.T) {
 }
 
 func TestFormatLatency_Sentinel(t *testing.T) {
+	assert.Equal(t, "---", FormatLatency(model.MetricNotAvailable))
 	assert.Equal(t, "---", FormatLatency(-1))
-	assert.Equal(t, "---", FormatLatency(-1.0))
 	assert.Equal(t, "---", FormatLatency(-0.001))
 }
 
@@ -80,8 +82,8 @@ func TestFormatRate(t *testing.T) {
 }
 
 func TestFormatRate_Sentinel(t *testing.T) {
+	assert.Equal(t, "---", FormatRate(model.MetricNotAvailable))
 	assert.Equal(t, "---", FormatRate(-1))
-	assert.Equal(t, "---", FormatRate(-1.0))
 	assert.Equal(t, "---", FormatRate(-0.001))
 }
 

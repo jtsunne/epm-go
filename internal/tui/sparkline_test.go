@@ -100,3 +100,37 @@ func TestRenderSparkline_ZeroWidth(t *testing.T) {
 		t.Errorf("expected empty string for width=0, got %q", result)
 	}
 }
+
+func TestRenderSparkline_AllSentinel(t *testing.T) {
+	// All MetricNotAvailable (-1.0) values: maxVal <= 0, so every bar renders at floor.
+	values := []float64{-1, -1, -1, -1, -1}
+	result := []rune(stripANSI(RenderSparkline(values, 5, testColor)))
+	if len(result) != 5 {
+		t.Fatalf("expected 5 runes, got %d: %q", len(result), string(result))
+	}
+	for i, ch := range result {
+		if ch != '▁' {
+			t.Errorf("index %d: expected '▁' (floor) for sentinel, got %q", i, ch)
+		}
+	}
+}
+
+func TestRenderSparkline_MixedSentinel(t *testing.T) {
+	// Sentinel values mixed with real values: sentinel renders at floor level (clamped to 0).
+	values := []float64{-1, 5, -1}
+	result := []rune(stripANSI(RenderSparkline(values, 3, testColor)))
+	if len(result) != 3 {
+		t.Fatalf("expected 3 runes, got %d: %q", len(result), string(result))
+	}
+	// First and last are sentinel (-1), which produces negative idx clamped to 0 → '▁'
+	if result[0] != '▁' {
+		t.Errorf("index 0: expected '▁' for sentinel, got %q", result[0])
+	}
+	// Middle is the max value → '█'
+	if result[1] != '█' {
+		t.Errorf("index 1: expected '█' for max value, got %q", result[1])
+	}
+	if result[2] != '▁' {
+		t.Errorf("index 2: expected '▁' for sentinel, got %q", result[2])
+	}
+}

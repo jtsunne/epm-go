@@ -100,8 +100,8 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		app.nodeTable.SetData(msg.NodeRows)
 		app.computeTablePageSizes()
 		// Only push to history when we have a previous snapshot — the first
-		// poll has no delta, so all rate/latency metrics are zero and would
-		// corrupt the sparkline baseline.
+		// poll has no delta, so all rate/latency metrics are MetricNotAvailable
+		// (-1.0) and must not be pushed into the sparkline history.
 		if app.previous != nil {
 			app.history.Push(model.SparklinePoint{
 				Timestamp:     msg.Snapshot.FetchedAt,

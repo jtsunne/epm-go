@@ -298,6 +298,32 @@ func TestRenderOverview_WithSnapshot(t *testing.T) {
 	assert.Contains(t, stripped, "42")
 }
 
+// TestApp_TabSwitchesFocus verifies that Tab toggles activeTable and updates
+// focused state on both index and node tables independently.
+func TestApp_TabSwitchesFocus(t *testing.T) {
+	app := NewApp(nil, 10*time.Second)
+	// Initial state: activeTable=0, indexTable focused, nodeTable unfocused.
+	require.Equal(t, 0, app.activeTable)
+	require.True(t, app.indexTable.focused)
+	require.False(t, app.nodeTable.focused)
+
+	tab := tea.KeyMsg{Type: tea.KeyTab}
+
+	// First Tab: switch to node table.
+	newModel, _ := app.Update(tab)
+	updated := newModel.(*App)
+	assert.Equal(t, 1, updated.activeTable, "activeTable should be 1 after Tab")
+	assert.False(t, updated.indexTable.focused, "indexTable should be unfocused after Tab")
+	assert.True(t, updated.nodeTable.focused, "nodeTable should be focused after Tab")
+
+	// Second Tab: switch back to index table.
+	newModel, _ = updated.Update(tab)
+	updated = newModel.(*App)
+	assert.Equal(t, 0, updated.activeTable, "activeTable should wrap back to 0")
+	assert.True(t, updated.indexTable.focused, "indexTable should be focused again")
+	assert.False(t, updated.nodeTable.focused, "nodeTable should be unfocused again")
+}
+
 // stripANSI removes ANSI escape sequences for plain-text content assertions.
 // Handles all CSI sequences (not just SGR m-terminated ones).
 func stripANSI(s string) string {
