@@ -105,7 +105,7 @@ Final phase: production-quality error states, threshold-based visual alerts on o
 
 ### Task 7: `--insecure` auto-suggestion
 
-- [ ] update `cmd/epm/main.go`:
+- [x] update `cmd/epm/main.go`:
   - if URI scheme is `https://` and `--insecure` not set: note in startup info (not an error, just a hint)
   - if connection fails with TLS error AND scheme is https: print "Hint: add --insecure flag for self-signed certificates" to stderr
   - `--insecure` automatically enables `InsecureSkipVerify` in the TLS config

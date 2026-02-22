@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -100,6 +101,15 @@ func main() {
 		}
 	}
 
+	// Hint: connecting to https:// without --insecure may fail if the cluster
+	// uses a self-signed certificate. Print once before the TUI starts.
+	{
+		u, _ := url.Parse(baseURL)
+		if u != nil && u.Scheme == "https" && !*insecure {
+			fmt.Fprintln(os.Stderr, "note: connecting to https:// — if the cluster uses a self-signed certificate, add --insecure")
+		}
+	}
+
 	requestTimeout := *interval - 500*time.Millisecond
 
 	cfg := client.ClientConfig{
@@ -118,8 +128,23 @@ func main() {
 
 	app := tui.NewApp(c, *interval)
 	p := tea.NewProgram(app, tea.WithAltScreen())
-	if _, err := p.Run(); err != nil {
+	finalModel, err := p.Run()
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
+	}
+
+	// After the TUI exits, if the last error was a TLS error and --insecure
+	// was not set, print a post-exit hint to stderr (visible in the terminal
+	// after the alt screen is restored).
+	if !*insecure {
+		if a, ok := finalModel.(*tui.App); ok {
+			if lastErr := a.LastError(); lastErr != nil {
+				msg := strings.ToLower(lastErr.Error())
+				if strings.Contains(msg, "certificate") || strings.Contains(msg, "tls") || strings.Contains(msg, "x509") {
+					fmt.Fprintln(os.Stderr, "hint: connection failed due to a TLS error — try adding --insecure for self-signed certificates")
+				}
+			}
+		}
 	}
 }

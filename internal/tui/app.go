@@ -363,6 +363,12 @@ func (app *App) computeTablePageSizes() {
 	app.nodeTable.clampPage(len(app.nodeTable.displayRows))
 }
 
+// LastError returns the most recent fetch error, or nil if the last fetch
+// was successful. Used by main to decide whether to print a post-exit hint.
+func (app *App) LastError() error {
+	return app.lastError
+}
+
 // renderedHeight returns the number of terminal lines a rendered section
 // occupies. Returns 0 for empty strings (sections absent before data arrives).
 func renderedHeight(s string) int {
