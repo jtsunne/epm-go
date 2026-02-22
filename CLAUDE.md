@@ -5,12 +5,22 @@ Go TUI reimplementation of the Chrome extension "Elasticsearch Performance Monit
 ## Usage
 
 ```bash
-epm [--interval 10s] [--insecure] <elasticsearch-uri>
+epm [--interval 10s] [--insecure] [--user USER] [--password PASS] <elasticsearch-uri>
 
 # Examples
 epm http://localhost:9200
 epm --insecure https://elastic:changeme@prod.example.com:9200
 epm --interval 30s http://localhost:9200
+
+# Credentials with special characters (# ? % etc.) — use flags instead of URI
+epm --user root --password "op0107##" https://host:9200
+epm --insecure --user root --password "s3cr#t!" https://prod.example.com:9200
+
+# Credentials via environment variables
+ES_USER=elastic ES_PASSWORD=changeme epm http://localhost:9200
+ES_PASSWORD="op0107##" epm --user root https://host:9200
+
+# Credential priority: --user/--password flags > ES_USER/ES_PASSWORD env vars > URI-embedded
 ```
 
 ## Tech Stack

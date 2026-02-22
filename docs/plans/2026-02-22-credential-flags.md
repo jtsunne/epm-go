@@ -48,8 +48,8 @@
 - [x] Run linter (`make lint`)
 
 ### Task 3: Update documentation
-- [ ] Update CLAUDE.md usage section with new flags and env var examples
-- [ ] Add credential examples to the examples section showing all three methods
+- [x] Update CLAUDE.md usage section with new flags and env var examples
+- [x] Add credential examples to the examples section showing all three methods
 
 ## Technical Details
 
