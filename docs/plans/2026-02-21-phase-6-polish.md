@@ -166,7 +166,7 @@ Final phase: production-quality error states, threshold-based visual alerts on o
 
 ### Task 11: Final integration test file
 
-- [ ] create `internal/integration_test.go` (build tag: `//go:build integration`):
+- [x] create `internal/integration_test.go` (build tag: `//go:build integration`):
   - `TestLiveCluster_AllEndpoints` — connects to `$ES_URI`, calls FetchAll, verifies non-empty snapshot
   - `TestLiveCluster_MetricsNonNegative` — runs 2 polls, verifies rates >= 0
   - `TestLiveCluster_HTTPSWithInsecure` — if URI is https://, verify TLS skip-verify works
