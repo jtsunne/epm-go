@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/mattn/go-runewidth"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -30,15 +31,19 @@ func TestTruncateName(t *testing.T) {
 		{"width 4", "abcde", 4, "a..."},
 		{"unicode fits", "héllo", 5, "héllo"},
 		{"unicode truncated", "héllo world", 8, "héllo..."},
+		// Wide characters (CJK): each occupies 2 terminal columns.
+		{"wide chars fit", "中文", 4, "中文"},
+		{"wide chars truncated", "中文测试", 5, "中..."},
+		{"wide chars truncated exact", "中文测试", 7, "中文..."},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			got := truncateName(tc.s, tc.maxWidth)
 			assert.Equal(t, tc.want, got)
-			// Result must never exceed maxWidth runes.
+			// Result must never exceed maxWidth terminal display cells.
 			if tc.maxWidth > 0 {
-				assert.LessOrEqual(t, len([]rune(got)), tc.maxWidth,
-					"result rune length must not exceed maxWidth")
+				assert.LessOrEqual(t, runewidth.StringWidth(got), tc.maxWidth,
+					"result display width must not exceed maxWidth")
 			}
 		})
 	}

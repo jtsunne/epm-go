@@ -304,6 +304,54 @@ func TestRenderOverview_WidthFillsTerminal(t *testing.T) {
 	}
 }
 
+func TestRenderOverview_UltraNarrowReturnsEmpty(t *testing.T) {
+	// Widths 1-5 cannot render two paired cards without content overflow:
+	// paired cards get Width(<=2) leaving inner content space of 0 or negative,
+	// which causes unbreakable strings (bar chars, metric values) to exceed terminal width.
+	// renderOverview must return "" for these widths.
+	for _, w := range []int{1, 2, 3, 4, 5} {
+		t.Run(fmt.Sprintf("width=%d", w), func(t *testing.T) {
+			app := NewApp(nil, 10*time.Second)
+			app.width = w
+
+			snap := makeFixtureSnapshot()
+			snap.Health.Status = "green"
+			app.current = snap
+			app.resources = model.ClusterResources{}
+
+			assert.Equal(t, "", renderOverview(app), "renderOverview should return empty string for width=%d", w)
+		})
+	}
+}
+
+func TestRenderOverview_NarrowEdgeWidths(t *testing.T) {
+	// Narrow mode (< 80) should not overflow at ultra-narrow widths.
+	// Width 6 is the minimum: all paired cards have Width(3), inner content space = 1,
+	// which allows lipgloss to hard-wrap any single-word content without overflow.
+	// Each row is 2 paired cards; their combined width must not exceed app.width.
+	narrowWidths := []int{6, 7, 8, 10, 20, 40, 60, 79}
+	for _, w := range narrowWidths {
+		t.Run(fmt.Sprintf("width=%d", w), func(t *testing.T) {
+			app := NewApp(nil, 10*time.Second)
+			app.width = w
+
+			snap := makeFixtureSnapshot()
+			snap.Health.Status = "green"
+			app.current = snap
+			app.resources = model.ClusterResources{}
+
+			result := renderOverview(app)
+			require.NotEmpty(t, result)
+
+			// Each row in narrow mode must not exceed app.width columns.
+			for i, line := range strings.Split(result, "\n") {
+				got := lipgloss.Width(line)
+				assert.LessOrEqual(t, got, w, "narrow overview line %d width %d > terminal %d", i, got, w)
+			}
+		})
+	}
+}
+
 func TestRenderOverview_WideMode_EqualCardHeights(t *testing.T) {
 	app := NewApp(nil, 10*time.Second)
 	app.width = 120

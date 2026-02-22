@@ -4,6 +4,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/mattn/go-runewidth"
 )
 
 // columnDef describes a single column in a table.
@@ -209,22 +210,22 @@ func (t *tableModel) currentPageRowCount(totalRows int) int {
 	return end - start
 }
 
-// truncateName truncates s to fit within maxWidth runes, appending "..."
-// if truncated. Returns s unchanged if it fits. Uses []rune for correct
-// Unicode handling. ES index names are ASCII in practice, but node names
-// can be arbitrary hostnames.
+// truncateName truncates s to fit within maxWidth terminal display cells,
+// appending "..." if truncated. Returns s unchanged if it fits.
+// Uses display-width measurement to correctly handle wide characters
+// (CJK, emoji) that occupy 2 terminal columns per code point.
+// ES index names are ASCII in practice, but node names can be arbitrary.
 func truncateName(s string, maxWidth int) string {
-	runes := []rune(s)
-	if len(runes) <= maxWidth {
+	if maxWidth <= 0 {
+		return ""
+	}
+	if runewidth.StringWidth(s) <= maxWidth {
 		return s
 	}
 	if maxWidth <= 3 {
-		if maxWidth <= 0 {
-			return ""
-		}
-		return string(runes[:maxWidth])
+		return runewidth.Truncate(s, maxWidth, "")
 	}
-	return string(runes[:maxWidth-3]) + "..."
+	return runewidth.Truncate(s, maxWidth, "...")
 }
 
 // columnWidths distributes available terminal width across table columns,

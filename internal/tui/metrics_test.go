@@ -1,9 +1,12 @@
 package tui
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -38,11 +41,10 @@ func TestRenderMetricCard_NoUnit(t *testing.T) {
 }
 
 func TestRenderMetricCard_MinWidthEnforced(t *testing.T) {
-	// Card width below 20 should still render without panicking.
+	// Card width below the internal minimum should still render without panicking.
+	// Content may wrap at very narrow widths — only check non-empty output.
 	result := renderMetricCard("Rate", "1.0", "", nil, 5, colorGreen, StyleDim)
 	require.NotEmpty(t, result)
-	stripped := stripANSI(result)
-	assert.Contains(t, stripped, "Rate")
 }
 
 func TestRenderMetricsRow_NilSnapshot(t *testing.T) {
@@ -82,18 +84,74 @@ func TestRenderMetricsRow_WithSnapshot(t *testing.T) {
 }
 
 func TestRenderMetricsRow_NarrowTerminal(t *testing.T) {
-	// width < 80 triggers 2x2 grid layout — should not panic and should contain all titles.
-	app := NewApp(nil, 10*time.Second)
-	app.width = 60
+	// width < 80 triggers 2x2 grid layout — should not panic or overflow.
+	// Widths >= 20 guarantee "Rate" (4 chars) fits on one card line without wrapping.
+	narrowWidths := []int{60, 40, 30, 20}
+	for _, w := range narrowWidths {
+		t.Run(fmt.Sprintf("width=%d", w), func(t *testing.T) {
+			app := NewApp(nil, 10*time.Second)
+			app.width = w
 
-	snap := &model.Snapshot{FetchedAt: time.Now()}
-	app.current = snap
-	app.metrics = model.PerformanceMetrics{}
+			snap := &model.Snapshot{FetchedAt: time.Now()}
+			app.current = snap
+			app.metrics = model.PerformanceMetrics{}
 
-	result := renderMetricsRow(app)
-	require.NotEmpty(t, result)
+			result := renderMetricsRow(app)
+			require.NotEmpty(t, result)
 
-	stripped := stripANSI(result)
-	assert.Contains(t, stripped, "Indexing Rate")
-	assert.Contains(t, stripped, "Search Latency")
+			stripped := stripANSI(result)
+			// Section label and "Rate" (4 chars) fit on one line at all tested widths.
+			assert.Contains(t, stripped, "Cluster Performance")
+			assert.Contains(t, stripped, "Rate")
+
+			// No line in the rendered output may exceed app.width columns.
+			for i, line := range strings.Split(result, "\n") {
+				got := lipgloss.Width(line)
+				assert.LessOrEqual(t, got, w, "narrow metrics line %d width %d > terminal %d", i, got, w)
+			}
+		})
+	}
+}
+
+func TestRenderMetricsRow_NarrowEdgeWidths(t *testing.T) {
+	// width=12 is the minimum that renders the 2x2 grid (cardWidth=8, 2*(8-2)=12).
+	// Content wraps severely at this width so only the no-overflow invariant is checked.
+	edgeWidths := []int{12, 13, 14, 15}
+	for _, w := range edgeWidths {
+		t.Run(fmt.Sprintf("width=%d", w), func(t *testing.T) {
+			app := NewApp(nil, 10*time.Second)
+			app.width = w
+
+			snap := &model.Snapshot{FetchedAt: time.Now()}
+			app.current = snap
+			app.metrics = model.PerformanceMetrics{}
+
+			result := renderMetricsRow(app)
+			require.NotEmpty(t, result)
+
+			// No line in the rendered output may exceed app.width columns.
+			for i, line := range strings.Split(result, "\n") {
+				got := lipgloss.Width(line)
+				assert.LessOrEqual(t, got, w, "edge metrics line %d width %d > terminal %d", i, got, w)
+			}
+		})
+	}
+}
+
+func TestRenderMetricsRow_TooNarrowReturnsEmpty(t *testing.T) {
+	// widths < 12 cannot fit two 8-wide cards without overflow — must return empty string.
+	tooNarrowWidths := []int{11, 10, 8, 4, 1}
+	for _, w := range tooNarrowWidths {
+		t.Run(fmt.Sprintf("width=%d", w), func(t *testing.T) {
+			app := NewApp(nil, 10*time.Second)
+			app.width = w
+
+			snap := &model.Snapshot{FetchedAt: time.Now()}
+			app.current = snap
+			app.metrics = model.PerformanceMetrics{}
+
+			result := renderMetricsRow(app)
+			assert.Equal(t, "", result, "expected empty string for too-narrow terminal width=%d", w)
+		})
+	}
 }

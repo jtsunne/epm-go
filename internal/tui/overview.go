@@ -27,6 +27,13 @@ func renderOverview(app *App) string {
 	if width <= 0 {
 		width = 80
 	}
+	if width < 6 {
+		// Paired cards need at least Width(3) each (inner=1) so lipgloss can
+		// hard-wrap single-word content without overflowing. Below 6, the inner
+		// content space is 0 or negative and unbreakable strings (bar chars,
+		// metric values) overflow the terminal width.
+		return ""
+	}
 
 	narrowMode := width < 80
 
@@ -50,6 +57,17 @@ func renderOverview(app *App) string {
 		// Card 7 (index 6) spans the full row alone.
 		narrowBase := width / 2
 		narrowRem := width % 2
+		// Preferred minimum of 4 per paired card, but cap at narrowBase so the
+		// pair (2 * cardWidth) never exceeds the terminal width. At ultra-narrow
+		// widths (narrowBase < 4) use narrowBase directly; floor at 1 to prevent
+		// zero-width cards.
+		minPaired := 4
+		if narrowBase < minPaired {
+			minPaired = narrowBase
+		}
+		if minPaired < 1 {
+			minPaired = 1
+		}
 		for i := range cardWidths {
 			switch {
 			case i == 6:
@@ -59,9 +77,9 @@ func renderOverview(app *App) string {
 			default:
 				cardWidths[i] = narrowBase
 			}
-			// Enforce minimum card width for paired cards.
-			if i < 6 && cardWidths[i] < 10 {
-				cardWidths[i] = 10
+			// Enforce minimum card width for paired cards without overflowing terminal.
+			if i < 6 && cardWidths[i] < minPaired {
+				cardWidths[i] = minPaired
 			}
 		}
 	} else {

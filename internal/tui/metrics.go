@@ -16,7 +16,10 @@ import (
 //	│ ▁▂▃▅▇█▇▅▃▂       │   ← colored sparkline
 //	╰──────────────────╯
 func renderMetricCard(title, value, unit string, sparkValues []float64, cardWidth int, color lipgloss.Color, titleStyle lipgloss.Style) string {
-	const minCardWidth = 20
+	// Minimum of 8 avoids zero/negative Width() args.
+	// Narrow mode callers return early before passing cardWidth < 8.
+	// Wide mode callers enforce their own ≥20 floor before passing cardWidth here.
+	const minCardWidth = 8
 	if cardWidth < minCardWidth {
 		cardWidth = minCardWidth
 	}
@@ -76,10 +79,16 @@ func renderMetricsRow(app *App) string {
 		// 2x2 grid layout for narrow terminals.
 		// Each card renders at (cardWidth-2) chars wide (lipgloss Width includes padding,
 		// border adds 2). For 2 cards to fill app.width: 2*(cardWidth-2)=app.width → cardWidth=(app.width+4)/2.
+		// Do not clamp to a minimum greater than what the formula produces: clamping to 8
+		// when app.width < 12 would make 2*(8-2)=12 > app.width and cause horizontal overflow.
+		// Instead, return empty when the terminal is too narrow for the minimum card size.
 		cardWidth := (app.width + 4) / 2
-		if cardWidth < 20 {
-			cardWidth = 20
+		if cardWidth < 8 {
+			return ""
 		}
+		// Truncate the label so it never widens the JoinVertical block beyond app.width.
+		// "Cluster Performance" is 19 chars; without MaxWidth it would dominate at narrow widths.
+		narrowLabel := StyleDim.MaxWidth(app.width).Render("Cluster Performance")
 		top := lipgloss.JoinHorizontal(lipgloss.Top,
 			renderMetricCard("Indexing Rate", format.FormatRate(app.metrics.IndexingRate), "", app.history.Values("indexingRate"), cardWidth, colorGreen, StyleDim),
 			renderMetricCard("Search Rate", format.FormatRate(app.metrics.SearchRate), "", app.history.Values("searchRate"), cardWidth, colorCyan, StyleDim),
@@ -88,7 +97,7 @@ func renderMetricsRow(app *App) string {
 			renderMetricCard("Index Latency", format.FormatLatency(app.metrics.IndexLatency), "", app.history.Values("indexLatency"), cardWidth, colorYellow, idxLatTitleStyle),
 			renderMetricCard("Search Latency", format.FormatLatency(app.metrics.SearchLatency), "", app.history.Values("searchLatency"), cardWidth, colorRed, srchLatTitleStyle),
 		)
-		return lipgloss.JoinVertical(lipgloss.Left, label, top, bottom)
+		return lipgloss.JoinVertical(lipgloss.Left, narrowLabel, top, bottom)
 	}
 
 	// 1x4 horizontal row for wide terminals.
