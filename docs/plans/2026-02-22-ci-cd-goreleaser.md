@@ -55,9 +55,9 @@
 - [x] Workflow: тесты → goreleaser release (только при пуше тега `v*`)
 
 ### Task 6: Пушнуть на GitHub и проверить CI
-- [ ] Добавить remote: `git remote add origin git@github.com:jtsunne/epm-go.git`
-- [ ] Пушнуть main ветку: `git push -u origin main`
-- [ ] Проверить что CI workflow запустился и прошёл в GitHub Actions
+- [x] Добавить remote: `git remote add origin git@github.com:jtsunne/epm-go.git`
+- [x] Пушнуть main ветку: `git push -u origin main`
+- [x] Проверить что CI workflow запустился и прошёл в GitHub Actions
 
 ### Task 7: Верификация
 - [ ] `goreleaser check` — валидация конфига
