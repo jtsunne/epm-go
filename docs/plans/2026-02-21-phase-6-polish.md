@@ -124,7 +124,7 @@ Final phase: production-quality error states, threshold-based visual alerts on o
 
 ### Task 9: Makefile finalization
 
-- [ ] update `Makefile`:
+- [x] update `Makefile`:
   ```makefile
   .PHONY: build test lint clean run
 
@@ -147,8 +147,8 @@ Final phase: production-quality error states, threshold-based visual alerts on o
   integration:
   	ES_URI=$(ES_URI) go test -tags=integration ./...
   ```
-- [ ] add version variable in `cmd/epm/main.go`: `var version = "dev"` (overridden by ldflags)
-- [ ] `--version` flag prints the version
+- [x] add version variable in `cmd/epm/main.go`: `var version = "dev"` (overridden by ldflags)
+- [x] `--version` flag prints the version
 
 ### Task 10: README.md
 
