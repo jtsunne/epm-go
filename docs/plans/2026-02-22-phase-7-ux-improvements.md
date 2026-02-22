@@ -270,17 +270,17 @@ Two UX issues found during testing of the completed Phase 1-6 implementation:
 
 ### Task 9: Final verification
 
-- [ ] run `go test -race ./...` — all pass, no race conditions
-- [ ] run `go vet ./...` — clean
-- [ ] run `go build -o bin/epm ./cmd/epm` — clean build
-- [ ] manual: first snapshot shows "---" for all rate/latency; second poll shows real values
-- [ ] manual: cluster with 0 activity — after second poll shows "0 /s" (not "---")
-- [ ] manual: long index names truncated with "...", row height stays 1 line
-- [ ] manual: ↑↓ / j/k move cursor highlight within focused table
-- [ ] manual: detail line shows full untruncated name below focused table
-- [ ] manual: tab switches focus — cursor + detail line move to other table
-- [ ] manual: page change / search / sort resets cursor to first row
-- [ ] manual: terminal resize — cursor clamped, layout stable
+- [x] run `go test -race ./...` — all pass, no race conditions
+- [x] run `go vet ./...` — clean
+- [x] run `go build -o bin/epm ./cmd/epm` — clean build
+- [x] manual: first snapshot shows "---" for all rate/latency; second poll shows real values
+- [x] manual: cluster with 0 activity — after second poll shows "0 /s" (not "---")
+- [x] manual: long index names truncated with "...", row height stays 1 line
+- [x] manual: ↑↓ / j/k move cursor highlight within focused table
+- [x] manual: detail line shows full untruncated name below focused table
+- [x] manual: tab switches focus — cursor + detail line move to other table
+- [x] manual: page change / search / sort resets cursor to first row
+- [x] manual: terminal resize — cursor clamped, layout stable
 
 ### Task 10: Move plan to completed
 
