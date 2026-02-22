@@ -58,7 +58,7 @@ Two UX issues found during testing of the completed Phase 1-6 implementation:
 - Modify: `internal/engine/calculator.go`
 - Modify: `internal/engine/calculator_test.go`
 
-- [ ] update `CalcClusterMetrics()`: early-return branch returns all four fields as `model.MetricNotAvailable` instead of zero-value struct:
+- [x] update `CalcClusterMetrics()`: early-return branch returns all four fields as `model.MetricNotAvailable` instead of zero-value struct:
   ```go
   if prev == nil || curr == nil || elapsed.Seconds() < minTimeDiffSeconds {
       return model.PerformanceMetrics{
@@ -69,16 +69,16 @@ Two UX issues found during testing of the completed Phase 1-6 implementation:
       }
   }
   ```
-- [ ] update `CalcNodeRows()`: when `!enoughTime`, assign sentinel to rate/latency fields of each row:
+- [x] update `CalcNodeRows()`: when `!enoughTime`, assign sentinel to rate/latency fields of each row:
   ```go
   row.IndexingRate = model.MetricNotAvailable
   row.SearchRate = model.MetricNotAvailable
   row.IndexLatency = model.MetricNotAvailable
   row.SearchLatency = model.MetricNotAvailable
   ```
-- [ ] update `CalcIndexRows()`: same sentinel assignment when `!enoughTime`
-- [ ] update existing `calculator_test.go` table cases that expected `0` for nil-prev scenarios to expect `model.MetricNotAvailable`
-- [ ] run `go test ./internal/engine/...` — all pass
+- [x] update `CalcIndexRows()`: same sentinel assignment when `!enoughTime`
+- [x] update existing `calculator_test.go` table cases that expected `0` for nil-prev scenarios to expect `model.MetricNotAvailable`
+- [x] run `go test ./internal/engine/...` — all pass
 
 ### Task 3: Handle sentinel in formatters
 

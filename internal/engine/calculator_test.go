@@ -98,7 +98,13 @@ func TestCalcClusterMetrics_FirstSnapshot(t *testing.T) {
 		IndexStats: makeClusterIndexStats(1000, 500, 2000, 800),
 	}
 	got := CalcClusterMetrics(nil, curr, 10*time.Second)
-	assert.Equal(t, model.PerformanceMetrics{}, got)
+	want := model.PerformanceMetrics{
+		IndexingRate:  model.MetricNotAvailable,
+		SearchRate:    model.MetricNotAvailable,
+		IndexLatency:  model.MetricNotAvailable,
+		SearchLatency: model.MetricNotAvailable,
+	}
+	assert.Equal(t, want, got)
 }
 
 func TestCalcClusterMetrics_NilCurr(t *testing.T) {
@@ -106,7 +112,13 @@ func TestCalcClusterMetrics_NilCurr(t *testing.T) {
 		IndexStats: makeClusterIndexStats(1000, 500, 2000, 800),
 	}
 	got := CalcClusterMetrics(prev, nil, 10*time.Second)
-	assert.Equal(t, model.PerformanceMetrics{}, got)
+	want := model.PerformanceMetrics{
+		IndexingRate:  model.MetricNotAvailable,
+		SearchRate:    model.MetricNotAvailable,
+		IndexLatency:  model.MetricNotAvailable,
+		SearchLatency: model.MetricNotAvailable,
+	}
+	assert.Equal(t, want, got)
 }
 
 func TestCalcClusterMetrics_BasicRates(t *testing.T) {
@@ -152,9 +164,15 @@ func TestCalcClusterMetrics_TooShortInterval(t *testing.T) {
 	curr := &model.Snapshot{
 		IndexStats: makeClusterIndexStats(2000, 700, 3500, 1300),
 	}
-	// 500ms < 1s → return zeros
+	// 500ms < 1s → return sentinels
 	got := CalcClusterMetrics(prev, curr, 500*time.Millisecond)
-	assert.Equal(t, model.PerformanceMetrics{}, got)
+	want := model.PerformanceMetrics{
+		IndexingRate:  model.MetricNotAvailable,
+		SearchRate:    model.MetricNotAvailable,
+		IndexLatency:  model.MetricNotAvailable,
+		SearchLatency: model.MetricNotAvailable,
+	}
+	assert.Equal(t, want, got)
 }
 
 func TestCalcClusterMetrics_RateSanityCap(t *testing.T) {
@@ -387,7 +405,7 @@ func makeIndexStats(priIdxOps, priIdxTime, priSrchOps, priSrchTime,
 }
 
 func TestCalcIndexRows_NilPrev(t *testing.T) {
-	// No previous snapshot → all rates must be zero, but rows are returned.
+	// No previous snapshot → rate/latency fields set to MetricNotAvailable, rows are returned.
 	curr := &model.Snapshot{
 		Indices: []client.IndexInfo{
 			{Index: "logs", Pri: "1", Rep: "0", DocsCount: "1000"},
@@ -401,10 +419,10 @@ func TestCalcIndexRows_NilPrev(t *testing.T) {
 	rows := CalcIndexRows(nil, curr, 10*time.Second)
 	assert.Len(t, rows, 1)
 	assert.Equal(t, "logs", rows[0].Name)
-	assert.Equal(t, 0.0, rows[0].IndexingRate)
-	assert.Equal(t, 0.0, rows[0].SearchRate)
-	assert.Equal(t, 0.0, rows[0].IndexLatency)
-	assert.Equal(t, 0.0, rows[0].SearchLatency)
+	assert.Equal(t, model.MetricNotAvailable, rows[0].IndexingRate)
+	assert.Equal(t, model.MetricNotAvailable, rows[0].SearchRate)
+	assert.Equal(t, model.MetricNotAvailable, rows[0].IndexLatency)
+	assert.Equal(t, model.MetricNotAvailable, rows[0].SearchLatency)
 }
 
 func TestCalcIndexRows_ShardCountParsing(t *testing.T) {
@@ -524,7 +542,7 @@ func TestCalcNodeRows_NilCurr(t *testing.T) {
 }
 
 func TestCalcNodeRows_NilPrev(t *testing.T) {
-	// No previous snapshot → rows returned with zero rates.
+	// No previous snapshot → rate/latency fields set to MetricNotAvailable, rows are returned.
 	curr := &model.Snapshot{
 		Nodes: []client.NodeInfo{
 			{Name: "node-a", NodeRole: "d", IP: "10.0.0.1"},
@@ -535,10 +553,10 @@ func TestCalcNodeRows_NilPrev(t *testing.T) {
 	assert.Len(t, rows, 1)
 	assert.Equal(t, "id1", rows[0].ID)
 	assert.Equal(t, "node-a", rows[0].Name)
-	assert.Equal(t, 0.0, rows[0].IndexingRate)
-	assert.Equal(t, 0.0, rows[0].SearchRate)
-	assert.Equal(t, 0.0, rows[0].IndexLatency)
-	assert.Equal(t, 0.0, rows[0].SearchLatency)
+	assert.Equal(t, model.MetricNotAvailable, rows[0].IndexingRate)
+	assert.Equal(t, model.MetricNotAvailable, rows[0].SearchRate)
+	assert.Equal(t, model.MetricNotAvailable, rows[0].IndexLatency)
+	assert.Equal(t, model.MetricNotAvailable, rows[0].SearchLatency)
 }
 
 func TestCalcNodeRows_BasicRates(t *testing.T) {
@@ -567,7 +585,8 @@ func TestCalcNodeRows_BasicRates(t *testing.T) {
 }
 
 func TestCalcNodeRows_NewNode(t *testing.T) {
-	// Node in curr that didn't exist in prev → zero rates, no crash.
+	// Node in curr that didn't exist in prev → zero rates (enoughTime is true,
+	// but no prev entry for this node), no crash.
 	prev := &model.Snapshot{
 		NodeStats: client.NodeStatsResponse{
 			Nodes: map[string]client.NodePerformanceStats{},
@@ -582,6 +601,7 @@ func TestCalcNodeRows_NewNode(t *testing.T) {
 	rows := CalcNodeRows(prev, curr, 10*time.Second)
 	assert.Len(t, rows, 1)
 	assert.Equal(t, "id-new", rows[0].ID)
+	// enoughTime is true (prev != nil, elapsed >= 1s) but node not in prev → rates are 0
 	assert.Equal(t, 0.0, rows[0].IndexingRate)
 	assert.Equal(t, 0.0, rows[0].SearchRate)
 }
@@ -601,7 +621,7 @@ func TestCalcNodeRows_RoleAndIPFromNodes(t *testing.T) {
 }
 
 func TestCalcNodeRows_TooShortInterval(t *testing.T) {
-	// elapsed < 1s → zero rates even with valid prev.
+	// elapsed < 1s → sentinel rates (not enough time for valid delta).
 	prev := &model.Snapshot{
 		NodeStats: makeNodeStatsWithID("id1", "node-a", 1000, 500, 2000, 800),
 	}
@@ -610,6 +630,8 @@ func TestCalcNodeRows_TooShortInterval(t *testing.T) {
 	}
 	rows := CalcNodeRows(prev, curr, 500*time.Millisecond)
 	assert.Len(t, rows, 1)
-	assert.Equal(t, 0.0, rows[0].IndexingRate)
-	assert.Equal(t, 0.0, rows[0].SearchRate)
+	assert.Equal(t, model.MetricNotAvailable, rows[0].IndexingRate)
+	assert.Equal(t, model.MetricNotAvailable, rows[0].SearchRate)
+	assert.Equal(t, model.MetricNotAvailable, rows[0].IndexLatency)
+	assert.Equal(t, model.MetricNotAvailable, rows[0].SearchLatency)
 }

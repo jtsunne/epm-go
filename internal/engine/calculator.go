@@ -54,6 +54,11 @@ func CalcNodeRows(prev, curr *model.Snapshot, elapsed time.Duration) []model.Nod
 				row.IndexLatency = clampLatency(safeDivide(idxTimeDelta, idxOpsDelta))
 				row.SearchLatency = clampLatency(safeDivide(srchTimeDelta, srchOpsDelta))
 			}
+		} else {
+			row.IndexingRate = model.MetricNotAvailable
+			row.SearchRate = model.MetricNotAvailable
+			row.IndexLatency = model.MetricNotAvailable
+			row.SearchLatency = model.MetricNotAvailable
 		}
 
 		rows = append(rows, row)
@@ -111,12 +116,17 @@ func maxFloat64(a, b float64) float64 {
 // between two consecutive snapshots. Aggregates indexing ops from primaries and
 // search ops from totals across all index stats, per the spec.
 //
-// Returns zero PerformanceMetrics when:
+// Returns MetricNotAvailable for all rate/latency fields when:
 //   - prev or curr is nil (first snapshot, no baseline)
 //   - elapsed < minTimeDiffSeconds (interval too short, data unreliable)
 func CalcClusterMetrics(prev, curr *model.Snapshot, elapsed time.Duration) model.PerformanceMetrics {
 	if prev == nil || curr == nil || elapsed.Seconds() < minTimeDiffSeconds {
-		return model.PerformanceMetrics{}
+		return model.PerformanceMetrics{
+			IndexingRate:  model.MetricNotAvailable,
+			SearchRate:    model.MetricNotAvailable,
+			IndexLatency:  model.MetricNotAvailable,
+			SearchLatency: model.MetricNotAvailable,
+		}
 	}
 
 	var (
@@ -373,6 +383,11 @@ func CalcIndexRows(prev, curr *model.Snapshot, elapsed time.Duration) []model.In
 			row.SearchRate = clampRate(srchOpsDelta / elapsedSec)
 			row.IndexLatency = clampLatency(safeDivide(idxTimeDelta, idxOpsDelta))
 			row.SearchLatency = clampLatency(safeDivide(srchTimeDelta, srchOpsDelta))
+		} else {
+			row.IndexingRate = model.MetricNotAvailable
+			row.SearchRate = model.MetricNotAvailable
+			row.IndexLatency = model.MetricNotAvailable
+			row.SearchLatency = model.MetricNotAvailable
 		}
 
 		rows = append(rows, row)
