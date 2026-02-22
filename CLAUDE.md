@@ -217,6 +217,13 @@ make integration ES_URI=http://localhost:9200
 - **Never store credentials** beyond the lifetime of the process (in-memory `ClientConfig` only)
 - **MetricNotAvailable sentinel**: `model.MetricNotAvailable = -1.0` is returned by all calculator functions when `prev == nil` or elapsed < 1s (delta not computable). `FormatRate` and `FormatLatency` treat any value `< 0` as sentinel and display `"---"`. Safe because the engine clamps all real metrics to `>= 0`. Sparkline history guard in `app.go` prevents sentinel values from entering the history buffer.
 
+## lipgloss Layout Patterns
+
+- **`.Width(n)` sets minimum width only** — pads with spaces but does NOT cap overflow. Use `.MaxWidth(n)` to truncate content that exceeds a boundary (e.g., safety net on header bar).
+- **Equal width distribution**: `base = width / n; rem = width % n` — first `rem` elements get `base+1`. Ensures `sum(widths) == width` exactly with no trailing gap.
+- **Card height equalization**: `.Height(n).AlignVertical(lipgloss.Center)` makes lipgloss fill the card background for all `n` lines and vertically centers shorter content — prevents mismatched background fill in `JoinHorizontal`.
+- **Header overflow prevention**: progressive truncation order — truncate left (plain text) first, then right via `MaxWidth`, then hard-truncate center as last resort. Add `const minGap = 1` between segments. Always apply `.MaxWidth(innerWidth)` to the final rendered row as a safety net.
+
 ## ES Version Compatibility
 
 All 5 endpoints are stable across ES 6.x, 7.x, 8.x, 9.x:

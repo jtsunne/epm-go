@@ -97,8 +97,8 @@ In `renderOverview()` (`overview.go:67-141`), equalize card heights in wide mode
 
 ### Task 5: [Final] Update documentation
 
-- [ ] Update CLAUDE.md if any new patterns discovered
-- [ ] Update README.md if needed
+- [x] Update CLAUDE.md if any new patterns discovered
+- [x] Update README.md if needed
 
 ## Technical Details
 
