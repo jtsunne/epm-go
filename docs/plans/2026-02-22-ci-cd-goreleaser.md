@@ -51,8 +51,8 @@
 - [x] 3 параллельных джоба: test, lint (staticcheck), goreleaser config check
 
 ### Task 5: Создать GitHub Actions Release workflow
-- [ ] Создать `.github/workflows/release.yml` (содержимое ниже в Technical Details)
-- [ ] Workflow: тесты → goreleaser release (только при пуше тега `v*`)
+- [x] Создать `.github/workflows/release.yml` (содержимое ниже в Technical Details)
+- [x] Workflow: тесты → goreleaser release (только при пуше тега `v*`)
 
 ### Task 6: Пушнуть на GitHub и проверить CI
 - [ ] Добавить remote: `git remote add origin git@github.com:jtsunne/epm-go.git`
