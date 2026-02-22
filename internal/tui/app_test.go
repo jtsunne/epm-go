@@ -304,6 +304,31 @@ func TestRenderOverview_WidthFillsTerminal(t *testing.T) {
 	}
 }
 
+func TestRenderOverview_WideMode_EqualCardHeights(t *testing.T) {
+	app := NewApp(nil, 10*time.Second)
+	app.width = 120
+
+	snap := makeFixtureSnapshot()
+	snap.Health.Status = "green"
+	snap.Health.NumberOfNodes = 3
+	snap.Health.ActiveShards = 10
+	app.current = snap
+	app.resources = model.ClusterResources{
+		AvgCPUPercent:     50.0,
+		AvgJVMHeapPercent: 60.0,
+		StoragePercent:    70.0,
+		StorageUsedBytes:  1024 * 1024 * 1024,
+		StorageTotalBytes: 2 * 1024 * 1024 * 1024,
+	}
+
+	result := renderOverview(app)
+	// Wide mode: JoinHorizontal equalises all cards to maxCardHeight lines.
+	// After ANSI stripping, the result must have exactly maxCardHeight lines.
+	stripped := stripANSI(result)
+	lines := strings.Split(stripped, "\n")
+	assert.Equal(t, maxCardHeight, len(lines), "wide mode overview should have exactly maxCardHeight lines")
+}
+
 func TestRenderOverview_WithSnapshot(t *testing.T) {
 	app := NewApp(nil, 10*time.Second)
 	app.width = 120

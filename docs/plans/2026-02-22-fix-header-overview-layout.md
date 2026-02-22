@@ -80,12 +80,12 @@ In `renderOverview()` (`overview.go:28-40`), fix the width formula to fill full 
 
 In `renderOverview()` (`overview.go:67-141`), equalize card heights in wide mode:
 
-- [ ] Define `const maxCardHeight = 4` (Storage card has 4 lines: value + bar + used/total + label)
-- [ ] In wide mode: add `.Height(maxCardHeight).AlignVertical(lipgloss.Center)` to all 7 card style chains — makes lipgloss fill background for full height and vertically centers shorter content
-- [ ] In narrow mode: skip explicit height (rows are stacked, per-row heights equalize naturally via `JoinHorizontal`)
-- [ ] Use helper closure `applyHeight := func(s lipgloss.Style) lipgloss.Style` that conditionally applies height only in wide mode
-- [ ] Write test: verify all 7 cards in wide mode have equal line count
-- [ ] Run `make test` — must pass before task 4
+- [x] Define `const maxCardHeight = 4` (Storage card has 4 lines: value + bar + used/total + label)
+- [x] In wide mode: add `.Height(maxCardHeight).AlignVertical(lipgloss.Center)` to all 7 card style chains — makes lipgloss fill background for full height and vertically centers shorter content
+- [x] In narrow mode: skip explicit height (rows are stacked, per-row heights equalize naturally via `JoinHorizontal`)
+- [x] Use helper closure `applyHeight := func(s lipgloss.Style) lipgloss.Style` that conditionally applies height only in wide mode
+- [x] Write test: verify all 7 cards in wide mode have equal line count
+- [x] Run `make test` — must pass before task 4
 
 ### Task 4: Verify acceptance criteria
 

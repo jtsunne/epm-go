@@ -9,6 +9,11 @@ import (
 	"github.com/dm/epm-go/internal/format"
 )
 
+// maxCardHeight is the tallest card content in wide mode.
+// Card 7 (Storage) has 4 lines: value + bar + used/total + label.
+// All other cards are padded to this height for visual consistency.
+const maxCardHeight = 4
+
 // renderOverview renders the 7-stat overview bar.
 // Wide terminals (>= 80 cols): all 7 cards in a single horizontal row.
 // Narrow terminals (< 80 cols): cards stacked in rows of 2 (4 rows: 2+2+2+1).
@@ -24,6 +29,17 @@ func renderOverview(app *App) string {
 	}
 
 	narrowMode := width < 80
+
+	// applyHeight sets a fixed height + vertical centering in wide mode so that
+	// all 7 cards share the same number of lines and lipgloss fills the card
+	// background evenly. Narrow mode skips this — JoinHorizontal per row already
+	// equalises heights within each pair.
+	applyHeight := func(s lipgloss.Style) lipgloss.Style {
+		if !narrowMode {
+			return s.Height(maxCardHeight).AlignVertical(lipgloss.Center)
+		}
+		return s
+	}
 
 	// Build per-card width slice (7 elements, indices 0-6).
 	// Width() in lipgloss sets the outer rendered width (including padding),
@@ -93,30 +109,30 @@ func renderOverview(app *App) string {
 	default:
 		statusBg = colorGray
 	}
-	card1 := StyleOverviewCard.
+	card1 := applyHeight(StyleOverviewCard.
 		Background(statusBg).
 		Foreground(colorDark).
 		Bold(true).
-		Width(cardWidths[0]).
+		Width(cardWidths[0])).
 		Render(statusText + "\nStatus")
 
 	// Card 2: Node count — blue foreground.
-	card2 := StyleOverviewCard.
+	card2 := applyHeight(StyleOverviewCard.
 		Foreground(colorBlue).
-		Width(cardWidths[1]).
+		Width(cardWidths[1])).
 		Render(fmt.Sprintf("%d", health.NumberOfNodes) + "\nNodes")
 
 	// Card 3: Index count — purple foreground.
 	indexCount := len(app.current.Indices)
-	card3 := StyleOverviewCard.
+	card3 := applyHeight(StyleOverviewCard.
 		Foreground(colorPurple).
-		Width(cardWidths[2]).
+		Width(cardWidths[2])).
 		Render(fmt.Sprintf("%d", indexCount) + "\nIndices")
 
 	// Card 4: Active shards — indigo foreground.
-	card4 := StyleOverviewCard.
+	card4 := applyHeight(StyleOverviewCard.
 		Foreground(colorIndigo).
-		Width(cardWidths[3]).
+		Width(cardWidths[3])).
 		Render(fmt.Sprintf("%d", health.ActiveShards) + "\nActive Shards")
 
 	// Card 5: CPU% with mini bar — threshold-colored via cpuSeverity.
@@ -127,9 +143,9 @@ func renderOverview(app *App) string {
 		cpuVal += "!"
 	}
 	cpuBar := renderMiniBar(cpuPct, barWidthFor(4))
-	card5 := severityCardStyle().
+	card5 := applyHeight(severityCardStyle().
 		Foreground(severityFg(cpuSev)).
-		Width(cardWidths[4]).
+		Width(cardWidths[4])).
 		Render(cpuVal + "\n" + cpuBar + "\nCPU")
 
 	// Card 6: JVM heap% with mini bar — threshold-colored via jvmSeverity.
@@ -140,9 +156,9 @@ func renderOverview(app *App) string {
 		jvmVal += "!"
 	}
 	jvmBar := renderMiniBar(jvmPct, barWidthFor(5))
-	card6 := severityCardStyle().
+	card6 := applyHeight(severityCardStyle().
 		Foreground(severityFg(jvmSev)).
-		Width(cardWidths[5]).
+		Width(cardWidths[5])).
 		Render(jvmVal + "\n" + jvmBar + "\nJVM Heap")
 
 	// Card 7: Storage% with mini bar — threshold-colored via storageSeverity.
@@ -155,9 +171,9 @@ func renderOverview(app *App) string {
 	storageBar := renderMiniBar(storagePct, barWidthFor(6))
 	usedStr := format.FormatBytes(res.StorageUsedBytes)
 	totalStr := format.FormatBytes(res.StorageTotalBytes)
-	card7 := severityCardStyle().
+	card7 := applyHeight(severityCardStyle().
 		Foreground(severityFg(storageSev)).
-		Width(cardWidths[6]).
+		Width(cardWidths[6])).
 		Render(storageVal + "\n" + storageBar + "\n" + usedStr + "/" + totalStr + "\nStorage")
 
 	if narrowMode {
