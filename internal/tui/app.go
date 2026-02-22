@@ -47,16 +47,27 @@ type App struct {
 
 	// UI state
 	showHelp bool
+
+	// Tables
+	indexTable  IndexTableModel
+	nodeTable   NodeTableModel
+	activeTable int // 0 = index table, 1 = node table
 }
 
 // NewApp creates a new App with the given ES client and poll interval.
 func NewApp(c client.ESClient, interval time.Duration) *App {
+	it := NewIndexTable()
+	it.focused = true // index table is focused by default
+	nt := NewNodeTable()
 	return &App{
 		client:       c,
 		pollInterval: interval,
 		history:      model.NewSparklineHistory(60),
 		connState:    stateDisconnected,
 		fetching:     true, // Init() always issues an immediate fetchCmd
+		indexTable:   it,
+		nodeTable:    nt,
+		activeTable:  0,
 	}
 }
 
@@ -81,6 +92,8 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		app.resources = msg.Resources
 		app.nodeRows = msg.NodeRows
 		app.indexRows = msg.IndexRows
+		app.indexTable.SetData(msg.IndexRows)
+		app.nodeTable.SetData(msg.NodeRows)
 		// Only push to history when we have a previous snapshot — the first
 		// poll has no delta, so all rate/latency metrics are zero and would
 		// corrupt the sparkline baseline.
@@ -119,9 +132,26 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return app, fetchCmd(app.client, app.current, app.pollInterval)
 
 	case tea.KeyMsg:
-		switch {
-		case key.Matches(msg, keys.Quit):
+		// ctrl+c / q always quit, even during table search.
+		if key.Matches(msg, keys.Quit) {
 			return app, tea.Quit
+		}
+
+		// While the active table has its search input open, delegate all
+		// other keys to the table so typed characters reach the text field.
+		activeSearching := (app.activeTable == 0 && app.indexTable.searching) ||
+			(app.activeTable == 1 && app.nodeTable.searching)
+		if activeSearching {
+			var cmd tea.Cmd
+			if app.activeTable == 0 {
+				app.indexTable, cmd = app.indexTable.Update(msg)
+			} else {
+				app.nodeTable, cmd = app.nodeTable.Update(msg)
+			}
+			return app, cmd
+		}
+
+		switch {
 		case key.Matches(msg, keys.Refresh):
 			if app.fetching {
 				return app, nil
@@ -129,8 +159,20 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			app.tickGen++ // invalidate any pending tick so it doesn't trigger a double-fetch
 			app.fetching = true
 			return app, fetchCmd(app.client, app.current, app.pollInterval)
+		case key.Matches(msg, keys.Tab), key.Matches(msg, keys.ShiftTab):
+			app.activeTable = (app.activeTable + 1) % 2
+			app.indexTable.focused = app.activeTable == 0
+			app.nodeTable.focused = app.activeTable == 1
 		case key.Matches(msg, keys.Help):
 			app.showHelp = !app.showHelp
+		default:
+			var cmd tea.Cmd
+			if app.activeTable == 0 {
+				app.indexTable, cmd = app.indexTable.Update(msg)
+			} else {
+				app.nodeTable, cmd = app.nodeTable.Update(msg)
+			}
+			return app, cmd
 		}
 	}
 
@@ -150,6 +192,8 @@ func (app *App) View() string {
 	if m := renderMetricsRow(app); m != "" {
 		parts = append(parts, m)
 	}
+	parts = append(parts, app.indexTable.renderTable(app))
+	parts = append(parts, app.nodeTable.renderTable(app))
 	parts = append(parts, renderFooter(app))
 
 	return strings.Join(parts, "\n")

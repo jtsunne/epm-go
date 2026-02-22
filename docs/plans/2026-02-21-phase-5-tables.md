@@ -133,14 +133,14 @@ Add the two sortable, paginated, searchable data tables: Index Statistics (9 col
 
 ### Task 5: Wire tables into App model
 
-- [ ] add `indexTable IndexTableModel` and `nodeTable NodeTableModel` to `App` struct
-- [ ] add `activeTable int` (0 = index, 1 = node) and `focused bool`
-- [ ] initialize both tables in `NewApp()`
-- [ ] on `SnapshotMsg`: call `app.indexTable.SetData(msg.IndexRows)` and `app.nodeTable.SetData(msg.NodeRows)`
-- [ ] in `App.Update()`:
+- [x] add `indexTable IndexTableModel` and `nodeTable NodeTableModel` to `App` struct
+- [x] add `activeTable int` (0 = index, 1 = node) and `focused bool`
+- [x] initialize both tables in `NewApp()`
+- [x] on `SnapshotMsg`: call `app.indexTable.SetData(msg.IndexRows)` and `app.nodeTable.SetData(msg.NodeRows)`
+- [x] in `App.Update()`:
   - `tab` / `shift+tab` → cycle `activeTable`
   - delegate key events to the active table's `Update()` method
-- [ ] in `App.View()`: call `app.indexTable.renderTable()` and `app.nodeTable.renderTable()`, join vertically
+- [x] in `App.View()`: call `app.indexTable.renderTable()` and `app.nodeTable.renderTable()`, join vertically
 
 ### Task 6: Layout with height budget
 
