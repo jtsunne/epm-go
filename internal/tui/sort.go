@@ -33,49 +33,49 @@ func sortIndexRows(rows []model.IndexRow, col int, desc bool) []model.IndexRow {
 			if a.PrimaryShards != b.PrimaryShards {
 				less = a.PrimaryShards < b.PrimaryShards
 			} else {
-				less = strings.ToLower(a.Name) < strings.ToLower(b.Name)
+				return strings.ToLower(a.Name) < strings.ToLower(b.Name)
 			}
 		case 2:
 			if a.TotalSizeBytes != b.TotalSizeBytes {
 				less = a.TotalSizeBytes < b.TotalSizeBytes
 			} else {
-				less = strings.ToLower(a.Name) < strings.ToLower(b.Name)
+				return strings.ToLower(a.Name) < strings.ToLower(b.Name)
 			}
 		case 3:
 			if a.AvgShardSize != b.AvgShardSize {
 				less = a.AvgShardSize < b.AvgShardSize
 			} else {
-				less = strings.ToLower(a.Name) < strings.ToLower(b.Name)
+				return strings.ToLower(a.Name) < strings.ToLower(b.Name)
 			}
 		case 4:
 			if a.DocCount != b.DocCount {
 				less = a.DocCount < b.DocCount
 			} else {
-				less = strings.ToLower(a.Name) < strings.ToLower(b.Name)
+				return strings.ToLower(a.Name) < strings.ToLower(b.Name)
 			}
 		case 5:
 			if a.IndexingRate != b.IndexingRate {
 				less = a.IndexingRate < b.IndexingRate
 			} else {
-				less = strings.ToLower(a.Name) < strings.ToLower(b.Name)
+				return strings.ToLower(a.Name) < strings.ToLower(b.Name)
 			}
 		case 6:
 			if a.SearchRate != b.SearchRate {
 				less = a.SearchRate < b.SearchRate
 			} else {
-				less = strings.ToLower(a.Name) < strings.ToLower(b.Name)
+				return strings.ToLower(a.Name) < strings.ToLower(b.Name)
 			}
 		case 7:
 			if a.IndexLatency != b.IndexLatency {
 				less = a.IndexLatency < b.IndexLatency
 			} else {
-				less = strings.ToLower(a.Name) < strings.ToLower(b.Name)
+				return strings.ToLower(a.Name) < strings.ToLower(b.Name)
 			}
 		case 8:
 			if a.SearchLatency != b.SearchLatency {
 				less = a.SearchLatency < b.SearchLatency
 			} else {
-				less = strings.ToLower(a.Name) < strings.ToLower(b.Name)
+				return strings.ToLower(a.Name) < strings.ToLower(b.Name)
 			}
 		default:
 			less = strings.ToLower(a.Name) < strings.ToLower(b.Name)
@@ -112,37 +112,37 @@ func sortNodeRows(rows []model.NodeRow, col int, desc bool) []model.NodeRow {
 			if a.Role != b.Role {
 				less = strings.ToLower(a.Role) < strings.ToLower(b.Role)
 			} else {
-				less = strings.ToLower(a.Name) < strings.ToLower(b.Name)
+				return strings.ToLower(a.Name) < strings.ToLower(b.Name)
 			}
 		case 2:
 			if a.IP != b.IP {
 				less = a.IP < b.IP
 			} else {
-				less = strings.ToLower(a.Name) < strings.ToLower(b.Name)
+				return strings.ToLower(a.Name) < strings.ToLower(b.Name)
 			}
 		case 3:
 			if a.IndexingRate != b.IndexingRate {
 				less = a.IndexingRate < b.IndexingRate
 			} else {
-				less = strings.ToLower(a.Name) < strings.ToLower(b.Name)
+				return strings.ToLower(a.Name) < strings.ToLower(b.Name)
 			}
 		case 4:
 			if a.SearchRate != b.SearchRate {
 				less = a.SearchRate < b.SearchRate
 			} else {
-				less = strings.ToLower(a.Name) < strings.ToLower(b.Name)
+				return strings.ToLower(a.Name) < strings.ToLower(b.Name)
 			}
 		case 5:
 			if a.IndexLatency != b.IndexLatency {
 				less = a.IndexLatency < b.IndexLatency
 			} else {
-				less = strings.ToLower(a.Name) < strings.ToLower(b.Name)
+				return strings.ToLower(a.Name) < strings.ToLower(b.Name)
 			}
 		case 6:
 			if a.SearchLatency != b.SearchLatency {
 				less = a.SearchLatency < b.SearchLatency
 			} else {
-				less = strings.ToLower(a.Name) < strings.ToLower(b.Name)
+				return strings.ToLower(a.Name) < strings.ToLower(b.Name)
 			}
 		default:
 			less = strings.ToLower(a.Name) < strings.ToLower(b.Name)
