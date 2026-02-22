@@ -170,8 +170,8 @@ Two UX issues found during testing of the completed Phase 1-6 implementation:
 - Modify: `internal/tui/indextable.go`
 - Modify: `internal/tui/nodetable.go`
 
-- [ ] add `cursor int` field to `tableModel` struct; init to `0` in `newTableModel()`
-- [ ] add `clampCursor(pageRowCount int)` method to `tableModel`:
+- [x] add `cursor int` field to `tableModel` struct; init to `0` in `newTableModel()`
+- [x] add `clampCursor(pageRowCount int)` method to `tableModel`:
   ```go
   func (t *tableModel) clampCursor(pageRowCount int) {
       if pageRowCount <= 0 {
@@ -186,13 +186,13 @@ Two UX issues found during testing of the completed Phase 1-6 implementation:
       }
   }
   ```
-- [ ] add key bindings to `keys.go` keyMap struct and `keys` var:
+- [x] add key bindings to `keys.go` keyMap struct and `keys` var:
   ```go
   CursorUp:   key.NewBinding(key.WithKeys("up", "k"), key.WithHelp("↑/k", "cursor up")),
   CursorDown: key.NewBinding(key.WithKeys("down", "j"), key.WithHelp("↓/j", "cursor down")),
   ```
   Note: `j`/`k` only reach this handler when `!t.searching` — textinput already captures all keys in search mode.
-- [ ] handle up/down in `tableModel.Update()` non-searching branch:
+- [x] handle up/down in `tableModel.Update()` non-searching branch:
   ```go
   case key.Matches(msg, keys.CursorUp):
       if t.cursor > 0 {
@@ -203,16 +203,16 @@ Two UX issues found during testing of the completed Phase 1-6 implementation:
       t.cursor++
       return t, nil
   ```
-- [ ] reset `cursor = 0` on: `PrevPage`, `NextPage`, `Enter` (search confirm), `Escape` (clear search), digit sort key
-- [ ] call `clampCursor(pageRowCount)` in `IndexTableModel.Update()` after `clampPage()`, computing `pageRowCount` from displayRows slice bounds
-- [ ] call `clampCursor(pageRowCount)` in `NodeTableModel.Update()` — same pattern
-- [ ] call `clampCursor(pageRowCount)` in `IndexTableModel.SetData()` and `NodeTableModel.SetData()` after `clampPage()`
-- [ ] update `helpText` constant in `keys.go`:
+- [x] reset `cursor = 0` on: `PrevPage`, `NextPage`, `Enter` (search confirm), `Escape` (clear search), digit sort key
+- [x] call `clampCursor(pageRowCount)` in `IndexTableModel.Update()` after `clampPage()`, computing `pageRowCount` from displayRows slice bounds
+- [x] call `clampCursor(pageRowCount)` in `NodeTableModel.Update()` — same pattern
+- [x] call `clampCursor(pageRowCount)` in `IndexTableModel.SetData()` and `NodeTableModel.SetData()` after `clampPage()`
+- [x] update `helpText` constant in `keys.go`:
   ```go
   const helpText = "tab: switch table  /: search  1-9: sort col  ←→: pages  ↑↓: select row  r: refresh  q: quit  ?: close help"
   ```
-- [ ] write tests: cursor up/down movement, clamp at 0 (can't go below), reset on page change, reset on search apply/clear, reset on sort change
-- [ ] run `go test ./internal/tui/...` — all pass
+- [x] write tests: cursor up/down movement, clamp at 0 (can't go below), reset on page change, reset on search apply/clear, reset on sort change
+- [x] run `go test ./internal/tui/...` — all pass
 
 ### Task 7: Cursor highlight and detail line in tables
 

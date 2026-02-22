@@ -1,9 +1,14 @@
 package tui
 
 import (
+	"fmt"
 	"testing"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/dm/epm-go/internal/model"
 )
 
 func TestTruncateName(t *testing.T) {
@@ -161,4 +166,199 @@ func TestCurrentPageIndices(t *testing.T) {
 	// Empty slice.
 	got = currentPageIndices(nil, 0, 4)
 	assert.Nil(t, got)
+}
+
+// makeIndexRows returns n IndexRow values with IndexingRate = float64(i).
+func makeIndexRows(n int) []model.IndexRow {
+	rows := make([]model.IndexRow, n)
+	for i := range rows {
+		rows[i] = model.IndexRow{
+			Name:         fmt.Sprintf("index-%02d", i),
+			IndexingRate: float64(i),
+		}
+	}
+	return rows
+}
+
+// TestTableModel_CursorDownUp verifies that cursor increments on Down and
+// decrements on Up, and that it cannot go below 0.
+func TestTableModel_CursorDownUp(t *testing.T) {
+	m := NewIndexTable()
+	m.focused = true
+	m.SetData(makeIndexRows(5))
+	require.Equal(t, 0, m.cursor, "cursor starts at 0")
+
+	down := tea.KeyMsg{Type: tea.KeyDown}
+	up := tea.KeyMsg{Type: tea.KeyUp}
+
+	m, _ = m.Update(down)
+	assert.Equal(t, 1, m.cursor, "cursor should move to 1")
+
+	m, _ = m.Update(down)
+	assert.Equal(t, 2, m.cursor, "cursor should move to 2")
+
+	m, _ = m.Update(up)
+	assert.Equal(t, 1, m.cursor, "cursor should move back to 1")
+
+	m, _ = m.Update(up)
+	assert.Equal(t, 0, m.cursor, "cursor should be at 0")
+
+	// Cannot go below 0.
+	m, _ = m.Update(up)
+	assert.Equal(t, 0, m.cursor, "cursor must not go below 0")
+}
+
+// TestTableModel_CursorVimKeys verifies j/k work as aliases for down/up.
+func TestTableModel_CursorVimKeys(t *testing.T) {
+	m := NewIndexTable()
+	m.focused = true
+	m.SetData(makeIndexRows(5))
+
+	j := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}}
+	k := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}}
+
+	m, _ = m.Update(j)
+	assert.Equal(t, 1, m.cursor, "j moves cursor down")
+
+	m, _ = m.Update(k)
+	assert.Equal(t, 0, m.cursor, "k moves cursor up")
+}
+
+// TestTableModel_CursorClampedAtPageEnd verifies cursor is clamped to the last
+// row in the page and cannot exceed it.
+func TestTableModel_CursorClampedAtPageEnd(t *testing.T) {
+	m := NewIndexTable()
+	m.focused = true
+	m.SetData(makeIndexRows(3)) // 3 rows, pageSize=10 → only 3 rows on page
+
+	down := tea.KeyMsg{Type: tea.KeyDown}
+
+	m, _ = m.Update(down)
+	m, _ = m.Update(down)
+	assert.Equal(t, 2, m.cursor, "cursor at last row (index 2)")
+
+	// Down again: clamped at 2.
+	m, _ = m.Update(down)
+	assert.Equal(t, 2, m.cursor, "cursor clamped at last row")
+}
+
+// TestTableModel_CursorResetOnPageChange verifies cursor resets to 0 when
+// navigating to previous or next page.
+func TestTableModel_CursorResetOnPageChange(t *testing.T) {
+	m := NewIndexTable()
+	m.focused = true
+	m.SetData(makeIndexRows(25)) // 3 pages at pageSize=10
+
+	down := tea.KeyMsg{Type: tea.KeyDown}
+	next := tea.KeyMsg{Type: tea.KeyRight}
+	prev := tea.KeyMsg{Type: tea.KeyLeft}
+
+	// Move cursor down on page 0.
+	m, _ = m.Update(down)
+	m, _ = m.Update(down)
+	require.Equal(t, 2, m.cursor)
+
+	// Go to next page → cursor resets.
+	m, _ = m.Update(next)
+	assert.Equal(t, 0, m.cursor, "cursor resets to 0 on next page")
+	assert.Equal(t, 1, m.page)
+
+	// Move cursor on page 1.
+	m, _ = m.Update(down)
+	require.Equal(t, 1, m.cursor)
+
+	// Go back → cursor resets.
+	m, _ = m.Update(prev)
+	assert.Equal(t, 0, m.cursor, "cursor resets to 0 on prev page")
+	assert.Equal(t, 0, m.page)
+}
+
+// TestTableModel_CursorResetOnSortChange verifies cursor resets to 0 when
+// the sort column changes via digit key.
+func TestTableModel_CursorResetOnSortChange(t *testing.T) {
+	m := NewIndexTable()
+	m.focused = true
+	m.SetData(makeIndexRows(5))
+
+	down := tea.KeyMsg{Type: tea.KeyDown}
+	sort1 := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'1'}}
+
+	m, _ = m.Update(down)
+	m, _ = m.Update(down)
+	require.Equal(t, 2, m.cursor)
+
+	// Press sort key → cursor resets.
+	m, _ = m.Update(sort1)
+	assert.Equal(t, 0, m.cursor, "cursor resets to 0 on sort column change")
+}
+
+// TestTableModel_CursorResetOnSearchApply verifies cursor resets to 0 when
+// a search is confirmed with Enter.
+func TestTableModel_CursorResetOnSearchApply(t *testing.T) {
+	m := NewIndexTable()
+	m.focused = true
+	rows := []model.IndexRow{
+		{Name: "alpha", IndexingRate: 1},
+		{Name: "beta", IndexingRate: 2},
+		{Name: "gamma", IndexingRate: 3},
+	}
+	m.SetData(rows)
+
+	down := tea.KeyMsg{Type: tea.KeyDown}
+	searchKey := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}}
+	enter := tea.KeyMsg{Type: tea.KeyEnter}
+
+	// Move cursor.
+	m, _ = m.Update(down)
+	require.Equal(t, 1, m.cursor)
+
+	// Open search, type nothing, press Enter.
+	m, _ = m.Update(searchKey)
+	require.True(t, m.searching)
+	m, _ = m.Update(enter)
+	assert.Equal(t, 0, m.cursor, "cursor resets to 0 after search confirm")
+}
+
+// TestTableModel_CursorResetOnSearchClear verifies cursor resets to 0 when
+// Escape clears an active search filter (non-searching mode).
+func TestTableModel_CursorResetOnSearchClear(t *testing.T) {
+	m := NewIndexTable()
+	m.focused = true
+	m.search = "alpha"
+	rows := []model.IndexRow{
+		{Name: "alpha-1", IndexingRate: 1},
+		{Name: "alpha-2", IndexingRate: 2},
+	}
+	m.SetData(rows)
+
+	down := tea.KeyMsg{Type: tea.KeyDown}
+	esc := tea.KeyMsg{Type: tea.KeyEscape}
+
+	m, _ = m.Update(down)
+	require.Equal(t, 1, m.cursor)
+
+	// Escape clears active search → cursor resets.
+	m, _ = m.Update(esc)
+	assert.Equal(t, 0, m.cursor, "cursor resets when Escape clears active search")
+	assert.Equal(t, "", m.search, "search filter cleared")
+}
+
+// TestTableModel_ClampCursor verifies clampCursor bounds cursor correctly.
+func TestTableModel_ClampCursor(t *testing.T) {
+	base := newTableModel(nil)
+
+	// cursor above page: clamped to last row.
+	base.cursor = 10
+	base.clampCursor(5)
+	assert.Equal(t, 4, base.cursor, "cursor clamped to pageRowCount-1")
+
+	// cursor below 0: clamped to 0.
+	base.cursor = -1
+	base.clampCursor(5)
+	assert.Equal(t, 0, base.cursor)
+
+	// zero page rows: cursor set to 0.
+	base.cursor = 3
+	base.clampCursor(0)
+	assert.Equal(t, 0, base.cursor)
 }

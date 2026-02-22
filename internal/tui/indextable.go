@@ -48,6 +48,7 @@ func (m *IndexTableModel) SetData(rows []model.IndexRow) {
 	filtered := filterIndexRows(m.allRows, m.search)
 	m.displayRows = sortIndexRows(filtered, m.sortCol, m.sortDesc)
 	m.clampPage(len(m.displayRows))
+	m.clampCursor(m.currentPageRowCount(len(m.displayRows)))
 }
 
 // Update handles keyboard events for sorting, pagination, and search. It
@@ -66,6 +67,7 @@ func (m IndexTableModel) Update(msg tea.Msg) (IndexTableModel, tea.Cmd) {
 		m.displayRows = sortIndexRows(filtered, m.sortCol, m.sortDesc)
 	}
 	m.clampPage(len(m.displayRows)) // always clamp after any key (e.g. NextPage)
+	m.clampCursor(m.currentPageRowCount(len(m.displayRows)))
 	return m, cmd
 }
 

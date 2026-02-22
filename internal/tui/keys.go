@@ -4,15 +4,17 @@ import "github.com/charmbracelet/bubbles/key"
 
 // keyMap holds all key bindings for the TUI.
 type keyMap struct {
-	Quit     key.Binding
-	Refresh  key.Binding
-	Tab      key.Binding
-	ShiftTab key.Binding
-	Search   key.Binding
-	Escape   key.Binding
-	Help     key.Binding
-	PrevPage key.Binding
-	NextPage key.Binding
+	Quit       key.Binding
+	Refresh    key.Binding
+	Tab        key.Binding
+	ShiftTab   key.Binding
+	Search     key.Binding
+	Escape     key.Binding
+	Help       key.Binding
+	PrevPage   key.Binding
+	NextPage   key.Binding
+	CursorUp   key.Binding
+	CursorDown key.Binding
 }
 
 // keys is the global key map.
@@ -53,7 +55,15 @@ var keys = keyMap{
 		key.WithKeys("right"),
 		key.WithHelp("→", "next page"),
 	),
+	CursorUp: key.NewBinding(
+		key.WithKeys("up", "k"),
+		key.WithHelp("↑/k", "cursor up"),
+	),
+	CursorDown: key.NewBinding(
+		key.WithKeys("down", "j"),
+		key.WithHelp("↓/j", "cursor down"),
+	),
 }
 
 // helpText is the full help string displayed in the footer when help is toggled on.
-const helpText = "tab: switch table  /: search  1-9: sort col  ←→: pages  r: refresh  q: quit  ?: close help"
+const helpText = "tab: switch table  /: search  1-9: sort col  ←→: pages  ↑↓: select row  r: refresh  q: quit  ?: close help"

@@ -22,6 +22,7 @@ type tableModel struct {
 	sortDesc  bool
 	page      int // 0-indexed
 	pageSize  int // default 10
+	cursor    int // 0-indexed row within current page
 	search    string
 	searching bool
 	input     textinput.Model
@@ -56,6 +57,7 @@ func (t tableModel) Update(msg tea.Msg) (tableModel, tea.Cmd) {
 				t.input.Blur()
 				if t.input.Value() == "" {
 					t.search = ""
+					t.cursor = 0
 				}
 				return t, nil
 			case msg.String() == "enter":
@@ -63,6 +65,7 @@ func (t tableModel) Update(msg tea.Msg) (tableModel, tea.Cmd) {
 				t.searching = false
 				t.input.Blur()
 				t.page = 0
+				t.cursor = 0
 				return t, nil
 			default:
 				var cmd tea.Cmd
@@ -83,15 +86,26 @@ func (t tableModel) Update(msg tea.Msg) (tableModel, tea.Cmd) {
 				t.search = ""
 				t.input.SetValue("")
 				t.page = 0
+				t.cursor = 0
 			}
 			return t, nil
 		case key.Matches(msg, keys.PrevPage):
 			if t.page > 0 {
 				t.page--
+				t.cursor = 0
 			}
 			return t, nil
 		case key.Matches(msg, keys.NextPage):
 			t.page++
+			t.cursor = 0
+			return t, nil
+		case key.Matches(msg, keys.CursorUp):
+			if t.cursor > 0 {
+				t.cursor--
+			}
+			return t, nil
+		case key.Matches(msg, keys.CursorDown):
+			t.cursor++
 			return t, nil
 		default:
 			// Digit keys 1-9 → set sort column.
@@ -110,6 +124,7 @@ func (t tableModel) Update(msg tea.Msg) (tableModel, tea.Cmd) {
 					}
 				}
 				t.page = 0
+				t.cursor = 0
 				return t, nil
 			}
 		}
@@ -166,6 +181,38 @@ func (t *tableModel) clampPage(totalRows int) {
 	if t.page < 0 {
 		t.page = 0
 	}
+}
+
+// clampCursor clamps the cursor to the valid range [0, pageRowCount-1].
+// If pageRowCount is 0 or negative, cursor is set to 0.
+func (t *tableModel) clampCursor(pageRowCount int) {
+	if pageRowCount <= 0 {
+		t.cursor = 0
+		return
+	}
+	if t.cursor >= pageRowCount {
+		t.cursor = pageRowCount - 1
+	}
+	if t.cursor < 0 {
+		t.cursor = 0
+	}
+}
+
+// currentPageRowCount returns the number of rows visible on the current page
+// given the total number of rows.
+func (t *tableModel) currentPageRowCount(totalRows int) int {
+	if totalRows == 0 || t.pageSize <= 0 {
+		return 0
+	}
+	start := t.page * t.pageSize
+	if start >= totalRows {
+		start = 0
+	}
+	end := start + t.pageSize
+	if end > totalRows {
+		end = totalRows
+	}
+	return end - start
 }
 
 // truncateName truncates s to fit within maxWidth runes, appending "..."
