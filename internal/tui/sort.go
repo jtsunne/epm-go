@@ -181,7 +181,7 @@ func filterNodeRows(rows []model.NodeRow, search string) []model.NodeRow {
 	out := rows[:0:0]
 	for _, r := range rows {
 		if strings.Contains(strings.ToLower(r.Name), lower) ||
-			strings.Contains(r.IP, lower) {
+			strings.Contains(strings.ToLower(r.IP), lower) {
 			out = append(out, r)
 		}
 	}

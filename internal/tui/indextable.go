@@ -22,15 +22,15 @@ type IndexTableModel struct {
 // default sort by IndexingRate (col 5) descending.
 func NewIndexTable() IndexTableModel {
 	cols := []columnDef{
-		{Title: "Index Name", Width: 25, Align: "left", Key: "name"},
-		{Title: "P/T", Width: 7, Align: "center", Key: "shards"},
-		{Title: "Total Size", Width: 10, Align: "right", Key: "size"},
-		{Title: "Shard Size", Width: 10, Align: "right", Key: "shard_size"},
-		{Title: "Doc Count", Width: 12, Align: "right", Key: "docs"},
-		{Title: "Idx/s", Width: 8, Align: "right", Key: "idx_rate"},
-		{Title: "Srch/s", Width: 8, Align: "right", Key: "srch_rate"},
-		{Title: "Idx Lat", Width: 9, Align: "right", Key: "idx_lat"},
-		{Title: "Srch Lat", Width: 9, Align: "right", Key: "srch_lat"},
+		{Title: "Index Name", Width: 25, Align: "left",   Key: "name",       SortDesc: false},
+		{Title: "P/T",        Width: 7,  Align: "center", Key: "shards",     SortDesc: true},
+		{Title: "Total Size", Width: 10, Align: "right",  Key: "size",       SortDesc: true},
+		{Title: "Shard Size", Width: 10, Align: "right",  Key: "shard_size", SortDesc: true},
+		{Title: "Doc Count",  Width: 12, Align: "right",  Key: "docs",       SortDesc: true},
+		{Title: "Idx/s",      Width: 8,  Align: "right",  Key: "idx_rate",   SortDesc: true},
+		{Title: "Srch/s",     Width: 8,  Align: "right",  Key: "srch_rate",  SortDesc: true},
+		{Title: "Idx Lat",    Width: 9,  Align: "right",  Key: "idx_lat",    SortDesc: true},
+		{Title: "Srch Lat",   Width: 9,  Align: "right",  Key: "srch_lat",   SortDesc: true},
 	}
 	m := IndexTableModel{
 		tableModel: newTableModel(cols),
@@ -63,8 +63,8 @@ func (m IndexTableModel) Update(msg tea.Msg) (IndexTableModel, tea.Cmd) {
 	if m.sortCol != prevSort || m.sortDesc != prevDesc || m.search != prevSearch {
 		filtered := filterIndexRows(m.allRows, m.search)
 		m.displayRows = sortIndexRows(filtered, m.sortCol, m.sortDesc)
-		m.clampPage(len(m.displayRows))
 	}
+	m.clampPage(len(m.displayRows)) // always clamp after any key (e.g. NextPage)
 	return m, cmd
 }
 

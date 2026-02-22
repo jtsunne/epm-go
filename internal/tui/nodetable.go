@@ -22,13 +22,13 @@ type NodeTableModel struct {
 // default sort by IndexingRate (col 3) descending.
 func NewNodeTable() NodeTableModel {
 	cols := []columnDef{
-		{Title: "Node Name", Width: 20, Align: "left", Key: "name"},
-		{Title: "Role", Width: 6, Align: "left", Key: "role"},
-		{Title: "IP", Width: 15, Align: "left", Key: "ip"},
-		{Title: "Idx/s", Width: 8, Align: "right", Key: "idx_rate"},
-		{Title: "Srch/s", Width: 8, Align: "right", Key: "srch_rate"},
-		{Title: "Idx Lat", Width: 9, Align: "right", Key: "idx_lat"},
-		{Title: "Srch Lat", Width: 9, Align: "right", Key: "srch_lat"},
+		{Title: "Node Name", Width: 20, Align: "left",  Key: "name",      SortDesc: false},
+		{Title: "Role",      Width: 6,  Align: "left",  Key: "role",      SortDesc: false},
+		{Title: "IP",        Width: 15, Align: "left",  Key: "ip",        SortDesc: false},
+		{Title: "Idx/s",     Width: 8,  Align: "right", Key: "idx_rate",  SortDesc: true},
+		{Title: "Srch/s",    Width: 8,  Align: "right", Key: "srch_rate", SortDesc: true},
+		{Title: "Idx Lat",   Width: 9,  Align: "right", Key: "idx_lat",   SortDesc: true},
+		{Title: "Srch Lat",  Width: 9,  Align: "right", Key: "srch_lat",  SortDesc: true},
 	}
 	m := NodeTableModel{
 		tableModel: newTableModel(cols),
@@ -61,8 +61,8 @@ func (m NodeTableModel) Update(msg tea.Msg) (NodeTableModel, tea.Cmd) {
 	if m.sortCol != prevSort || m.sortDesc != prevDesc || m.search != prevSearch {
 		filtered := filterNodeRows(m.allRows, m.search)
 		m.displayRows = sortNodeRows(filtered, m.sortCol, m.sortDesc)
-		m.clampPage(len(m.displayRows))
 	}
+	m.clampPage(len(m.displayRows)) // always clamp after any key (e.g. NextPage)
 	return m, cmd
 }
 

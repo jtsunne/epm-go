@@ -59,7 +59,7 @@ internal/
     table.go                 # Generic tableModel: sort, paginate, search (Phase 5)
     indextable.go            # IndexTableModel (9 columns)           (Phase 5)
     nodetable.go             # NodeTableModel (7 columns)            (Phase 5)
-    thresholds.go            # Threshold severity functions for alert coloring (Phase 6)
+    thresholds.go            # Threshold severity functions for alert coloring (Phase 6, not yet implemented)
   format/
     format.go                # FormatBytes, FormatRate, FormatLatency, FormatNumber, FormatPercent
     format_test.go
@@ -149,6 +149,8 @@ Overview cards change color when thresholds are exceeded — no alert history or
 
 ## Color Coding
 
+Metric cards (overview + sparkline cards):
+
 | Metric | Color |
 |--------|-------|
 | Indexing Rate | Green `#10b981` |
@@ -158,6 +160,16 @@ Overview cards change color when thresholds are exceeded — no alert history or
 | Cluster GREEN | Emerald |
 | Cluster YELLOW | Amber |
 | Cluster RED | Red (entire bg tints red) |
+
+Table column colors (indextable / nodetable StyleFunc):
+
+| Column | Color |
+|--------|-------|
+| Idx/s (col 5 index, col 3 node) | Green `#10b981` |
+| Srch/s (col 6 index, col 4 node) | Cyan `#06b6d4` |
+| Idx Lat (col 7 index, col 5 node) | Purple `#8b5cf6` |
+| Srch Lat (col 8 index, col 6 node) | Orange `#f97316` |
+| Role (col 1 node) | Blue `#3b82f6` |
 
 ## Development
 
@@ -173,6 +185,7 @@ make integration ES_URI=http://localhost:9200
 
 ## Testing Conventions
 
+- `cmd/epm/main_test.go` — table-driven tests for `parseESURI`: credential stripping, scheme validation, invalid host detection
 - `internal/client/client_test.go` — httptest server returning fixture JSON for each of the 5 endpoints
 - `internal/engine/calculator_test.go` — table-driven tests with fixture Snapshots; highest-value tests in project
 - `internal/format/format_test.go` — table-driven tests for all formatters

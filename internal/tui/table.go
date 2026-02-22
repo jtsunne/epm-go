@@ -8,10 +8,11 @@ import (
 
 // columnDef describes a single column in a table.
 type columnDef struct {
-	Title string
-	Width int
-	Align string // "left", "right", "center"
-	Key   string // sort key (informational)
+	Title    string
+	Width    int
+	Align    string // "left", "right", "center"
+	Key      string // sort key (informational)
+	SortDesc bool   // default sort direction when first selected: true=descending (numeric), false=ascending (text)
 }
 
 // tableModel is the generic base for sortable, paginated, searchable tables.
@@ -78,9 +79,11 @@ func (t tableModel) Update(msg tea.Msg) (tableModel, tea.Cmd) {
 			t.input.Focus()
 			return t, textinput.Blink
 		case key.Matches(msg, keys.Escape):
-			t.search = ""
-			t.input.SetValue("")
-			t.page = 0
+			if t.search != "" {
+				t.search = ""
+				t.input.SetValue("")
+				t.page = 0
+			}
 			return t, nil
 		case key.Matches(msg, keys.PrevPage):
 			if t.page > 0 {
@@ -98,7 +101,13 @@ func (t tableModel) Update(msg tea.Msg) (tableModel, tea.Cmd) {
 					t.sortDesc = !t.sortDesc
 				} else {
 					t.sortCol = col
-					t.sortDesc = true // default: descending for new column
+					// Use per-column default direction: descending for numeric
+					// columns, ascending for text columns (name, role, IP).
+					if col < len(t.columns) {
+						t.sortDesc = t.columns[col].SortDesc
+					} else {
+						t.sortDesc = true
+					}
 				}
 				t.page = 0
 				return t, nil
