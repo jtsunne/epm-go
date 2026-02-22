@@ -89,11 +89,11 @@ In `renderOverview()` (`overview.go:67-141`), equalize card heights in wide mode
 
 ### Task 4: Verify acceptance criteria
 
-- [ ] Verify header stays on single line at widths 60, 80, 120, 200
-- [ ] Verify overview fills full terminal width with no trailing gap
-- [ ] Verify all 7 overview cards have consistent height in wide mode
-- [ ] Run full test suite (`make test`)
-- [ ] Run linter (`make lint`) — all issues must be fixed
+- [x] Verify header stays on single line at widths 60, 80, 120, 200
+- [x] Verify overview fills full terminal width with no trailing gap
+- [x] Verify all 7 overview cards have consistent height in wide mode
+- [x] Run full test suite (`make test`)
+- [x] Run linter (`make lint`) — all issues must be fixed
 
 ### Task 5: [Final] Update documentation
 
