@@ -116,7 +116,7 @@ Add the two sortable, paginated, searchable data tables: Index Statistics (9 col
 
 ### Task 4: Node table renderer
 
-- [ ] create `internal/tui/nodetable.go`:
+- [x] create `internal/tui/nodetable.go`:
   - `NodeTableModel` embedding `tableModel` with typed `[]model.NodeRow`
   - `NewNodeTable() NodeTableModel` — 7 column defs:
     - 0: "Node Name" left, Width 20
