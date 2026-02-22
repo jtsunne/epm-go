@@ -120,6 +120,8 @@ func (m *NodeTableModel) renderTable(app *App) string {
 	}
 
 	sortCol := m.sortCol
+	focused := m.focused
+	cursor := m.cursor
 	t := ltable.New().
 		Headers(headers...).
 		StyleFunc(func(row, col int) lipgloss.Style {
@@ -130,7 +132,9 @@ func (m *NodeTableModel) renderTable(app *App) string {
 				return lipgloss.NewStyle().Bold(true).Foreground(colorGray)
 			}
 			base := lipgloss.NewStyle()
-			if row%2 == 0 {
+			if focused && row == cursor {
+				base = base.Background(colorSelectedBg)
+			} else if row%2 == 0 {
 				base = base.Background(colorAlt)
 			}
 			switch col {
@@ -173,6 +177,15 @@ func (m *NodeTableModel) renderTable(app *App) string {
 		t = t.Row(cells...)
 	}
 
+	// Detail line: show full untruncated Name + Role + IP for the selected row when focused.
+	var detailLine string
+	if m.focused && len(pageIdx) > 0 && m.cursor < len(pageIdx) {
+		r := m.displayRows[pageIdx[m.cursor]]
+		detailLine = StyleDim.Render("  " + r.Name + "  " + r.Role + "  " + r.IP)
+	}
+	if detailLine != "" {
+		return lipgloss.JoinVertical(lipgloss.Left, hdr, t.String(), detailLine)
+	}
 	return lipgloss.JoinVertical(lipgloss.Left, hdr, t.String())
 }
 

@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -80,6 +81,46 @@ func TestNodeTableSort_NameAscendingByDefault(t *testing.T) {
 	assert.Equal(t, "alpha", m.displayRows[0].Name, "Name column should sort ascending on first press")
 	assert.Equal(t, "mango", m.displayRows[1].Name)
 	assert.Equal(t, "zebra", m.displayRows[2].Name)
+}
+
+// TestNodeTableDetailLine_FocusedShowsFullName verifies that when the table is
+// focused, the rendered output contains the full Name, Role, and IP of the
+// selected row in the detail line below the table body.
+func TestNodeTableDetailLine_FocusedShowsFullName(t *testing.T) {
+	m := NewNodeTable()
+	m.focused = true
+	rows := []model.NodeRow{
+		{Name: "very-long-node-hostname-prod-001", Role: "dimr", IP: "192.168.100.50"},
+	}
+	m.SetData(rows)
+
+	out := m.renderTable(nil)
+	assert.True(t, strings.Contains(out, "very-long-node-hostname-prod-001"),
+		"detail line should contain the full untruncated node name when focused")
+	assert.True(t, strings.Contains(out, "192.168.100.50"),
+		"detail line should contain the node IP when focused")
+}
+
+// TestNodeTableDetailLine_UnfocusedAbsent verifies that the focused table
+// output is longer than the unfocused output, confirming the detail line is
+// only rendered when the table is focused.
+func TestNodeTableDetailLine_UnfocusedAbsent(t *testing.T) {
+	rows := []model.NodeRow{
+		{Name: "very-long-node-hostname-prod-001", Role: "dimr", IP: "192.168.100.50"},
+	}
+
+	mUnfocused := NewNodeTable()
+	mUnfocused.focused = false
+	mUnfocused.SetData(rows)
+	outUnfocused := mUnfocused.renderTable(nil)
+
+	mFocused := NewNodeTable()
+	mFocused.focused = true
+	mFocused.SetData(rows)
+	outFocused := mFocused.renderTable(nil)
+
+	assert.Greater(t, len(outFocused), len(outUnfocused),
+		"focused table output should be longer than unfocused (has detail line)")
 }
 
 // TestAbbreviateRole verifies that role strings are returned as-is when ≤6

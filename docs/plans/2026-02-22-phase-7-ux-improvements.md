@@ -221,11 +221,11 @@ Two UX issues found during testing of the completed Phase 1-6 implementation:
 - Modify: `internal/tui/indextable.go`
 - Modify: `internal/tui/nodetable.go`
 
-- [ ] add selected row color to `styles.go`:
+- [x] add selected row color to `styles.go`:
   ```go
   var colorSelectedBg = lipgloss.Color("#1e3a5f") // subtle blue highlight
   ```
-- [ ] update `indextable.go` `renderTable()` `StyleFunc`: when `focused && row == cursor`, use `colorSelectedBg` background; otherwise keep existing alternating row logic:
+- [x] update `indextable.go` `renderTable()` `StyleFunc`: when `focused && row == cursor`, use `colorSelectedBg` background; otherwise keep existing alternating row logic:
   ```go
   focused := m.focused
   cursor := m.cursor
@@ -240,7 +240,7 @@ Two UX issues found during testing of the completed Phase 1-6 implementation:
       // ... column colors unchanged
   })
   ```
-- [ ] add detail line at bottom of `indextable.go` `renderTable()`: if focused and data present, show full untruncated name:
+- [x] add detail line at bottom of `indextable.go` `renderTable()`: if focused and data present, show full untruncated name:
   ```go
   var detailLine string
   if m.focused && len(pageIdx) > 0 && m.cursor < len(pageIdx) {
@@ -251,9 +251,9 @@ Two UX issues found during testing of the completed Phase 1-6 implementation:
   }
   return lipgloss.JoinVertical(lipgloss.Left, hdr, t.String())
   ```
-- [ ] apply same cursor highlight and detail line in `nodetable.go` `renderTable()`: detail line shows `Name + "  " + Role + "  " + IP`
-- [ ] write tests: detail line contains full untruncated name when focused; detail line absent when unfocused
-- [ ] run `go test ./internal/tui/...` — all pass
+- [x] apply same cursor highlight and detail line in `nodetable.go` `renderTable()`: detail line shows `Name + "  " + Role + "  " + IP`
+- [x] write tests: detail line contains full untruncated name when focused; detail line absent when unfocused
+- [x] run `go test ./internal/tui/...` — all pass
 
 ### Task 8: Adjust height budget for detail line
 

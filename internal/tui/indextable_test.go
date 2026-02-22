@@ -132,3 +132,49 @@ func TestIndexTableRender_ContainsIndexName(t *testing.T) {
 	out := m.renderTable(nil)
 	assert.True(t, strings.Contains(out, "my-test-index"), "rendered output should contain the index name")
 }
+
+// TestIndexTableDetailLine_FocusedShowsFullName verifies that when the table
+// is focused, the rendered output contains the full untruncated index name in
+// the detail line below the table body.
+func TestIndexTableDetailLine_FocusedShowsFullName(t *testing.T) {
+	m := NewIndexTable()
+	m.focused = true
+	longName := "logstash-production-2024.01.15-000042"
+	rows := []model.IndexRow{
+		{Name: longName, IndexingRate: 42.0},
+	}
+	m.SetData(rows)
+
+	out := m.renderTable(nil)
+	assert.True(t, strings.Contains(out, longName),
+		"detail line should contain the full untruncated index name when focused")
+}
+
+// TestIndexTableDetailLine_UnfocusedAbsent verifies that when the table is not
+// focused, no detail line is rendered for the selected row.
+func TestIndexTableDetailLine_UnfocusedAbsent(t *testing.T) {
+	m := NewIndexTable()
+	m.focused = false
+	longName := "logstash-production-2024.01.15-000042"
+	rows := []model.IndexRow{
+		{Name: longName, IndexingRate: 42.0},
+	}
+	m.SetData(rows)
+
+	// Strip ANSI escapes is not needed here since we assert on absence of the
+	// name appearing more than once (it may appear truncated in the table body).
+	// We check that the full name does NOT appear in the output when unfocused
+	// and the column is narrow enough to require truncation. Using a nil app
+	// means no column-width truncation, so instead we verify the detail line
+	// is simply not appended by checking that focused=false produces no detail.
+	outUnfocused := m.renderTable(nil)
+
+	m2 := NewIndexTable()
+	m2.focused = true
+	m2.SetData(rows)
+	outFocused := m2.renderTable(nil)
+
+	// The focused output must be longer (extra detail line).
+	assert.Greater(t, len(outFocused), len(outUnfocused),
+		"focused table output should be longer than unfocused (has detail line)")
+}

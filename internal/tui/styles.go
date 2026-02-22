@@ -8,18 +8,19 @@ import (
 
 // Color constants — ES Performance Monitor palette.
 var (
-	colorGreen  = lipgloss.Color("#10b981")
-	colorYellow = lipgloss.Color("#f59e0b")
-	colorRed    = lipgloss.Color("#ef4444")
-	colorGray   = lipgloss.Color("#6b7280")
-	colorBlue   = lipgloss.Color("#3b82f6")
-	colorCyan   = lipgloss.Color("#06b6d4")
-	colorPurple = lipgloss.Color("#8b5cf6")
-	colorIndigo = lipgloss.Color("#6366f1")
-	colorOrange = lipgloss.Color("#f97316")
-	colorWhite  = lipgloss.Color("#f8fafc")
-	colorDark   = lipgloss.Color("#1e293b")
-	colorAlt    = lipgloss.Color("#0f172a")
+	colorGreen      = lipgloss.Color("#10b981")
+	colorYellow     = lipgloss.Color("#f59e0b")
+	colorRed        = lipgloss.Color("#ef4444")
+	colorGray       = lipgloss.Color("#6b7280")
+	colorBlue       = lipgloss.Color("#3b82f6")
+	colorCyan       = lipgloss.Color("#06b6d4")
+	colorPurple     = lipgloss.Color("#8b5cf6")
+	colorIndigo     = lipgloss.Color("#6366f1")
+	colorOrange     = lipgloss.Color("#f97316")
+	colorWhite      = lipgloss.Color("#f8fafc")
+	colorDark       = lipgloss.Color("#1e293b")
+	colorAlt        = lipgloss.Color("#0f172a")
+	colorSelectedBg = lipgloss.Color("#1e3a5f") // subtle blue highlight for cursor row
 )
 
 // Status styles — bold foreground, used for cluster health indicator.
