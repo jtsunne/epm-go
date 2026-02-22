@@ -94,9 +94,12 @@ func (c *DefaultClient) doGet(ctx context.Context, path string) ([]byte, error) 
 	defer resp.Body.Close()
 
 	const maxResponseBytes = 32 * 1024 * 1024 // 32 MB — well above any real ES response
-	body, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBytes))
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBytes+1))
 	if err != nil {
 		return nil, fmt.Errorf("read body: %w", err)
+	}
+	if len(body) > maxResponseBytes {
+		return nil, fmt.Errorf("response body exceeds %d MB limit; the cluster may be returning an unexpectedly large payload", maxResponseBytes/(1024*1024))
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {

@@ -181,8 +181,12 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			app.tickGen++ // invalidate any pending tick so it doesn't trigger a double-fetch
 			app.fetching = true
 			return app, fetchCmd(app.client, app.current, app.pollInterval)
-		case key.Matches(msg, keys.Tab), key.Matches(msg, keys.ShiftTab):
+		case key.Matches(msg, keys.Tab):
 			app.activeTable = (app.activeTable + 1) % 2
+			app.indexTable.focused = app.activeTable == 0
+			app.nodeTable.focused = app.activeTable == 1
+		case key.Matches(msg, keys.ShiftTab):
+			app.activeTable = (app.activeTable - 1 + 2) % 2
 			app.indexTable.focused = app.activeTable == 0
 			app.nodeTable.focused = app.activeTable == 1
 		case key.Matches(msg, keys.Help):

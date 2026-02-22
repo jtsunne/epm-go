@@ -85,11 +85,12 @@ func resolveCredentials(uriUser, uriPass, envUser, envPass, flagUser, flagPass s
 
 func main() {
 	var (
-		interval    = flag.Duration("interval", 10*time.Second, "polling interval, between 5s and 300s (e.g. 10s, 30s)")
-		insecure    = flag.Bool("insecure", false, "skip TLS certificate verification (for self-signed certs)")
-		showVersion = flag.Bool("version", false, "print version and exit")
-		userFlag    = flag.String("user", "", "Elasticsearch username (overrides URI credentials and ES_USER env var)")
-		passFlag    = flag.String("password", "", "Elasticsearch password (overrides URI credentials and ES_PASSWORD env var)")
+		interval          = flag.Duration("interval", 10*time.Second, "polling interval, between 5s and 300s (e.g. 10s, 30s)")
+		insecure          = flag.Bool("insecure", false, "skip TLS certificate verification (for self-signed certs)")
+		allowInsecureAuth = flag.Bool("allow-insecure-auth", false, "allow sending credentials over unencrypted HTTP (insecure; not recommended for production)")
+		showVersion       = flag.Bool("version", false, "print version and exit")
+		userFlag          = flag.String("user", "", "Elasticsearch username (overrides URI credentials and ES_USER env var)")
+		passFlag          = flag.String("password", "", "Elasticsearch password (overrides URI credentials and ES_PASSWORD env var)")
 	)
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "epm %s — Elasticsearch Performance Monitor\n\n", version)
@@ -153,9 +154,13 @@ func main() {
 		*userFlag, *passFlag,
 	)
 
-	// Warn when credentials are sent over unencrypted HTTP.
+	// Block credentials over unencrypted HTTP unless user explicitly opts in.
 	if (finalUser != "" || finalPass != "") && strings.HasPrefix(baseURL, "http://") {
-		fmt.Fprintln(os.Stderr, "warning: credentials will be sent over unencrypted HTTP; use https:// for production clusters")
+		if !*allowInsecureAuth {
+			fmt.Fprintln(os.Stderr, "error: credentials would be sent over unencrypted HTTP; use https:// or add --allow-insecure-auth to proceed anyway (insecure)")
+			os.Exit(1)
+		}
+		fmt.Fprintln(os.Stderr, "warning: credentials are being sent over unencrypted HTTP")
 	}
 
 	// Hint: connecting to https:// without --insecure may fail if the cluster

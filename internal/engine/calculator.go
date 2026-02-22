@@ -300,9 +300,20 @@ func CalcIndexRows(prev, curr *model.Snapshot, elapsed time.Duration) []model.In
 		name := info.Index
 
 		// Parse string fields from _cat/indices response.
-		pri, _ := strconv.Atoi(info.Pri)
-		rep, _ := strconv.Atoi(info.Rep)
-		docCount, _ := strconv.ParseInt(info.DocsCount, 10, 64)
+		// ES returns "-" for unavailable fields (e.g. some system indices);
+		// treat any non-numeric value as 0 rather than silently discarding the error.
+		pri := 0
+		if v, err := strconv.Atoi(info.Pri); err == nil {
+			pri = v
+		}
+		rep := 0
+		if v, err := strconv.Atoi(info.Rep); err == nil {
+			rep = v
+		}
+		docCount := int64(0)
+		if v, err := strconv.ParseInt(info.DocsCount, 10, 64); err == nil {
+			docCount = v
+		}
 		totalShards := pri * (1 + rep)
 
 		// Size from _stats shard data.
