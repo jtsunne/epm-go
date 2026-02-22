@@ -90,7 +90,7 @@ Add the two sortable, paginated, searchable data tables: Index Statistics (9 col
 
 ### Task 3: Index table renderer
 
-- [ ] create `internal/tui/indextable.go`:
+- [x] create `internal/tui/indextable.go`:
   - `IndexTableModel` embedding `tableModel` with typed row data `[]model.IndexRow`
   - `NewIndexTable() IndexTableModel` — initializes with 9 column defs:
     - 0: "Index Name" left, Width 25
