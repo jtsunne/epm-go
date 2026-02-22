@@ -284,7 +284,7 @@ Two UX issues found during testing of the completed Phase 1-6 implementation:
 
 ### Task 10: Move plan to completed
 
-- [ ] move `docs/plans/2026-02-22-phase-7-ux-improvements.md` → `docs/plans/completed/`
+- [x] move `docs/plans/2026-02-22-phase-7-ux-improvements.md` → `docs/plans/completed/`
 
 ## Technical Details
 
