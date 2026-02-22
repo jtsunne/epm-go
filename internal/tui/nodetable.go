@@ -164,6 +164,10 @@ func (m *NodeTableModel) renderTable(app *App) string {
 		for col := range m.columns {
 			cells[col] = nodeCellValue(r, col)
 		}
+		// Prevent cell wrapping: truncate name to allocated column width.
+		if len(colWidths) > 0 && colWidths[0] > 0 {
+			cells[0] = truncateName(cells[0], colWidths[0])
+		}
 		t = t.Row(cells...)
 	}
 

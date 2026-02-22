@@ -144,7 +144,7 @@ Two UX issues found during testing of the completed Phase 1-6 implementation:
 - Modify: `internal/tui/indextable.go`
 - Modify: `internal/tui/nodetable.go`
 
-- [ ] update `indextable.go` `renderTable()`: after building `cells`, truncate column 0 to `colWidths[0]`:
+- [x] update `indextable.go` `renderTable()`: after building `cells`, truncate column 0 to `colWidths[0]`:
   ```go
   for _, idx := range pageIdx {
       r := m.displayRows[idx]
@@ -159,8 +159,8 @@ Two UX issues found during testing of the completed Phase 1-6 implementation:
       t = t.Row(cells...)
   }
   ```
-- [ ] apply the same pattern in `nodetable.go` `renderTable()` for Node Name (column 0)
-- [ ] run `go test ./internal/tui/...` — all pass
+- [x] apply the same pattern in `nodetable.go` `renderTable()` for Node Name (column 0)
+- [x] run `go test ./internal/tui/...` — all pass
 
 ### Task 6: Add cursor state and up/down navigation
 
