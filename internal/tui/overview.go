@@ -98,7 +98,7 @@ func renderOverview(app *App) string {
 		cpuVal += "!"
 	}
 	cpuBar := renderMiniBar(cpuPct, barWidth)
-	card5 := severityCardStyle(cpuSev).
+	card5 := severityCardStyle().
 		Foreground(severityFg(cpuSev)).
 		Width(cardWidth).
 		Render(cpuVal + "\n" + cpuBar + "\nCPU")
@@ -111,7 +111,7 @@ func renderOverview(app *App) string {
 		jvmVal += "!"
 	}
 	jvmBar := renderMiniBar(jvmPct, barWidth)
-	card6 := severityCardStyle(jvmSev).
+	card6 := severityCardStyle().
 		Foreground(severityFg(jvmSev)).
 		Width(cardWidth).
 		Render(jvmVal + "\n" + jvmBar + "\nJVM Heap")
@@ -126,7 +126,7 @@ func renderOverview(app *App) string {
 	storageBar := renderMiniBar(storagePct, barWidth)
 	usedStr := format.FormatBytes(res.StorageUsedBytes)
 	totalStr := format.FormatBytes(res.StorageTotalBytes)
-	card7 := severityCardStyle(storageSev).
+	card7 := severityCardStyle().
 		Foreground(severityFg(storageSev)).
 		Width(cardWidth).
 		Render(storageVal + "\n" + storageBar + "\n" + usedStr + "/" + totalStr + "\nStorage")
