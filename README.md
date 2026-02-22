@@ -11,14 +11,14 @@ Terminal dashboard for Elasticsearch cluster performance monitoring. A standalon
 │ GREEN │ 5 Nodes │ 42 Idx │ 210 Shards │ CPU 34% │ JVM 67% │ S 45%│
 ├──────────────────────────────────────────────────────────────────┤
 │ Indexing Rate  │ Search Rate  │ Index Latency  │ Search Latency  │
-│  1,204.3 /s   │   892.1 /s  │   2.34 ms      │   5.67 ms       │
-│  ▁▂▃▅▇█▇▅▃▂   │  ▁▃▅▇▅▃▁▂▃ │  ▁▁▂▂▃▃▂▁▁▁   │  ▁▂▃▂▁▁▂▃▄▃    │
+│  1,204.3 /s    │   892.1 /s   │   2.34 ms      │   5.67 ms       │
+│  ▁▂▃▅▇█▇▅▃▂    │  ▁▃▅▇▅▃▁▂▃   │  ▁▁▂▂▃▃▂▁▁▁    │  ▁▂▃▂▁▁▂▃▄▃     │
 ├──────────────────────────────────────────────────────────────────┤
-│ Index Statistics  [/: search]  [1-9: sort col]  [←→: page] 1/5  │
-│ Name           │ P/T  │ Size   │ Shard │  Docs  │Idx/s│Srch/s│  │
+│ Index Statistics  [/: search]  [1-9: sort col]  [←→: page] 1/5   │
+│ Name           │ P/T  │ Size  │ Shard   │  Docs  │Idx/s │Srch/s│ │
 ├──────────────────────────────────────────────────────────────────┤
-│ Node Statistics                                         Page 1/1  │
-│ Name       │ Role │ IP          │ Idx/s │ Srch/s │ ILat │ SLat  │
+│ Node Statistics                                         Page 1/1 │
+│ Name       │ Role │ IP          │ Idx/s │ Srch/s │ ILat │  SLat  │
 ├──────────────────────────────────────────────────────────────────┤
 │ tab: switch  /: search  1-9: sort  ←→: pages  r: refresh  q: quit│
 └──────────────────────────────────────────────────────────────────┘
