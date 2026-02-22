@@ -62,21 +62,48 @@ func parseESURI(esURI string) (baseURL, username, password string, err error) {
 	return u.String(), username, password, nil
 }
 
+// resolveCredentials determines the final username and password using a
+// priority order: CLI flags > environment variables > URI-embedded credentials.
+// An empty string at a higher-priority source means "not set" and the next
+// lower-priority source is used.
+func resolveCredentials(uriUser, uriPass, envUser, envPass, flagUser, flagPass string) (user, pass string) {
+	user, pass = uriUser, uriPass
+	if envUser != "" {
+		user = envUser
+	}
+	if envPass != "" {
+		pass = envPass
+	}
+	if flagUser != "" {
+		user = flagUser
+	}
+	if flagPass != "" {
+		pass = flagPass
+	}
+	return user, pass
+}
+
 func main() {
 	var (
 		interval    = flag.Duration("interval", 10*time.Second, "polling interval, between 5s and 300s (e.g. 10s, 30s)")
 		insecure    = flag.Bool("insecure", false, "skip TLS certificate verification (for self-signed certs)")
 		showVersion = flag.Bool("version", false, "print version and exit")
+		userFlag    = flag.String("user", "", "Elasticsearch username (overrides URI credentials and ES_USER env var)")
+		passFlag    = flag.String("password", "", "Elasticsearch password (overrides URI credentials and ES_PASSWORD env var)")
 	)
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "epm %s — Elasticsearch Performance Monitor\n\n", version)
 		fmt.Fprintf(os.Stderr, "usage:\n")
-		fmt.Fprintf(os.Stderr, "  epm [--interval <duration>] [--insecure] [--version] <elasticsearch-uri>\n\n")
+		fmt.Fprintf(os.Stderr, "  epm [flags] <elasticsearch-uri>\n\n")
 		fmt.Fprintf(os.Stderr, "examples:\n")
 		fmt.Fprintf(os.Stderr, "  epm http://localhost:9200\n")
 		fmt.Fprintf(os.Stderr, "  epm --insecure https://elastic:changeme@prod.example.com:9200\n")
+		fmt.Fprintf(os.Stderr, "  epm --user root --password \"s3cr#t!\" https://host:9200\n")
 		fmt.Fprintf(os.Stderr, "  epm --interval 30s http://localhost:9200\n")
 		fmt.Fprintf(os.Stderr, "  epm --version\n\n")
+		fmt.Fprintf(os.Stderr, "environment variables:\n")
+		fmt.Fprintf(os.Stderr, "  ES_USER       Elasticsearch username (overridden by --user flag)\n")
+		fmt.Fprintf(os.Stderr, "  ES_PASSWORD   Elasticsearch password (overridden by --password flag)\n\n")
 		fmt.Fprintf(os.Stderr, "flags:\n")
 		flag.PrintDefaults()
 	}
@@ -119,8 +146,15 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Resolve credentials: flags > env vars > URI-embedded
+	finalUser, finalPass := resolveCredentials(
+		username, password,
+		os.Getenv("ES_USER"), os.Getenv("ES_PASSWORD"),
+		*userFlag, *passFlag,
+	)
+
 	// Warn when credentials are sent over unencrypted HTTP.
-	if username != "" || password != "" {
+	if finalUser != "" || finalPass != "" {
 		u, _ := url.Parse(baseURL)
 		if u != nil && u.Scheme == "http" {
 			fmt.Fprintln(os.Stderr, "warning: credentials will be sent over unencrypted HTTP; use https:// for production clusters")
@@ -146,8 +180,8 @@ func main() {
 
 	cfg := client.ClientConfig{
 		BaseURL:            baseURL,
-		Username:           username,
-		Password:           password,
+		Username:           finalUser,
+		Password:           finalPass,
 		InsecureSkipVerify: *insecure,
 		RequestTimeout:     requestTimeout,
 	}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"testing"
 )
 
@@ -159,4 +160,154 @@ func TestParseESURI(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCredentialResolution(t *testing.T) {
+	tests := []struct {
+		name     string
+		uriUser  string
+		uriPass  string
+		envUser  string
+		envPass  string
+		flagUser string
+		flagPass string
+		wantUser string
+		wantPass string
+	}{
+		{
+			name:     "URI credentials used when nothing else set",
+			uriUser:  "elastic",
+			uriPass:  "changeme",
+			wantUser: "elastic",
+			wantPass: "changeme",
+		},
+		{
+			name:     "env vars override URI credentials",
+			uriUser:  "elastic",
+			uriPass:  "changeme",
+			envUser:  "envuser",
+			envPass:  "envpass",
+			wantUser: "envuser",
+			wantPass: "envpass",
+		},
+		{
+			name:     "flags override URI credentials",
+			uriUser:  "elastic",
+			uriPass:  "changeme",
+			flagUser: "flaguser",
+			flagPass: "flagpass",
+			wantUser: "flaguser",
+			wantPass: "flagpass",
+		},
+		{
+			name:     "flags override env vars",
+			envUser:  "envuser",
+			envPass:  "envpass",
+			flagUser: "flaguser",
+			flagPass: "flagpass",
+			wantUser: "flaguser",
+			wantPass: "flagpass",
+		},
+		{
+			name:     "priority chain: flag > env > URI",
+			uriUser:  "uriuser",
+			uriPass:  "uripass",
+			envUser:  "envuser",
+			envPass:  "envpass",
+			flagUser: "flaguser",
+			flagPass: "flagpass",
+			wantUser: "flaguser",
+			wantPass: "flagpass",
+		},
+		{
+			name:     "only flag user set overrides URI user, URI pass used",
+			uriUser:  "uriuser",
+			uriPass:  "uripass",
+			flagUser: "flaguser",
+			wantUser: "flaguser",
+			wantPass: "uripass",
+		},
+		{
+			name:     "flag password with special chars including hash",
+			uriUser:  "",
+			uriPass:  "",
+			flagUser: "root",
+			flagPass: "op0107##",
+			wantUser: "root",
+			wantPass: "op0107##",
+		},
+		{
+			name:     "env password with special chars including hash",
+			envUser:  "root",
+			envPass:  "op0107##",
+			wantUser: "root",
+			wantPass: "op0107##",
+		},
+		{
+			name:     "empty strings at all sources",
+			wantUser: "",
+			wantPass: "",
+		},
+		{
+			name:    "env user only, no URI or flag",
+			envUser: "envonly",
+			wantUser: "envonly",
+			wantPass: "",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			user, pass := resolveCredentials(tc.uriUser, tc.uriPass, tc.envUser, tc.envPass, tc.flagUser, tc.flagPass)
+			if user != tc.wantUser {
+				t.Errorf("user = %q, want %q", user, tc.wantUser)
+			}
+			if pass != tc.wantPass {
+				t.Errorf("pass = %q, want %q", pass, tc.wantPass)
+			}
+		})
+	}
+}
+
+// TestCredentialResolutionEnvVars tests that resolveCredentials integrates
+// correctly with real environment variables via os.Getenv.
+func TestCredentialResolutionEnvVars(t *testing.T) {
+	t.Run("ES_USER and ES_PASSWORD override URI", func(t *testing.T) {
+		t.Setenv("ES_USER", "envuser")
+		t.Setenv("ES_PASSWORD", "envpass")
+
+		user, pass := resolveCredentials("uriuser", "uripass", os.Getenv("ES_USER"), os.Getenv("ES_PASSWORD"), "", "")
+		if user != "envuser" {
+			t.Errorf("user = %q, want %q", user, "envuser")
+		}
+		if pass != "envpass" {
+			t.Errorf("pass = %q, want %q", pass, "envpass")
+		}
+	})
+
+	t.Run("flag overrides ES_PASSWORD env var", func(t *testing.T) {
+		t.Setenv("ES_USER", "envuser")
+		t.Setenv("ES_PASSWORD", "envpass")
+
+		user, pass := resolveCredentials("", "", os.Getenv("ES_USER"), os.Getenv("ES_PASSWORD"), "flaguser", "flagpass")
+		if user != "flaguser" {
+			t.Errorf("user = %q, want %q", user, "flaguser")
+		}
+		if pass != "flagpass" {
+			t.Errorf("pass = %q, want %q", pass, "flagpass")
+		}
+	})
+
+	t.Run("ES_PASSWORD with hash character", func(t *testing.T) {
+		t.Setenv("ES_USER", "root")
+		t.Setenv("ES_PASSWORD", "op0107##")
+
+		user, pass := resolveCredentials("", "", os.Getenv("ES_USER"), os.Getenv("ES_PASSWORD"), "", "")
+		if user != "root" {
+			t.Errorf("user = %q, want %q", user, "root")
+		}
+		if pass != "op0107##" {
+			t.Errorf("pass = %q, want %q", pass, "op0107##")
+		}
+	})
 }
