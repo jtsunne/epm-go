@@ -9,7 +9,9 @@ import (
 	"github.com/dm/epm-go/internal/format"
 )
 
-// renderOverview renders the 7-stat horizontal overview bar.
+// renderOverview renders the 7-stat overview bar.
+// Wide terminals (>= 80 cols): all 7 cards in a single horizontal row.
+// Narrow terminals (< 80 cols): cards stacked in rows of 2 (4 rows: 2+2+2+1).
 // Returns empty string if no snapshot is available yet.
 func renderOverview(app *App) string {
 	if app.current == nil {
@@ -21,9 +23,20 @@ func renderOverview(app *App) string {
 		width = 80
 	}
 
-	cardWidth := (width - 14) / 7
-	if cardWidth < 8 {
-		cardWidth = 8
+	narrowMode := width < 80
+
+	var cardWidth int
+	if narrowMode {
+		// 2 cards per row: split width evenly between 2 cards.
+		cardWidth = (width - 4) / 2
+		if cardWidth < 10 {
+			cardWidth = 10
+		}
+	} else {
+		cardWidth = (width - 14) / 7
+		if cardWidth < 8 {
+			cardWidth = 8
+		}
 	}
 
 	// Mini bar inner width: card width minus padding (1 char each side).
@@ -118,6 +131,13 @@ func renderOverview(app *App) string {
 		Width(cardWidth).
 		Render(storageVal + "\n" + storageBar + "\n" + usedStr + "/" + totalStr + "\nStorage")
 
+	if narrowMode {
+		// Arrange 7 cards in rows of 2 (4 rows: 2+2+2+1).
+		row1 := lipgloss.JoinHorizontal(lipgloss.Top, card1, card2)
+		row2 := lipgloss.JoinHorizontal(lipgloss.Top, card3, card4)
+		row3 := lipgloss.JoinHorizontal(lipgloss.Top, card5, card6)
+		return lipgloss.JoinVertical(lipgloss.Left, row1, row2, row3, card7)
+	}
 	return lipgloss.JoinHorizontal(lipgloss.Top, card1, card2, card3, card4, card5, card6, card7)
 }
 

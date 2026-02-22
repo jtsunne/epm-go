@@ -88,12 +88,12 @@ Final phase: production-quality error states, threshold-based visual alerts on o
 
 ### Task 5: Terminal resize handling
 
-- [ ] verify `tea.WindowSizeMsg` handler in `app.go` re-renders all components
-- [ ] update `renderOverview()`: if `app.width < 80`, stack cards vertically (2 per row) instead of 1×7
-- [ ] update `renderMetricsRow()`: if `app.width < 80`, show 2×2 grid instead of 1×4
-- [ ] update tables: recalculate column widths on resize (clamp to min widths, drop columns if too narrow)
-- [ ] add `columnWidths(available int, defs []columnDef) []int` function that distributes width proportionally
-- [ ] test manually: resize terminal while running, verify no layout artifacts
+- [x] verify `tea.WindowSizeMsg` handler in `app.go` re-renders all components
+- [x] update `renderOverview()`: if `app.width < 80`, stack cards vertically (2 per row) instead of 1×7
+- [x] update `renderMetricsRow()`: if `app.width < 80`, show 2×2 grid instead of 1×4
+- [x] update tables: recalculate column widths on resize (clamp to min widths, drop columns if too narrow)
+- [x] add `columnWidths(available int, defs []columnDef) []int` function that distributes width proportionally
+- [x] test manually: resize terminal while running, verify no layout artifacts
 
 ### Task 6: Context cancellation and clean shutdown
 

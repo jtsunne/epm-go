@@ -167,3 +167,59 @@ func (t *tableModel) clampPage(totalRows int) {
 		t.page = 0
 	}
 }
+
+// columnWidths distributes available terminal width across table columns,
+// proportional to each column's preferred Width in its columnDef.
+// Each column receives at least minColWidth characters.
+// If available is 0 or negative, preferred widths are returned unchanged.
+func columnWidths(available int, defs []columnDef) []int {
+	const minColWidth = 4
+	n := len(defs)
+	result := make([]int, n)
+	if n == 0 {
+		return result
+	}
+	if available <= 0 {
+		for i, d := range defs {
+			result[i] = d.Width
+		}
+		return result
+	}
+
+	// Sum preferred widths.
+	total := 0
+	for _, d := range defs {
+		total += d.Width
+	}
+
+	if total <= 0 {
+		each := available / n
+		if each < minColWidth {
+			each = minColWidth
+		}
+		for i := range result {
+			result[i] = each
+		}
+		return result
+	}
+
+	// Scale proportionally, assigning remainder to the last column.
+	assigned := 0
+	for i, d := range defs {
+		if i == n-1 {
+			w := available - assigned
+			if w < minColWidth {
+				w = minColWidth
+			}
+			result[i] = w
+		} else {
+			w := available * d.Width / total
+			if w < minColWidth {
+				w = minColWidth
+			}
+			result[i] = w
+			assigned += w
+		}
+	}
+	return result
+}
