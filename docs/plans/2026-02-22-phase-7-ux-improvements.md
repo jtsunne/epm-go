@@ -115,7 +115,7 @@ Two UX issues found during testing of the completed Phase 1-6 implementation:
 - Modify: `internal/tui/table.go`
 - Modify: `internal/tui/table_test.go`
 
-- [ ] add `truncateName` function:
+- [x] add `truncateName` function:
   ```go
   // truncateName truncates s to fit within maxWidth runes, appending "..."
   // if truncated. Returns s unchanged if it fits. Uses []rune for correct
@@ -135,8 +135,8 @@ Two UX issues found during testing of the completed Phase 1-6 implementation:
       return string(runes[:maxWidth-3]) + "..."
   }
   ```
-- [ ] write table-driven tests covering: short (fits), exact width, one over, long name, very narrow (width 0, 1, 2, 3, 4), unicode, empty string; verify `len([]rune(got)) <= maxWidth` for all cases
-- [ ] run `go test ./internal/tui/...` — all pass
+- [x] write table-driven tests covering: short (fits), exact width, one over, long name, very narrow (width 0, 1, 2, 3, 4), unicode, empty string; verify `len([]rune(got)) <= maxWidth` for all cases
+- [x] run `go test ./internal/tui/...` — all pass
 
 ### Task 5: Apply name truncation in index and node tables
 

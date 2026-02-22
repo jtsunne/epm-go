@@ -6,6 +6,39 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestTruncateName(t *testing.T) {
+	tests := []struct {
+		name     string
+		s        string
+		maxWidth int
+		want     string
+	}{
+		{"empty string", "", 10, ""},
+		{"fits exactly", "hello", 5, "hello"},
+		{"fits shorter", "hi", 10, "hi"},
+		{"one over", "hello!", 5, "he..."},
+		{"long name", "logstash-production-2024.01.15-000042", 20, "logstash-producti..."},
+		{"width 0", "abc", 0, ""},
+		{"width 1", "abc", 1, "a"},
+		{"width 2", "abc", 2, "ab"},
+		{"width 3", "abcd", 3, "abc"},
+		{"width 4", "abcde", 4, "a..."},
+		{"unicode fits", "héllo", 5, "héllo"},
+		{"unicode truncated", "héllo world", 8, "héllo..."},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := truncateName(tc.s, tc.maxWidth)
+			assert.Equal(t, tc.want, got)
+			// Result must never exceed maxWidth runes.
+			if tc.maxWidth > 0 {
+				assert.LessOrEqual(t, len([]rune(got)), tc.maxWidth,
+					"result rune length must not exceed maxWidth")
+			}
+		})
+	}
+}
+
 func TestColumnWidths_ZeroAvailable(t *testing.T) {
 	defs := []columnDef{
 		{Title: "A", Width: 10},

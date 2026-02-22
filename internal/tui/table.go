@@ -168,6 +168,24 @@ func (t *tableModel) clampPage(totalRows int) {
 	}
 }
 
+// truncateName truncates s to fit within maxWidth runes, appending "..."
+// if truncated. Returns s unchanged if it fits. Uses []rune for correct
+// Unicode handling. ES index names are ASCII in practice, but node names
+// can be arbitrary hostnames.
+func truncateName(s string, maxWidth int) string {
+	runes := []rune(s)
+	if len(runes) <= maxWidth {
+		return s
+	}
+	if maxWidth <= 3 {
+		if maxWidth <= 0 {
+			return ""
+		}
+		return string(runes[:maxWidth])
+	}
+	return string(runes[:maxWidth-3]) + "..."
+}
+
 // columnWidths distributes available terminal width across table columns,
 // proportional to each column's preferred Width in its columnDef.
 // Each column receives at least minColWidth characters.
