@@ -68,7 +68,7 @@ Add the two sortable, paginated, searchable data tables: Index Statistics (9 col
 
 ### Task 2: Sorting and filtering helpers
 
-- [ ] create `internal/tui/sort.go` (or within table.go):
+- [x] create `internal/tui/sort.go` (or within table.go):
   - `sortIndexRows(rows []model.IndexRow, col int, desc bool) []model.IndexRow`
     - col 0 = Name (string asc default), col 1 = PrimaryShards, col 2 = TotalSizeBytes, col 3 = AvgShardSize, col 4 = DocCount, col 5 = IndexingRate, col 6 = SearchRate, col 7 = IndexLatency, col 8 = SearchLatency
     - default sort: col 5 (IndexingRate) desc
@@ -79,14 +79,14 @@ Add the two sortable, paginated, searchable data tables: Index Statistics (9 col
     - case-insensitive substring match on `Name`
   - `filterNodeRows(rows []model.NodeRow, search string) []model.NodeRow`
     - match on `Name` or `IP`
-- [ ] write `internal/tui/sort_test.go`:
+- [x] write `internal/tui/sort_test.go`:
   - `TestSortIndexRows_ByRate` — verify descending sort by IndexingRate
   - `TestSortIndexRows_ByName` — verify ascending alphabetical
   - `TestSortIndexRows_ToggleDirection` — same col twice → reverses
   - `TestFilterIndexRows_CaseInsensitive`
   - `TestFilterNodeRows_ByIP`
   - `TestSortNodeRows_BySearchRate`
-- [ ] run tests — all pass
+- [x] run tests — all pass
 
 ### Task 3: Index table renderer
 
