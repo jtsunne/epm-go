@@ -40,12 +40,12 @@
 - [x] Run tests — must pass before next task
 
 ### Task 2: Verify acceptance criteria
-- [ ] Verify: `epm --user root --password "op0107##" https://host:9200` works (no URL parse error)
-- [ ] Verify: `ES_PASSWORD="op0107##" epm https://host:9200` works
-- [ ] Verify: URI-embedded credentials still work: `epm http://elastic:changeme@host:9200`
-- [ ] Verify: flag overrides URI: `epm --password new http://elastic:old@host:9200` uses "new"
-- [ ] Run full test suite (`make test`)
-- [ ] Run linter (`make lint`)
+- [x] Verify: `epm --user root --password "op0107##" https://host:9200` works (no URL parse error)
+- [x] Verify: `ES_PASSWORD="op0107##" epm https://host:9200` works
+- [x] Verify: URI-embedded credentials still work: `epm http://elastic:changeme@host:9200`
+- [x] Verify: flag overrides URI: `epm --password new http://elastic:old@host:9200` uses "new"
+- [x] Run full test suite (`make test`)
+- [x] Run linter (`make lint`)
 
 ### Task 3: Update documentation
 - [ ] Update CLAUDE.md usage section with new flags and env var examples
