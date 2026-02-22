@@ -58,25 +58,33 @@ func sortIndexRows(rows []model.IndexRow, col int, desc bool) []model.IndexRow {
 				return strings.ToLower(a.Name) < strings.ToLower(b.Name)
 			}
 		case 5:
-			if a.IndexingRate != b.IndexingRate {
+			if aSentinel, bSentinel := a.IndexingRate < 0, b.IndexingRate < 0; aSentinel != bSentinel {
+				return bSentinel // sentinel always last regardless of direction
+			} else if a.IndexingRate != b.IndexingRate {
 				less = a.IndexingRate < b.IndexingRate
 			} else {
 				return strings.ToLower(a.Name) < strings.ToLower(b.Name)
 			}
 		case 6:
-			if a.SearchRate != b.SearchRate {
+			if aSentinel, bSentinel := a.SearchRate < 0, b.SearchRate < 0; aSentinel != bSentinel {
+				return bSentinel
+			} else if a.SearchRate != b.SearchRate {
 				less = a.SearchRate < b.SearchRate
 			} else {
 				return strings.ToLower(a.Name) < strings.ToLower(b.Name)
 			}
 		case 7:
-			if a.IndexLatency != b.IndexLatency {
+			if aSentinel, bSentinel := a.IndexLatency < 0, b.IndexLatency < 0; aSentinel != bSentinel {
+				return bSentinel
+			} else if a.IndexLatency != b.IndexLatency {
 				less = a.IndexLatency < b.IndexLatency
 			} else {
 				return strings.ToLower(a.Name) < strings.ToLower(b.Name)
 			}
 		case 8:
-			if a.SearchLatency != b.SearchLatency {
+			if aSentinel, bSentinel := a.SearchLatency < 0, b.SearchLatency < 0; aSentinel != bSentinel {
+				return bSentinel
+			} else if a.SearchLatency != b.SearchLatency {
 				less = a.SearchLatency < b.SearchLatency
 			} else {
 				return strings.ToLower(a.Name) < strings.ToLower(b.Name)
@@ -133,25 +141,33 @@ func sortNodeRows(rows []model.NodeRow, col int, desc bool) []model.NodeRow {
 				return strings.ToLower(a.Name) < strings.ToLower(b.Name)
 			}
 		case 3:
-			if a.IndexingRate != b.IndexingRate {
+			if aSentinel, bSentinel := a.IndexingRate < 0, b.IndexingRate < 0; aSentinel != bSentinel {
+				return bSentinel
+			} else if a.IndexingRate != b.IndexingRate {
 				less = a.IndexingRate < b.IndexingRate
 			} else {
 				return strings.ToLower(a.Name) < strings.ToLower(b.Name)
 			}
 		case 4:
-			if a.SearchRate != b.SearchRate {
+			if aSentinel, bSentinel := a.SearchRate < 0, b.SearchRate < 0; aSentinel != bSentinel {
+				return bSentinel
+			} else if a.SearchRate != b.SearchRate {
 				less = a.SearchRate < b.SearchRate
 			} else {
 				return strings.ToLower(a.Name) < strings.ToLower(b.Name)
 			}
 		case 5:
-			if a.IndexLatency != b.IndexLatency {
+			if aSentinel, bSentinel := a.IndexLatency < 0, b.IndexLatency < 0; aSentinel != bSentinel {
+				return bSentinel
+			} else if a.IndexLatency != b.IndexLatency {
 				less = a.IndexLatency < b.IndexLatency
 			} else {
 				return strings.ToLower(a.Name) < strings.ToLower(b.Name)
 			}
 		case 6:
-			if a.SearchLatency != b.SearchLatency {
+			if aSentinel, bSentinel := a.SearchLatency < 0, b.SearchLatency < 0; aSentinel != bSentinel {
+				return bSentinel
+			} else if a.SearchLatency != b.SearchLatency {
 				less = a.SearchLatency < b.SearchLatency
 			} else {
 				return strings.ToLower(a.Name) < strings.ToLower(b.Name)

@@ -114,6 +114,33 @@ func TestSortIndexRows_ByDocCount(t *testing.T) {
 	assert.Equal(t, "metrics", sorted[0].Name) // 250
 }
 
+func TestSortIndexRows_SentinelLastAscending(t *testing.T) {
+	// MetricNotAvailable (-1.0) sentinel rows must sort last even in ascending order.
+	rows := []model.IndexRow{
+		{Name: "b", IndexingRate: model.MetricNotAvailable},
+		{Name: "a", IndexingRate: 100},
+		{Name: "c", IndexingRate: 50},
+	}
+	sorted := sortIndexRows(rows, 5, false) // ascending
+	require.Len(t, sorted, 3)
+	assert.Equal(t, "c", sorted[0].Name)   // 50 first
+	assert.Equal(t, "a", sorted[1].Name)   // 100 second
+	assert.Equal(t, "b", sorted[2].Name)   // sentinel last
+}
+
+func TestSortIndexRows_SentinelLastDescending(t *testing.T) {
+	rows := []model.IndexRow{
+		{Name: "b", IndexingRate: model.MetricNotAvailable},
+		{Name: "a", IndexingRate: 100},
+		{Name: "c", IndexingRate: 50},
+	}
+	sorted := sortIndexRows(rows, 5, true) // descending
+	require.Len(t, sorted, 3)
+	assert.Equal(t, "a", sorted[0].Name)   // 100 first
+	assert.Equal(t, "c", sorted[1].Name)   // 50 second
+	assert.Equal(t, "b", sorted[2].Name)   // sentinel last
+}
+
 // ---------- filterIndexRows ----------
 
 func TestFilterIndexRows_CaseInsensitive(t *testing.T) {
@@ -183,6 +210,19 @@ func TestSortNodeRows_DoesNotMutateInput(t *testing.T) {
 	copy(original, rows)
 	sortNodeRows(rows, 3, true)
 	assert.Equal(t, original, rows)
+}
+
+func TestSortNodeRows_SentinelLastAscending(t *testing.T) {
+	rows := []model.NodeRow{
+		{Name: "node-b", IndexingRate: model.MetricNotAvailable},
+		{Name: "node-a", IndexingRate: 200},
+		{Name: "node-c", IndexingRate: 50},
+	}
+	sorted := sortNodeRows(rows, 3, false) // col 3 = IndexingRate ascending
+	require.Len(t, sorted, 3)
+	assert.Equal(t, "node-c", sorted[0].Name)  // 50 first
+	assert.Equal(t, "node-a", sorted[1].Name)  // 200 second
+	assert.Equal(t, "node-b", sorted[2].Name)  // sentinel last
 }
 
 // ---------- filterNodeRows ----------
