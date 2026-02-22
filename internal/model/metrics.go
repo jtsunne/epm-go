@@ -1,5 +1,9 @@
 package model
 
+// MetricNotAvailable signals that a rate/latency metric has not yet been
+// computed (requires two snapshots for delta calculation).
+const MetricNotAvailable float64 = -1.0
+
 // PerformanceMetrics holds cluster-level throughput and latency metrics derived
 // from the delta between two consecutive snapshots.
 type PerformanceMetrics struct {
