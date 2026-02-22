@@ -10,9 +10,7 @@ import (
 type columnDef struct {
 	Title    string
 	Width    int
-	Align    string // "left", "right", "center"
-	Key      string // sort key (informational)
-	SortDesc bool   // default sort direction when first selected: true=descending (numeric), false=ascending (text)
+	SortDesc bool // default sort direction when first selected: true=descending (numeric), false=ascending (text)
 }
 
 // tableModel is the generic base for sortable, paginated, searchable tables.

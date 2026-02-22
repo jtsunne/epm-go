@@ -23,13 +23,13 @@ type NodeTableModel struct {
 // default sort by IndexingRate (col 3) descending.
 func NewNodeTable() NodeTableModel {
 	cols := []columnDef{
-		{Title: "Node Name", Width: 20, Align: "left",  Key: "name",      SortDesc: false},
-		{Title: "Role",      Width: 6,  Align: "left",  Key: "role",      SortDesc: false},
-		{Title: "IP",        Width: 15, Align: "left",  Key: "ip",        SortDesc: false},
-		{Title: "Idx/s",     Width: 8,  Align: "right", Key: "idx_rate",  SortDesc: true},
-		{Title: "Srch/s",    Width: 8,  Align: "right", Key: "srch_rate", SortDesc: true},
-		{Title: "Idx Lat",   Width: 9,  Align: "right", Key: "idx_lat",   SortDesc: true},
-		{Title: "Srch Lat",  Width: 9,  Align: "right", Key: "srch_lat",  SortDesc: true},
+		{Title: "Node Name", Width: 20, SortDesc: false},
+		{Title: "Role",      Width: 6,  SortDesc: false},
+		{Title: "IP",        Width: 15, SortDesc: false},
+		{Title: "Idx/s",     Width: 8,  SortDesc: true},
+		{Title: "Srch/s",    Width: 8,  SortDesc: true},
+		{Title: "Idx Lat",   Width: 9,  SortDesc: true},
+		{Title: "Srch Lat",  Width: 9,  SortDesc: true},
 	}
 	m := NodeTableModel{
 		tableModel: newTableModel(cols),

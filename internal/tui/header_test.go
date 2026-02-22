@@ -176,7 +176,7 @@ func TestRenderHeader_LongClusterNameWidth60(t *testing.T) {
 
 	result := renderHeader(app)
 	assert.Equal(t, 1, headerLineCount(result), "header must be single line at width=60 with long cluster name")
-	assert.LessOrEqual(t, lipgloss.Width(result), 60, "rendered header must not exceed terminal width")
+	assert.Equal(t, 60, lipgloss.Width(result), "rendered header must fill terminal width exactly")
 }
 
 func TestRenderHeader_VeryNarrowWidth30(t *testing.T) {
@@ -192,7 +192,7 @@ func TestRenderHeader_VeryNarrowWidth30(t *testing.T) {
 
 	result := renderHeader(app)
 	assert.Equal(t, 1, headerLineCount(result), "header must be single line at width=30")
-	assert.LessOrEqual(t, lipgloss.Width(result), 30, "rendered header must not exceed terminal width")
+	assert.Equal(t, 30, lipgloss.Width(result), "rendered header must fill terminal width exactly")
 }
 
 func TestRenderHeader_DisconnectedWidth60(t *testing.T) {
@@ -209,7 +209,7 @@ func TestRenderHeader_DisconnectedWidth60(t *testing.T) {
 
 	result := renderHeader(app)
 	assert.Equal(t, 1, headerLineCount(result), "disconnected header must be single line at width=60")
-	assert.LessOrEqual(t, lipgloss.Width(result), 60, "disconnected header must not exceed terminal width")
+	assert.Equal(t, 60, lipgloss.Width(result), "disconnected header must fill terminal width exactly")
 }
 
 func TestFormatDuration(t *testing.T) {

@@ -237,7 +237,7 @@ func renderHeader(app *App) string {
 		row = lipgloss.NewStyle().MaxWidth(innerWidth).Render(center)
 	}
 
-	return StyleHeader.Width(width).Render(row)
+	return StyleHeader.Width(width).MaxWidth(width).Render(row)
 }
 
 // formatDuration formats a poll interval as a compact string, e.g. "10s", "1m", or "1m30s".

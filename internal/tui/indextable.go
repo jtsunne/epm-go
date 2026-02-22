@@ -23,15 +23,15 @@ type IndexTableModel struct {
 // default sort by IndexingRate (col 5) descending.
 func NewIndexTable() IndexTableModel {
 	cols := []columnDef{
-		{Title: "Index Name", Width: 25, Align: "left",   Key: "name",       SortDesc: false},
-		{Title: "P/T",        Width: 7,  Align: "center", Key: "shards",     SortDesc: true},
-		{Title: "Total Size", Width: 10, Align: "right",  Key: "size",       SortDesc: true},
-		{Title: "Shard Size", Width: 10, Align: "right",  Key: "shard_size", SortDesc: true},
-		{Title: "Doc Count",  Width: 12, Align: "right",  Key: "docs",       SortDesc: true},
-		{Title: "Idx/s",      Width: 8,  Align: "right",  Key: "idx_rate",   SortDesc: true},
-		{Title: "Srch/s",     Width: 8,  Align: "right",  Key: "srch_rate",  SortDesc: true},
-		{Title: "Idx Lat",    Width: 9,  Align: "right",  Key: "idx_lat",    SortDesc: true},
-		{Title: "Srch Lat",   Width: 9,  Align: "right",  Key: "srch_lat",   SortDesc: true},
+		{Title: "Index Name", Width: 25, SortDesc: false},
+		{Title: "P/T",        Width: 7,  SortDesc: true},
+		{Title: "Total Size", Width: 10, SortDesc: true},
+		{Title: "Shard Size", Width: 10, SortDesc: true},
+		{Title: "Doc Count",  Width: 12, SortDesc: true},
+		{Title: "Idx/s",      Width: 8,  SortDesc: true},
+		{Title: "Srch/s",     Width: 8,  SortDesc: true},
+		{Title: "Idx Lat",    Width: 9,  SortDesc: true},
+		{Title: "Srch Lat",   Width: 9,  SortDesc: true},
 	}
 	m := IndexTableModel{
 		tableModel: newTableModel(cols),
