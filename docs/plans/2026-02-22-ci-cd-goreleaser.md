@@ -46,9 +46,9 @@
 - [x] Выполнить `goreleaser check` — валидация конфига должна пройти
 
 ### Task 4: Создать GitHub Actions CI workflow
-- [ ] Создать директорию `.github/workflows/`
-- [ ] Создать `.github/workflows/ci.yml` (содержимое ниже в Technical Details)
-- [ ] 3 параллельных джоба: test, lint (staticcheck), goreleaser config check
+- [x] Создать директорию `.github/workflows/`
+- [x] Создать `.github/workflows/ci.yml` (содержимое ниже в Technical Details)
+- [x] 3 параллельных джоба: test, lint (staticcheck), goreleaser config check
 
 ### Task 5: Создать GitHub Actions Release workflow
 - [ ] Создать `.github/workflows/release.yml` (содержимое ниже в Technical Details)
