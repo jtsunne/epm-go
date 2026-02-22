@@ -100,6 +100,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "  epm http://localhost:9200\n")
 		fmt.Fprintf(os.Stderr, "  epm --insecure https://elastic:changeme@prod.example.com:9200\n")
 		fmt.Fprintf(os.Stderr, "  epm --user root --password \"s3cr#t!\" https://host:9200\n")
+		fmt.Fprintf(os.Stderr, "  epm --allow-insecure-auth --user elastic --password changeme http://localhost:9200\n")
 		fmt.Fprintf(os.Stderr, "  epm --interval 30s http://localhost:9200\n")
 		fmt.Fprintf(os.Stderr, "  epm --version\n\n")
 		fmt.Fprintf(os.Stderr, "environment variables:\n")

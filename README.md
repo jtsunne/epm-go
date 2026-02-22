@@ -60,8 +60,8 @@ epm https://elastic:changeme@es.prod.example.com:9200
 epm --user root --password "op0107##" https://host:9200
 epm --insecure --user root --password "s3cr#t!" https://prod.example.com:9200
 
-# Credentials via environment variables
-ES_USER=elastic ES_PASSWORD=changeme epm http://localhost:9200
+# Credentials via environment variables (use https:// or add --allow-insecure-auth for http://)
+ES_USER=elastic ES_PASSWORD=changeme epm --allow-insecure-auth http://localhost:9200
 ES_PASSWORD="op0107##" epm --user root https://host:9200
 
 # Credential priority: --user/--password flags > ES_USER/ES_PASSWORD env vars > URI-embedded
@@ -84,6 +84,7 @@ epm --version
 | `--insecure` | false | Skip TLS certificate verification |
 | `--user` | — | Elasticsearch username (overrides URI credentials and `ES_USER`) |
 | `--password` | — | Elasticsearch password (overrides URI credentials and `ES_PASSWORD`) |
+| `--allow-insecure-auth` | false | Allow sending credentials over unencrypted HTTP (not recommended for production) |
 | `--version` | — | Print version and exit |
 
 ### Environment Variables

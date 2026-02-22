@@ -16,8 +16,8 @@ epm --interval 30s http://localhost:9200
 epm --user root --password "op0107##" https://host:9200
 epm --insecure --user root --password "s3cr#t!" https://prod.example.com:9200
 
-# Credentials via environment variables
-ES_USER=elastic ES_PASSWORD=changeme epm http://localhost:9200
+# Credentials via environment variables (http:// requires --allow-insecure-auth)
+ES_USER=elastic ES_PASSWORD=changeme epm --allow-insecure-auth http://localhost:9200
 ES_PASSWORD="op0107##" epm --user root https://host:9200
 
 # Credential priority: --user/--password flags > ES_USER/ES_PASSWORD env vars > URI-embedded
