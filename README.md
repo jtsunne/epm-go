@@ -1,5 +1,7 @@
 # epm — Elasticsearch Performance Monitor
 
+[![CI](https://github.com/jtsunne/epm-go/actions/workflows/ci.yml/badge.svg)](https://github.com/jtsunne/epm-go/actions/workflows/ci.yml)
+
 Terminal dashboard for Elasticsearch cluster performance monitoring. A standalone Go binary that connects to any ES cluster and renders a live, interactive TUI — no browser required.
 
 ```
@@ -57,12 +59,12 @@ epm http://localhost:9200
 epm https://elastic:changeme@es.prod.example.com:9200
 
 # Passwords with special characters (#, ?, %) — use flags to bypass URL parsing
-epm --user root --password "op0107##" https://host:9200
+epm --user root --password "ab0102##" https://host:9200
 epm --insecure --user root --password "s3cr#t!" https://prod.example.com:9200
 
 # Credentials via environment variables (use https:// or add --allow-insecure-auth for http://)
 ES_USER=elastic ES_PASSWORD=changeme epm --allow-insecure-auth http://localhost:9200
-ES_PASSWORD="op0107##" epm --user root https://host:9200
+ES_PASSWORD="ab0102##" epm --user root https://host:9200
 
 # Credential priority: --user/--password flags > ES_USER/ES_PASSWORD env vars > URI-embedded
 

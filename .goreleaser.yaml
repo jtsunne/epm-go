@@ -17,6 +17,8 @@ builds:
     goarch:
       - amd64
       - arm64
+    flags:
+      - -trimpath
     ldflags:
       - -s -w -X main.version={{.Version}}
 
@@ -46,18 +48,14 @@ release:
     owner: jtsunne
     name: epm-go
 
-brews:
+homebrew_casks:
   - repository:
       owner: jtsunne
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    directory: Formula
+    directory: Casks
     name: epm
     homepage: "https://github.com/jtsunne/epm-go"
     description: "Terminal dashboard for Elasticsearch cluster performance monitoring"
     license: "MIT"
-    install: |
-      bin.install "epm"
-    test: |
-      system "#{bin}/epm", "--version"
     commit_msg_template: "chore: update epm formula to {{ .Tag }}"
