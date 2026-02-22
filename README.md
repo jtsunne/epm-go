@@ -41,7 +41,14 @@ make build
 # binary at bin/epm
 ```
 
-**Download binary:** pre-built binaries for macOS and Linux will be available on the [Releases](https://github.com/jtsunne/epm-go/releases) page.
+**Homebrew (macOS and Linux):**
+
+```bash
+brew tap jtsunne/tap
+brew install --cask epm
+```
+
+**Download binary:** pre-built binaries for macOS and Linux are available on the [Releases](https://github.com/jtsunne/epm-go/releases) page.
 
 ## Usage
 
