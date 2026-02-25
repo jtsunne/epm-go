@@ -263,6 +263,7 @@ func CalcRecommendations(
 type dateRollupGroupKey struct {
 	granularity string // "daily", "weekly", or "monthly"
 	base        string // base index name without the date suffix
+	year        string // four-digit year, e.g. "2024"
 }
 
 // dateRollupRecs analyses date-patterned indices and emits consolidation
@@ -280,11 +281,11 @@ func dateRollupRecs(indexRows []model.IndexRow) (recs []model.Recommendation, sa
 		}
 		var key dateRollupGroupKey
 		if m := reIndexDaily.FindStringSubmatch(idx.Name); m != nil {
-			key = dateRollupGroupKey{granularity: "daily", base: m[1]}
+			key = dateRollupGroupKey{granularity: "daily", base: m[1], year: m[2]}
 		} else if m := reIndexWeekly.FindStringSubmatch(idx.Name); m != nil {
-			key = dateRollupGroupKey{granularity: "weekly", base: m[1]}
+			key = dateRollupGroupKey{granularity: "weekly", base: m[1], year: m[2]}
 		} else if m := reIndexMonthly.FindStringSubmatch(idx.Name); m != nil {
-			key = dateRollupGroupKey{granularity: "monthly", base: m[1]}
+			key = dateRollupGroupKey{granularity: "monthly", base: m[1], year: m[2]}
 		} else {
 			continue
 		}
@@ -300,7 +301,10 @@ func dateRollupRecs(indexRows []model.IndexRow) (recs []model.Recommendation, sa
 		if keys[i].granularity != keys[j].granularity {
 			return keys[i].granularity < keys[j].granularity
 		}
-		return keys[i].base < keys[j].base
+		if keys[i].base != keys[j].base {
+			return keys[i].base < keys[j].base
+		}
+		return keys[i].year < keys[j].year
 	})
 
 	for _, key := range keys {
@@ -377,7 +381,7 @@ func dateRollupRecs(indexRows []model.IndexRow) (recs []model.Recommendation, sa
 		savedShards += grpSavedShards
 
 		detail := fmt.Sprintf(
-			"Current: %d indices, avg %.0f MiB primary/index, total %.2f GiB primary.\n"+
+			"Current: %d indices, avg %.0f MiB primary/index, total %.2f GiB primary. "+
 				"After consolidation to %s: ~%d %s indices, ~%d fewer shards, ~%.0f MiB per consolidated index.",
 			n, avgPriMiB, totalPriGiB,
 			target, m, target, grpSavedShards, sizePerConsolidatedMiB,
@@ -386,7 +390,7 @@ func dateRollupRecs(indexRows []model.IndexRow) (recs []model.Recommendation, sa
 		recs = append(recs, model.Recommendation{
 			Severity: model.SeverityWarning,
 			Category: model.CategoryIndexLifecycle,
-			Title:    fmt.Sprintf("Consolidate %s '%s' indices → %s", key.granularity, key.base, target),
+			Title:    fmt.Sprintf("Consolidate %s '%s' %s indices → %s", key.granularity, key.base, key.year, target),
 			Detail:   detail,
 		})
 	}

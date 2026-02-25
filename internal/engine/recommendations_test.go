@@ -530,6 +530,37 @@ func TestDateRollupRecs_ImpactCounts(t *testing.T) {
 	assert.Equal(t, 12, savedShards)
 }
 
+// TestDateRollupRecs_CrossYearGrouping verifies that daily indices from
+// different years with the same base name form separate groups, not one inflated group.
+func TestDateRollupRecs_CrossYearGrouping(t *testing.T) {
+	// 7 daily indices from 2023 + 7 from 2024 with the same base "app-logs".
+	// Each year has exactly 7 indices → 2 separate groups, each producing 1 rec.
+	// If years were merged into one group of 14 → only 1 rec, which is wrong.
+	var rows []model.IndexRow
+	for i := 1; i <= 7; i++ {
+		rows = append(rows, model.IndexRow{
+			Name:         fmt.Sprintf("app-logs-2023-01-%02d", i),
+			PriSizeBytes: 50 * oneMiBInt64,
+			TotalShards:  2,
+		})
+	}
+	for i := 1; i <= 7; i++ {
+		rows = append(rows, model.IndexRow{
+			Name:         fmt.Sprintf("app-logs-2024-01-%02d", i),
+			PriSizeBytes: 50 * oneMiBInt64,
+			TotalShards:  2,
+		})
+	}
+	recs, savedIdx, savedShards := dateRollupRecs(rows)
+	assert.Len(t, recs, 2, "should generate one recommendation per year")
+	// Each group: N=7, M=ceil(7/30)=1, savedIndices=6, avgShardDensity=2, savedShards=12.
+	assert.Equal(t, 12, savedIdx, "savedIndices = 6 per year × 2 years")
+	assert.Equal(t, 24, savedShards, "savedShards = 12 per year × 2 years")
+	// Verify titles reference distinct years.
+	assert.Contains(t, recs[0].Title, "2023")
+	assert.Contains(t, recs[1].Title, "2024")
+}
+
 // ---------------------------------------------------------------------------
 // emptyIndexRecs tests
 // ---------------------------------------------------------------------------
