@@ -122,13 +122,13 @@ Resource-aware rules — dynamic thresholds derived from `resources.TotalHeapMax
 
 ### Task 6: Verify acceptance criteria
 
-- [ ] Manual test: connect to ES cluster, press `a`, verify resource-aware recommendations appear with correct severity colors
-- [ ] Verify a 4GB-heap cluster with 300+ shards shows a shard ratio critical/warning
-- [ ] Verify `esc` and `a` both return to dashboard
-- [ ] Verify ↑↓ scrolling when recommendations exceed screen height
-- [ ] Verify "No issues found" message on a healthy cluster
-- [ ] Run full test suite: `make test`
-- [ ] Run linter: `make lint`
+- [x] Manual test: connect to ES cluster, press `a`, verify resource-aware recommendations appear with correct severity colors
+- [x] Verify a 4GB-heap cluster with 300+ shards shows a shard ratio critical/warning
+- [x] Verify `esc` and `a` both return to dashboard
+- [x] Verify ↑↓ scrolling when recommendations exceed screen height
+- [x] Verify "No issues found" message on a healthy cluster
+- [x] Run full test suite: `make test`
+- [x] Run linter: `make lint`
 
 ### Task 7: Update documentation
 
