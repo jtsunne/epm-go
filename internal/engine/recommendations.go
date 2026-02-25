@@ -231,6 +231,35 @@ func CalcRecommendations(
 	// Per-node heap hotspot.
 	result = append(result, heapHotspotRecs(nodeRows)...)
 
+	// Index lifecycle: date-rollup consolidation suggestions.
+	rollupRecs, savedIdx, savedShards := dateRollupRecs(indexRows)
+	result = append(result, rollupRecs...)
+
+	// Index lifecycle: empty index detection.
+	result = append(result, emptyIndexRecs(indexRows)...)
+
+	// Cluster-level impact summary for rollup recommendations.
+	if savedShards > 0 && resources.TotalHeapMaxBytes > 0 {
+		heapGB := totalHeapGB
+		activeShards := snap.Health.ActiveShards
+		currentRatio := float64(activeShards) / heapGB
+		estimatedShards := activeShards - savedShards
+		if estimatedShards < 0 {
+			estimatedShards = 0
+		}
+		estimatedRatio := float64(estimatedShards) / heapGB
+		result = append(result, model.Recommendation{
+			Severity: model.SeverityNormal,
+			Category: model.CategoryIndexLifecycle,
+			Title:    "Rollup impact summary",
+			Detail: fmt.Sprintf(
+				"Applying all rollup suggestions would eliminate ~%d indices (~%d shards). "+
+					"Shard/GB heap: current %.1f → estimated %.1f after rollup.",
+				savedIdx, savedShards, currentRatio, estimatedRatio,
+			),
+		})
+	}
+
 	return result
 }
 
@@ -373,6 +402,37 @@ func dateRollupRecs(indexRows []model.IndexRow) (recs []model.Recommendation, sa
 	}
 
 	return recs, savedIndices, savedShards
+}
+
+// emptyIndexRecs returns a warning recommendation when three or more non-system
+// indices have zero documents and zero storage — likely stale or forgotten indices
+// that can be safely deleted.
+func emptyIndexRecs(indexRows []model.IndexRow) []model.Recommendation {
+	var names []string
+	for _, idx := range indexRows {
+		if strings.HasPrefix(idx.Name, ".") {
+			continue
+		}
+		if idx.DocCount == 0 && idx.TotalSizeBytes == 0 {
+			names = append(names, idx.Name)
+		}
+	}
+	if len(names) < 3 {
+		return nil
+	}
+	const maxListed = 5
+	var listed string
+	if len(names) <= maxListed {
+		listed = strings.Join(names, ", ")
+	} else {
+		listed = strings.Join(names[:maxListed], ", ") + fmt.Sprintf(", ... and %d more", len(names)-maxListed)
+	}
+	return []model.Recommendation{{
+		Severity: model.SeverityWarning,
+		Category: model.CategoryIndexLifecycle,
+		Title:    fmt.Sprintf("%d empty indices found", len(names)),
+		Detail:   fmt.Sprintf("Non-system indices with 0 docs and 0 storage are deletion candidates: %s", listed),
+	}}
 }
 
 // heapHotspotRecs returns a warning recommendation when heap utilisation spread

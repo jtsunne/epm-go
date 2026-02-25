@@ -116,15 +116,15 @@ System indices (prefix `.`) are skipped.
 **Files:**
 - Modify: `internal/engine/recommendations.go`
 
-- [ ] Implement `emptyIndexRecs(indexRows []model.IndexRow) []model.Recommendation`:
+- [x] Implement `emptyIndexRecs(indexRows []model.IndexRow) []model.Recommendation`:
   - Collect non-system indices where `DocCount == 0 AND TotalSizeBytes == 0`
   - If count >= 3, emit one `SeverityWarning` / `CategoryIndexLifecycle` recommendation listing first 5 names (with "... and N more" if over 5)
-- [ ] In `CalcRecommendations`, after existing checks, call:
+- [x] In `CalcRecommendations`, after existing checks, call:
   - `rollupRecs, savedIdx, savedShards := dateRollupRecs(indexRows)`
   - `result = append(result, rollupRecs...)`
   - `result = append(result, emptyIndexRecs(indexRows)...)`
   - If `savedShards > 0` and heap data available, compute new estimated shard:heap ratio and append one `SeverityNormal` / `CategoryIndexLifecycle` cluster impact summary recommendation
-- [ ] Run `make test` — must pass before task 5
+- [x] Run `make test` — must pass before task 5
 
 ### Task 5: Add tests
 
