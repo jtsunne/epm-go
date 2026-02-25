@@ -148,11 +148,11 @@ System indices (prefix `.`) are skipped.
 
 ### Task 6: Verify acceptance criteria
 
-- [ ] Manual smoke test: `make build`, connect to cluster with date-patterned indices, press `a`
-- [ ] `make test` — full suite passes
-- [ ] `make lint` — no new lint issues
-- [ ] Verify analytics screen shows "Index Lifecycle" section with size-aware targets
-- [ ] Verify cluster impact summary recommendation appears at bottom of Index Lifecycle section
+- [x] Manual smoke test: `make build`, connect to cluster with date-patterned indices, press `a`
+- [x] `make test` — full suite passes
+- [x] `make lint` — no new lint issues
+- [x] Verify analytics screen shows "Index Lifecycle" section with size-aware targets
+- [x] Verify cluster impact summary recommendation appears at bottom of Index Lifecycle section
 
 ### Task 7: Update documentation
 
