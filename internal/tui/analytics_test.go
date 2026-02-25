@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/stretchr/testify/assert"
@@ -51,9 +52,9 @@ func TestSeverityBadge_ContainsExpectedText(t *testing.T) {
 
 func TestWrapText(t *testing.T) {
 	cases := []struct {
-		name     string
-		text     string
-		maxWidth int
+		name      string
+		text      string
+		maxWidth  int
 		wantLines int
 	}{
 		{"fits in one line", "hello world", 20, 1},
@@ -62,6 +63,9 @@ func TestWrapText(t *testing.T) {
 		{"zero width returns as-is", "hello world", 0, 1},
 		{"single long word", "superlongword", 5, 1}, // can't break within a word
 		{"empty string", "", 10, 1},
+		// Multi-byte UTF-8: "≤" is 3 bytes but 1 rune-column; wrapping must count runes.
+		{"unicode multibyte fits", "data ≤30×", 10, 1},
+		{"unicode multibyte wraps", "Index data is 25× total heap. Elastic recommends ≤30×.", 30, 2},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -77,7 +81,7 @@ func TestWrapText_LinesRespectMaxWidth(t *testing.T) {
 	maxWidth := 40
 	result := wrapText(text, maxWidth)
 	for i, line := range strings.Split(result, "\n") {
-		assert.LessOrEqual(t, len(line), maxWidth, "line %d exceeds max width: %q", i, line)
+		assert.LessOrEqual(t, utf8.RuneCountInString(line), maxWidth, "line %d exceeds max width: %q", i, line)
 	}
 }
 

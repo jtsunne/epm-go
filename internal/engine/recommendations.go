@@ -262,11 +262,13 @@ func heapHotspotRecs(nodeRows []model.NodeRow) []model.Recommendation {
 	return nil
 }
 
-// countDataNodes counts nodes whose role string contains 'd' (data role).
+// countDataNodes counts nodes whose role string contains any data role abbreviation.
+// 'd' = data (generic), 'h' = data_hot, 'w' = data_warm, 'c' = data_cold,
+// 'f' = data_frozen, 's' = data_content (ES 8.x+ tiered roles).
 func countDataNodes(nodeRows []model.NodeRow) int {
 	count := 0
 	for _, n := range nodeRows {
-		if strings.ContainsRune(n.Role, 'd') {
+		if strings.ContainsAny(n.Role, "dhwcfs") {
 			count++
 		}
 	}

@@ -330,3 +330,28 @@ func TestCalcRecommendations_AllCategories(t *testing.T) {
 	assert.True(t, hasRecCategory(recs, model.SeverityWarning, model.CategoryIndexConfig), "IndexConfig (zero-replica)")
 	assert.True(t, hasRecCategory(recs, model.SeverityWarning, model.CategoryHotspot), "Hotspot")
 }
+
+// TestCalcRecommendations_TieredDataNodes verifies that ES 8.x+ tiered data role
+// abbreviations ('h'=data_hot, 'w'=data_warm, 'c'=data_cold, 'f'=data_frozen,
+// 's'=data_content) are counted as data nodes, preventing false SPOF warnings.
+func TestCalcRecommendations_TieredDataNodes_NoSPOF(t *testing.T) {
+	snap := makeSnap("green", 0, 0)
+	// Two hot-tier nodes — no generic 'd' role, but should not trigger SPOF.
+	nodeRows := []model.NodeRow{
+		{Name: "hot1", Role: "h"},
+		{Name: "hot2", Role: "h"},
+	}
+	recs := CalcRecommendations(snap, model.ClusterResources{}, nodeRows, nil)
+	assert.False(t, hasRec(recs, model.SeverityWarning, "Single data node"), "two hot-tier nodes must not trigger SPOF")
+}
+
+func TestCalcRecommendations_TieredDataNodes_SingleNode_SPOF(t *testing.T) {
+	snap := makeSnap("green", 0, 0)
+	// Only one warm-tier node — should trigger SPOF.
+	nodeRows := []model.NodeRow{
+		{Name: "warm1", Role: "w"},
+		{Name: "master1", Role: "m"},
+	}
+	recs := CalcRecommendations(snap, model.ClusterResources{}, nodeRows, nil)
+	assert.True(t, hasRec(recs, model.SeverityWarning, "Single data node"), "single warm-tier node must trigger SPOF")
+}

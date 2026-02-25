@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/charmbracelet/lipgloss"
 
@@ -37,10 +38,10 @@ func severityBadge(sev model.RecommendationSeverity) string {
 	}
 }
 
-// wrapText wraps text at maxWidth characters, breaking at word boundaries.
+// wrapText wraps text at maxWidth rune-columns, breaking at word boundaries.
 // Returns the original string unchanged when it fits within maxWidth.
 func wrapText(text string, maxWidth int) string {
-	if maxWidth <= 0 || len(text) <= maxWidth {
+	if maxWidth <= 0 || utf8.RuneCountInString(text) <= maxWidth {
 		return text
 	}
 	words := strings.Fields(text)
@@ -49,19 +50,24 @@ func wrapText(text string, maxWidth int) string {
 	}
 	var lines []string
 	var current strings.Builder
+	var currentLen int // rune count of current line
 	for _, word := range words {
-		if current.Len() == 0 {
+		wordLen := utf8.RuneCountInString(word)
+		if currentLen == 0 {
 			current.WriteString(word)
-		} else if current.Len()+1+len(word) <= maxWidth {
+			currentLen = wordLen
+		} else if currentLen+1+wordLen <= maxWidth {
 			current.WriteByte(' ')
 			current.WriteString(word)
+			currentLen += 1 + wordLen
 		} else {
 			lines = append(lines, current.String())
 			current.Reset()
 			current.WriteString(word)
+			currentLen = wordLen
 		}
 	}
-	if current.Len() > 0 {
+	if currentLen > 0 {
 		lines = append(lines, current.String())
 	}
 	return strings.Join(lines, "\n")
