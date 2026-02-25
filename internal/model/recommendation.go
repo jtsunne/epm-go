@@ -17,6 +17,7 @@ const (
 	CategoryShardHealth
 	CategoryIndexConfig
 	CategoryHotspot
+	CategoryIndexLifecycle
 )
 
 // Recommendation is a single actionable suggestion derived from cluster state.

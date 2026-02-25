@@ -351,6 +351,7 @@ func CalcIndexRows(prev, curr *model.Snapshot, elapsed time.Duration) []model.In
 			TotalShards:    totalShards,
 			RepKnown:       repKnown,
 			TotalSizeBytes: totalSizeBytes,
+			PriSizeBytes:   primarySizeBytes,
 			AvgShardSize:   avgShardSize,
 			DocCount:       docCount,
 		}

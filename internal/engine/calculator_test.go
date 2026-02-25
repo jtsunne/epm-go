@@ -449,6 +449,28 @@ func TestCalcIndexRows_ShardCountParsing(t *testing.T) {
 	// AvgShardSize = primarySizeBytes / pri = 500MB / 5 = 100MB
 	assert.Equal(t, int64(100*1024*1024), rows[0].AvgShardSize)
 	assert.Equal(t, int64(1000*1024*1024), rows[0].TotalSizeBytes)
+	assert.Equal(t, int64(500*1024*1024), rows[0].PriSizeBytes)
+}
+
+func TestCalcIndexRows_PriSizeBytes(t *testing.T) {
+	// PriSizeBytes must reflect the primaries store bytes from _stats,
+	// not the total (which includes replicas).
+	const priBytes = int64(200 * 1024 * 1024)  // 200 MiB
+	const totBytes = int64(600 * 1024 * 1024)  // 600 MiB (3 replicas worth)
+	curr := &model.Snapshot{
+		Indices: []client.IndexInfo{
+			{Index: "myidx", Pri: "2", Rep: "2", DocsCount: "0"},
+		},
+		IndexStats: client.IndexStatsResponse{
+			Indices: map[string]client.IndexStatEntry{
+				"myidx": makeIndexStats(0, 0, -1, -1, -1, -1, -1, -1, priBytes, totBytes),
+			},
+		},
+	}
+	rows := CalcIndexRows(nil, curr, 10*time.Second)
+	assert.Len(t, rows, 1)
+	assert.Equal(t, priBytes, rows[0].PriSizeBytes)
+	assert.Equal(t, totBytes, rows[0].TotalSizeBytes)
 }
 
 func TestCalcIndexRows_PrimariesForIndexing(t *testing.T) {
