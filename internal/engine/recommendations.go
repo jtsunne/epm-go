@@ -2,14 +2,25 @@ package engine
 
 import (
 	"fmt"
+	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/jtsunne/epm-go/internal/model"
 )
 
 const (
-	oneGiBInt64 = int64(1 << 30) // 1 GiB in bytes
-	oneMiBInt64 = int64(1 << 20) // 1 MiB in bytes
+	oneGiBInt64        = int64(1 << 30) // 1 GiB in bytes
+	oneMiBInt64        = int64(1 << 20) // 1 MiB in bytes
+	rollupThresholdMiB = int64(100)     // daily→monthly if avg primary < 100 MiB; else →weekly
+)
+
+// Package-level compiled regexes for date-patterned index detection.
+// Priority order: daily checked first to avoid misclassifying YYYY.MM.DD as monthly.
+var (
+	reIndexDaily   = regexp.MustCompile(`^(.+)[.\-_](\d{4})[.\-](\d{2})[.\-](\d{2})$`)
+	reIndexWeekly  = regexp.MustCompile(`^(.+)[.\-_](\d{4})[.\-][Ww](\d{1,2})$`)
+	reIndexMonthly = regexp.MustCompile(`^(.+)[.\-_](\d{4})[.\-](\d{2})$`)
 )
 
 // CalcRecommendations generates actionable recommendations for the cluster
@@ -221,6 +232,147 @@ func CalcRecommendations(
 	result = append(result, heapHotspotRecs(nodeRows)...)
 
 	return result
+}
+
+// dateRollupGroupKey identifies a group of date-patterned indices.
+type dateRollupGroupKey struct {
+	granularity string // "daily", "weekly", or "monthly"
+	base        string // base index name without the date suffix
+}
+
+// dateRollupRecs analyses date-patterned indices and emits consolidation
+// recommendations when enough indices exist to justify a rollup. Returns the
+// recommendations plus aggregate savedIndices and savedShards counts for use in
+// the cluster-level impact summary.
+func dateRollupRecs(indexRows []model.IndexRow) (recs []model.Recommendation, savedIndices int, savedShards int) {
+	// Group indices by (granularity, base).
+	type groupData struct {
+		indices []model.IndexRow
+	}
+	groups := make(map[dateRollupGroupKey]*groupData)
+
+	for _, idx := range indexRows {
+		// Skip system indices.
+		if strings.HasPrefix(idx.Name, ".") {
+			continue
+		}
+		var key dateRollupGroupKey
+		if m := reIndexDaily.FindStringSubmatch(idx.Name); m != nil {
+			key = dateRollupGroupKey{granularity: "daily", base: m[1]}
+		} else if m := reIndexWeekly.FindStringSubmatch(idx.Name); m != nil {
+			key = dateRollupGroupKey{granularity: "weekly", base: m[1]}
+		} else if m := reIndexMonthly.FindStringSubmatch(idx.Name); m != nil {
+			key = dateRollupGroupKey{granularity: "monthly", base: m[1]}
+		} else {
+			continue
+		}
+		if groups[key] == nil {
+			groups[key] = &groupData{}
+		}
+		groups[key].indices = append(groups[key].indices, idx)
+	}
+
+	// Sort keys for deterministic output order.
+	keys := make([]dateRollupGroupKey, 0, len(groups))
+	for k := range groups {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		if keys[i].granularity != keys[j].granularity {
+			return keys[i].granularity < keys[j].granularity
+		}
+		return keys[i].base < keys[j].base
+	})
+
+	for _, key := range keys {
+		group := groups[key]
+		n := len(group.indices)
+
+		// Determine minimum count threshold, consolidation target, and period size.
+		var minCount, periodSize int
+		var target string
+		switch key.granularity {
+		case "daily":
+			minCount = 7
+			if n < minCount {
+				continue
+			}
+			// Size-aware: small daily indices skip the weekly step and go straight to monthly.
+			var sumPri int64
+			for _, idx := range group.indices {
+				sumPri += idx.PriSizeBytes
+			}
+			avgPriSize := sumPri / int64(n)
+			if avgPriSize < rollupThresholdMiB*oneMiBInt64 {
+				target = "monthly"
+				periodSize = 30
+			} else {
+				target = "weekly"
+				periodSize = 7
+			}
+		case "weekly":
+			minCount = 4
+			if n < minCount {
+				continue
+			}
+			target = "monthly"
+			periodSize = 4
+		case "monthly":
+			minCount = 12
+			if n < minCount {
+				continue
+			}
+			target = "yearly"
+			periodSize = 12
+		default:
+			continue
+		}
+
+		// Compute impact metrics.
+		var sumPriBytes int64
+		var sumTotalShards int
+		for _, idx := range group.indices {
+			sumPriBytes += idx.PriSizeBytes
+			sumTotalShards += idx.TotalShards
+		}
+
+		avgPriMiB := float64(sumPriBytes) / float64(n) / float64(oneMiBInt64)
+		totalPriGiB := float64(sumPriBytes) / float64(oneGiBInt64)
+
+		// M = ceil(N / periodSize) using integer arithmetic.
+		m := (n + periodSize - 1) / periodSize
+		if m < 1 {
+			m = 1
+		}
+
+		avgShardDensity := sumTotalShards / n // integer division — proportional estimate
+		grpSavedIndices := n - m
+		grpSavedShards := grpSavedIndices * avgShardDensity
+
+		var sizePerConsolidatedMiB float64
+		if m > 0 {
+			sizePerConsolidatedMiB = float64(sumPriBytes) / float64(m) / float64(oneMiBInt64)
+		}
+
+		savedIndices += grpSavedIndices
+		savedShards += grpSavedShards
+
+		detail := fmt.Sprintf(
+			"Current: %d indices, avg %.0f MiB primary/index, total %.2f GiB primary.\n"+
+				"After consolidation to %s: ~%d %s indices, ~%d fewer shards, ~%.0f MiB per consolidated index.",
+			n, avgPriMiB, totalPriGiB,
+			target, m, target, grpSavedShards, sizePerConsolidatedMiB,
+		)
+
+		recs = append(recs, model.Recommendation{
+			Severity: model.SeverityWarning,
+			Category: model.CategoryIndexLifecycle,
+			Title:    fmt.Sprintf("Consolidate %s '%s' indices → %s", key.granularity, key.base, target),
+			Detail:   detail,
+		})
+	}
+
+	return recs, savedIndices, savedShards
 }
 
 // heapHotspotRecs returns a warning recommendation when heap utilisation spread

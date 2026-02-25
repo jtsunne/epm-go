@@ -100,16 +100,16 @@ System indices (prefix `.`) are skipped.
 **Files:**
 - Modify: `internal/engine/recommendations.go`
 
-- [ ] Add `import "regexp"` and declare three package-level compiled regexes: `reIndexDaily`, `reIndexWeekly`, `reIndexMonthly`
-- [ ] Define size threshold constant `rollupThresholdMiB int64 = 100` for the daily→monthly vs daily→weekly boundary
-- [ ] Implement `dateRollupRecs(indexRows []model.IndexRow) (recs []model.Recommendation, savedIndices int, savedShards int)`:
+- [x] Add `import "regexp"` and declare three package-level compiled regexes: `reIndexDaily`, `reIndexWeekly`, `reIndexMonthly`
+- [x] Define size threshold constant `rollupThresholdMiB int64 = 100` for the daily→monthly vs daily→weekly boundary
+- [x] Implement `dateRollupRecs(indexRows []model.IndexRow) (recs []model.Recommendation, savedIndices int, savedShards int)`:
   - For each non-system index, try matching daily → weekly → monthly (first match wins), group by `granularity:base`
   - Per group, compute `avgPriSize`, decide target granularity (daily groups: monthly if <100 MiB, weekly otherwise)
   - Per group meeting the count threshold, emit one `SeverityWarning` / `CategoryIndexLifecycle` recommendation with:
     - Title: e.g. `"Consolidate daily 'app-logs' indices → monthly"`
     - Detail: current N indices / avg size / total size, estimated post-consolidation count M, shard reduction estimate, estimated size per consolidated index
   - Accumulate `savedIndices` and `savedShards` across all emitted recommendations
-- [ ] Run `make test` — must pass before task 4
+- [x] Run `make test` — must pass before task 4
 
 ### Task 4: Implement emptyIndexRecs and wire everything into CalcRecommendations
 
