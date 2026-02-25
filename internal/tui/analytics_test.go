@@ -188,10 +188,10 @@ func TestRenderAnalytics_ScrollHintAppearsWhenOverflow(t *testing.T) {
 
 	result := renderAnalytics(app)
 	stripped := stripANSI(result)
-	// Scroll hint should appear since content overflows.
-	assert.True(t,
-		strings.Contains(stripped, "scroll") || strings.Contains(stripped, "↓"),
-		"expected scroll hint in output: %q", stripped)
+	// The scroll hint text "scroll" must appear in the rendered output.
+	// We check for "scroll" specifically (not just "↓") to avoid false positives
+	// from navigation arrows that may appear in the footer.
+	assert.Contains(t, stripped, "scroll", "expected scroll hint in output: %q", stripped)
 }
 
 func TestRenderAnalytics_ScrollOffsetClampsToMax(t *testing.T) {
@@ -203,9 +203,12 @@ func TestRenderAnalytics_ScrollOffsetClampsToMax(t *testing.T) {
 		{Severity: model.SeverityWarning, Category: model.CategoryShardHealth, Title: "Item A"},
 	}
 
-	// Should not panic and should clamp gracefully.
+	// Should not panic, should clamp gracefully, and the recommendation must be visible.
 	result := renderAnalytics(app)
 	assert.NotEmpty(t, result)
+	stripped := stripANSI(result)
+	assert.Contains(t, stripped, "Item A", "clamped offset should still show recommendation content")
+	assert.LessOrEqual(t, app.analyticsScrollOffset, 9999, "offset must be clamped, not grown")
 }
 
 // TestApp_AnalyticsModeToggle verifies that pressing 'a' enters and exits analytics mode.
@@ -219,20 +222,30 @@ func TestApp_AnalyticsModeToggle(t *testing.T) {
 	assert.True(t, app.analyticsMode)
 	assert.Equal(t, 0, app.analyticsScrollOffset)
 
-	// Press 'a' again to exit analytics mode.
+	// Press 'a' again to exit analytics mode — offset is reset.
 	newModel, _ = app.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("a")})
 	app = newModel.(*App)
 	assert.False(t, app.analyticsMode)
+	assert.Equal(t, 0, app.analyticsScrollOffset)
+
+	// Re-entering resets offset even after prior scroll.
+	app.analyticsScrollOffset = 5
+	newModel, _ = app.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("a")})
+	app = newModel.(*App)
+	assert.True(t, app.analyticsMode)
+	assert.Equal(t, 0, app.analyticsScrollOffset, "re-entering analytics mode must reset scroll offset")
 }
 
-// TestApp_EscExitsAnalyticsMode verifies that pressing esc exits analytics mode.
+// TestApp_EscExitsAnalyticsMode verifies that pressing esc exits analytics mode and resets scroll offset.
 func TestApp_EscExitsAnalyticsMode(t *testing.T) {
 	app := NewApp(nil, 10*time.Second)
 	app.analyticsMode = true
+	app.analyticsScrollOffset = 7
 
 	newModel, _ := app.Update(tea.KeyMsg{Type: tea.KeyEsc})
 	app = newModel.(*App)
 	assert.False(t, app.analyticsMode)
+	assert.Equal(t, 0, app.analyticsScrollOffset)
 }
 
 // TestApp_AnalyticsModeScrolling verifies ↑↓ scrolling while in analytics mode.

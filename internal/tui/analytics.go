@@ -145,8 +145,16 @@ func renderAnalytics(app *App) string {
 		}
 	}
 
-	// Clamp scroll offset to valid range.
-	maxOffset := len(lines) - availH
+	// When content overflows, reserve the last line for a scroll hint.
+	overflows := len(lines) > availH
+	contentH := availH
+	if overflows && contentH > 1 {
+		contentH--
+	}
+
+	// Clamp scroll offset to valid range and write back so up-scrolling is
+	// immediately responsive regardless of how far down the user scrolled.
+	maxOffset := len(lines) - contentH
 	if maxOffset < 0 {
 		maxOffset = 0
 	}
@@ -154,9 +162,10 @@ func renderAnalytics(app *App) string {
 	if offset > maxOffset {
 		offset = maxOffset
 	}
+	app.analyticsScrollOffset = offset
 
-	// Slice visible lines.
-	end := offset + availH
+	// Slice visible content lines.
+	end := offset + contentH
 	if end > len(lines) {
 		end = len(lines)
 	}
@@ -165,13 +174,13 @@ func renderAnalytics(app *App) string {
 		visibleLines = append(visibleLines, lines[offset:end]...)
 	}
 
-	// Pad to fill availH with empty lines.
-	for len(visibleLines) < availH {
+	// Pad content area to contentH with empty lines.
+	for len(visibleLines) < contentH {
 		visibleLines = append(visibleLines, "")
 	}
 
-	// Show a scroll hint on the last visible line when content overflows.
-	if len(lines) > availH && len(visibleLines) > 0 {
+	// Append scroll hint as its own line (does not overwrite content).
+	if overflows {
 		var hint string
 		if offset == 0 {
 			hint = StyleDim.Render("  ↓ scroll for more")
@@ -180,7 +189,7 @@ func renderAnalytics(app *App) string {
 		} else {
 			hint = StyleDim.Render("  ↑↓ scroll")
 		}
-		visibleLines[len(visibleLines)-1] = hint
+		visibleLines = append(visibleLines, hint)
 	}
 
 	content := strings.Join(visibleLines, "\n")

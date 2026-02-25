@@ -332,7 +332,7 @@ func fetchCmd(c client.ESClient, prev *model.Snapshot, interval time.Duration) t
 		resources := engine.CalcClusterResources(snap)
 		nodeRows := engine.CalcNodeRows(prev, snap, elapsed)
 		indexRows := engine.CalcIndexRows(prev, snap, elapsed)
-		recommendations := engine.CalcRecommendations(snap, metrics, resources, nodeRows, indexRows)
+		recommendations := engine.CalcRecommendations(snap, resources, nodeRows, indexRows)
 
 		return SnapshotMsg{
 			Snapshot:        snap,

@@ -13,11 +13,10 @@ const (
 )
 
 // CalcRecommendations generates actionable recommendations for the cluster
-// based on the current snapshot, metrics, resources, and computed rows.
+// based on the current snapshot, resources, and computed rows.
 // Returns an empty (non-nil) slice when snap is nil or data is unavailable.
 func CalcRecommendations(
 	snap *model.Snapshot,
-	_ model.PerformanceMetrics,
 	resources model.ClusterResources,
 	nodeRows []model.NodeRow,
 	indexRows []model.IndexRow,
@@ -62,14 +61,14 @@ func CalcRecommendations(
 			Severity: model.SeverityCritical,
 			Category: model.CategoryResourcePressure,
 			Title:    "Critical CPU pressure",
-			Detail:   fmt.Sprintf("Average cluster CPU at %.0f%%. Critical load risks query timeouts. Add data nodes or reduce indexing throughput.", resources.AvgCPUPercent),
+			Detail:   fmt.Sprintf("Average cluster CPU at %.0f%%. Critical load risks query timeouts and node instability. Add data nodes or reduce indexing throughput immediately.", resources.AvgCPUPercent),
 		})
 	case resources.AvgCPUPercent > 80:
 		result = append(result, model.Recommendation{
 			Severity: model.SeverityWarning,
 			Category: model.CategoryResourcePressure,
 			Title:    "High CPU usage",
-			Detail:   fmt.Sprintf("Average cluster CPU at %.0f%%. Critical load risks query timeouts. Add data nodes or reduce indexing throughput.", resources.AvgCPUPercent),
+			Detail:   fmt.Sprintf("Average cluster CPU at %.0f%%. Sustained high CPU can degrade query performance. Consider adding data nodes or reducing indexing load.", resources.AvgCPUPercent),
 		})
 	}
 
@@ -81,14 +80,14 @@ func CalcRecommendations(
 			Severity: model.SeverityCritical,
 			Category: model.CategoryResourcePressure,
 			Title:    "Critical JVM heap pressure",
-			Detail:   fmt.Sprintf("Average JVM heap at %.0f%% (%.1f GB total heap). At critical levels GC pauses impact latency. Increase node heap (max 32 GB) or add nodes.", resources.AvgJVMHeapPercent, totalHeapGB),
+			Detail:   fmt.Sprintf("Average JVM heap at %.0f%% (%.1f GB total heap). At this level GC pauses are severe and OOM risk is high. Increase node heap (max 32 GB) or add nodes urgently.", resources.AvgJVMHeapPercent, totalHeapGB),
 		})
 	case resources.AvgJVMHeapPercent > 75:
 		result = append(result, model.Recommendation{
 			Severity: model.SeverityWarning,
 			Category: model.CategoryResourcePressure,
 			Title:    "High JVM heap usage",
-			Detail:   fmt.Sprintf("Average JVM heap at %.0f%% (%.1f GB total heap). At critical levels GC pauses impact latency. Increase node heap (max 32 GB) or add nodes.", resources.AvgJVMHeapPercent, totalHeapGB),
+			Detail:   fmt.Sprintf("Average JVM heap at %.0f%% (%.1f GB total heap). Elevated heap increases GC frequency. Consider increasing node heap (max 32 GB) or adding nodes.", resources.AvgJVMHeapPercent, totalHeapGB),
 		})
 	}
 
@@ -112,7 +111,7 @@ func CalcRecommendations(
 
 	// Shard-to-heap ratio — resource-aware dynamic threshold.
 	if resources.TotalHeapMaxBytes > 0 {
-		heapGB := float64(resources.TotalHeapMaxBytes) / float64(oneGiBInt64)
+		heapGB := totalHeapGB
 		activeShards := snap.Health.ActiveShards
 		shardPerGB := float64(activeShards) / heapGB
 		maxIdeal := int(20 * heapGB)
@@ -188,7 +187,7 @@ func CalcRecommendations(
 
 	// Data-to-heap ratio.
 	if resources.TotalHeapMaxBytes > 0 && totalIndexSizeBytes > 0 {
-		heapGB := float64(resources.TotalHeapMaxBytes) / float64(oneGiBInt64)
+		heapGB := totalHeapGB
 		dataGB := float64(totalIndexSizeBytes) / float64(oneGiBInt64)
 		ratio := float64(totalIndexSizeBytes) / float64(resources.TotalHeapMaxBytes)
 		if ratio > 30 {
@@ -212,16 +211,16 @@ func CalcRecommendations(
 	}
 
 	// Per-node heap hotspot.
-	appendHeapHotspot(nodeRows, &result)
+	result = append(result, heapHotspotRecs(nodeRows)...)
 
 	return result
 }
 
-// appendHeapHotspot appends a warning when heap utilisation spread across nodes
-// exceeds 30 percentage points.
-func appendHeapHotspot(nodeRows []model.NodeRow, result *[]model.Recommendation) {
+// heapHotspotRecs returns a warning recommendation when heap utilisation spread
+// across nodes exceeds 30 percentage points, or nil when the cluster is healthy.
+func heapHotspotRecs(nodeRows []model.NodeRow) []model.Recommendation {
 	if len(nodeRows) < 2 {
-		return
+		return nil
 	}
 	var minUtil, maxUtil float64
 	first := true
@@ -243,7 +242,7 @@ func appendHeapHotspot(nodeRows []model.NodeRow, result *[]model.Recommendation)
 		}
 	}
 	if !first && (maxUtil-minUtil) > 0.30 {
-		*result = append(*result, model.Recommendation{
+		return []model.Recommendation{{
 			Severity: model.SeverityWarning,
 			Category: model.CategoryHotspot,
 			Title:    "Uneven heap utilization across nodes",
@@ -251,8 +250,9 @@ func appendHeapHotspot(nodeRows []model.NodeRow, result *[]model.Recommendation)
 				"Uneven heap utilization across nodes (high: %.0f%%, low: %.0f%%). Rebalance shards with `_cluster/reroute` or enable `cluster.routing.rebalance.enable`.",
 				maxUtil*100, minUtil*100,
 			),
-		})
+		}}
 	}
+	return nil
 }
 
 // countDataNodes counts nodes whose role string contains 'd' (data role).
