@@ -26,31 +26,31 @@ func CalcRecommendations(
 		return result
 	}
 
-	// Cluster status.
+	// Cluster status — unassigned shard count is included in the detail to
+	// avoid a separate duplicate recommendation for the same root cause.
+	// RED is caused by unassigned primary shards; YELLOW by unassigned replicas.
 	switch snap.Health.Status {
 	case "red":
+		detail := "Cluster is in RED status — one or more primary shards are unavailable. Data may be missing. Investigate unassigned shards immediately."
+		if snap.Health.UnassignedShards > 0 {
+			detail = fmt.Sprintf("Cluster is in RED status — %d unassigned shard(s), including primary shards. Data may be missing. Check node availability and disk space immediately.", snap.Health.UnassignedShards)
+		}
 		result = append(result, model.Recommendation{
 			Severity: model.SeverityCritical,
 			Category: model.CategoryShardHealth,
 			Title:    "Cluster status RED",
-			Detail:   "Cluster is in RED status — one or more primary shards are unavailable. Data may be missing. Investigate unassigned shards immediately.",
+			Detail:   detail,
 		})
 	case "yellow":
+		detail := "Cluster is in YELLOW status — some replica shards are unassigned. Data is available but redundancy is reduced."
+		if snap.Health.UnassignedShards > 0 {
+			detail = fmt.Sprintf("Cluster is in YELLOW status — %d unassigned replica shard(s). Data is available but redundancy is reduced. Check node capacity.", snap.Health.UnassignedShards)
+		}
 		result = append(result, model.Recommendation{
 			Severity: model.SeverityWarning,
 			Category: model.CategoryShardHealth,
 			Title:    "Cluster status YELLOW",
-			Detail:   "Cluster is in YELLOW status — some replica shards are unassigned. Data is available but redundancy is reduced.",
-		})
-	}
-
-	// Unassigned shards.
-	if snap.Health.UnassignedShards > 0 {
-		result = append(result, model.Recommendation{
-			Severity: model.SeverityCritical,
-			Category: model.CategoryShardHealth,
-			Title:    "Unassigned shards detected",
-			Detail:   fmt.Sprintf("%d unassigned shards detected. Check node availability and disk space.", snap.Health.UnassignedShards),
+			Detail:   detail,
 		})
 	}
 

@@ -2,12 +2,11 @@ package client
 
 // ClusterHealth represents the response from /_cluster/health.
 type ClusterHealth struct {
-	ClusterName            string `json:"cluster_name"`
-	Status                 string `json:"status"`
-	NumberOfNodes          int    `json:"number_of_nodes"`
-	ActiveShards           int    `json:"active_shards"`
-	UnassignedShards       int    `json:"unassigned_shards"`
-	NumberOfPendingTasks   int    `json:"number_of_pending_tasks"`
+	ClusterName      string `json:"cluster_name"`
+	Status           string `json:"status"`
+	NumberOfNodes    int    `json:"number_of_nodes"`
+	ActiveShards     int    `json:"active_shards"`
+	UnassignedShards int    `json:"unassigned_shards"`
 }
 
 // NodeInfo represents a single node entry from /_cat/nodes.

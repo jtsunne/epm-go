@@ -74,10 +74,12 @@ func TestCalcRecommendations_ClusterStatusYellow(t *testing.T) {
 func TestCalcRecommendations_UnassignedShards(t *testing.T) {
 	snap := makeSnap("yellow", 10, 5)
 	recs := CalcRecommendations(snap, model.ClusterResources{}, nil, nil)
-	assert.True(t, hasRec(recs, model.SeverityCritical, "Unassigned shards"), "expect critical for unassigned shards")
+	// Unassigned shard count is embedded in the YELLOW status recommendation,
+	// not emitted as a separate recommendation, to avoid duplicate entries.
+	assert.True(t, hasRec(recs, model.SeverityWarning, "YELLOW"), "expect warning YELLOW status recommendation")
 	// Detail should mention the count.
 	for _, r := range recs {
-		if strings.Contains(r.Title, "Unassigned shards") {
+		if strings.Contains(r.Title, "YELLOW") {
 			assert.Contains(t, r.Detail, "5 unassigned")
 		}
 	}
