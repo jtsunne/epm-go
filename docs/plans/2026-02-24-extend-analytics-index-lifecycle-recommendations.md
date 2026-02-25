@@ -91,9 +91,9 @@ System indices (prefix `.`) are skipped.
 **Files:**
 - Modify: `internal/tui/analytics.go`
 
-- [ ] Add `"Index Lifecycle"` case for `CategoryIndexLifecycle` in `categoryLabel()` in `analytics.go`
-- [ ] Add `CategoryIndexLifecycle` to the `categories` slice in the analytics render path
-- [ ] Run `make test` — must pass before task 3
+- [x] Add `"Index Lifecycle"` case for `CategoryIndexLifecycle` in `categoryLabel()` in `analytics.go`
+- [x] Add `CategoryIndexLifecycle` to the `categories` slice in the analytics render path
+- [x] Run `make test` — must pass before task 3
 
 ### Task 3: Implement dateRollupRecs with size-aware logic
 

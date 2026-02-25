@@ -21,6 +21,8 @@ func categoryLabel(cat model.RecommendationCategory) string {
 		return "Index Configuration"
 	case model.CategoryHotspot:
 		return "Hotspot"
+	case model.CategoryIndexLifecycle:
+		return "Index Lifecycle"
 	default:
 		return "Other"
 	}
@@ -88,6 +90,7 @@ func buildAnalyticsLines(recs []model.Recommendation, width int) []string {
 			model.CategoryShardHealth,
 			model.CategoryIndexConfig,
 			model.CategoryHotspot,
+			model.CategoryIndexLifecycle,
 		}
 		for _, cat := range categories {
 			var catRecs []model.Recommendation
