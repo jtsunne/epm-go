@@ -140,8 +140,10 @@ func CalcRecommendations(
 	for _, idx := range indexRows {
 		totalIndexSizeBytes += idx.TotalSizeBytes
 		totalShardCount += idx.TotalShards
-		// Non-system index with no replicas: TotalShards == PrimaryShards.
-		if !strings.HasPrefix(idx.Name, ".") && idx.PrimaryShards > 0 && idx.TotalShards == idx.PrimaryShards {
+		// Non-system index with explicitly 0 replicas: rep parsed successfully and
+		// TotalShards == PrimaryShards. Skip indices where rep was unavailable ("-")
+		// to avoid false positives on closed or partially-initialised indices.
+		if !strings.HasPrefix(idx.Name, ".") && idx.RepKnown && idx.PrimaryShards > 0 && idx.TotalShards == idx.PrimaryShards {
 			zeroReplicaCount++
 		}
 	}

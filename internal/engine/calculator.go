@@ -316,8 +316,10 @@ func CalcIndexRows(prev, curr *model.Snapshot, elapsed time.Duration) []model.In
 			pri = v
 		}
 		rep := 0
+		repKnown := false
 		if v, err := strconv.Atoi(info.Rep); err == nil {
 			rep = v
+			repKnown = true
 		}
 		docCount := int64(0)
 		if v, err := strconv.ParseInt(info.DocsCount, 10, 64); err == nil {
@@ -347,6 +349,7 @@ func CalcIndexRows(prev, curr *model.Snapshot, elapsed time.Duration) []model.In
 			Name:           name,
 			PrimaryShards:  pri,
 			TotalShards:    totalShards,
+			RepKnown:       repKnown,
 			TotalSizeBytes: totalSizeBytes,
 			AvgShardSize:   avgShardSize,
 			DocCount:       docCount,

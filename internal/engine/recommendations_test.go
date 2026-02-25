@@ -172,9 +172,10 @@ func TestCalcRecommendations_StorageWarning(t *testing.T) {
 func TestCalcRecommendations_ZeroReplicaIndices(t *testing.T) {
 	snap := makeSnap("green", 5, 0)
 	indexRows := []model.IndexRow{
-		{Name: "myindex", PrimaryShards: 3, TotalShards: 3},    // no replicas
-		{Name: "other", PrimaryShards: 2, TotalShards: 4},       // has replicas
-		{Name: ".system", PrimaryShards: 1, TotalShards: 1},     // system — excluded
+		{Name: "myindex", PrimaryShards: 3, TotalShards: 3, RepKnown: true},  // no replicas (rep=0)
+		{Name: "other", PrimaryShards: 2, TotalShards: 4, RepKnown: true},    // has replicas
+		{Name: ".system", PrimaryShards: 1, TotalShards: 1, RepKnown: true},  // system — excluded
+		{Name: "closed", PrimaryShards: 1, TotalShards: 1, RepKnown: false},  // rep="-", must not count
 	}
 	recs := CalcRecommendations(snap, model.ClusterResources{}, nil, indexRows)
 	assert.True(t, hasRec(recs, model.SeverityWarning, "without replicas"))
@@ -316,7 +317,7 @@ func TestCalcRecommendations_AllCategories(t *testing.T) {
 		AvgCPUPercent:     85,
 	}
 	indexRows := []model.IndexRow{
-		{Name: "idx", PrimaryShards: 2, TotalShards: 2, TotalSizeBytes: 200 * oneMiBInt64},
+		{Name: "idx", PrimaryShards: 2, TotalShards: 2, RepKnown: true, TotalSizeBytes: 200 * oneMiBInt64},
 	}
 	nodeRows := []model.NodeRow{
 		{Name: "n1", Role: "d", HeapMaxBytes: oneGiBInt64, HeapUsedBytes: oneGiBInt64 * 9 / 10},

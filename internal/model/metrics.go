@@ -42,6 +42,7 @@ type IndexRow struct {
 	Name           string
 	PrimaryShards  int
 	TotalShards    int
+	RepKnown       bool    // true when the replica count was successfully parsed (not "-")
 	TotalSizeBytes int64
 	AvgShardSize   int64
 	DocCount       int64
