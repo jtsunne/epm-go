@@ -8,11 +8,12 @@ import (
 
 // SnapshotMsg delivers successful poll results to the TUI.
 type SnapshotMsg struct {
-	Snapshot  *model.Snapshot
-	Metrics   model.PerformanceMetrics
-	Resources model.ClusterResources
-	NodeRows  []model.NodeRow
-	IndexRows []model.IndexRow
+	Snapshot        *model.Snapshot
+	Metrics         model.PerformanceMetrics
+	Resources       model.ClusterResources
+	NodeRows        []model.NodeRow
+	IndexRows       []model.IndexRow
+	Recommendations []model.Recommendation
 }
 
 // FetchErrorMsg signals a poll failure.

@@ -51,6 +51,11 @@ type App struct {
 	// UI state
 	showHelp bool
 
+	// Analytics mode
+	analyticsMode         bool
+	analyticsScrollOffset int
+	recommendations       []model.Recommendation
+
 	// Tables
 	indexTable  IndexTableModel
 	nodeTable   NodeTableModel
@@ -96,6 +101,7 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		app.resources = msg.Resources
 		app.nodeRows = msg.NodeRows
 		app.indexRows = msg.IndexRows
+		app.recommendations = msg.Recommendations
 		app.indexTable.SetData(msg.IndexRows)
 		app.nodeTable.SetData(msg.NodeRows)
 		app.computeTablePageSizes()
@@ -159,6 +165,22 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return app, tea.Quit
 		}
 
+		// In analytics mode only esc/a close it, ↑↓ scroll, all others are ignored.
+		if app.analyticsMode {
+			switch {
+			case key.Matches(msg, keys.Escape), key.Matches(msg, keys.Analytics):
+				app.analyticsMode = false
+				app.analyticsScrollOffset = 0
+			case key.Matches(msg, keys.CursorUp):
+				if app.analyticsScrollOffset > 0 {
+					app.analyticsScrollOffset--
+				}
+			case key.Matches(msg, keys.CursorDown):
+				app.analyticsScrollOffset++
+			}
+			return app, nil
+		}
+
 		// While the active table has its search input open, delegate all
 		// other keys to the table so typed characters reach the text field.
 		activeSearching := (app.activeTable == 0 && app.indexTable.searching) ||
@@ -174,6 +196,9 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		switch {
+		case key.Matches(msg, keys.Analytics):
+			app.analyticsMode = true
+			app.analyticsScrollOffset = 0
 		case key.Matches(msg, keys.Refresh):
 			if app.fetching {
 				return app, nil
@@ -299,13 +324,15 @@ func fetchCmd(c client.ESClient, prev *model.Snapshot, interval time.Duration) t
 		resources := engine.CalcClusterResources(snap)
 		nodeRows := engine.CalcNodeRows(prev, snap, elapsed)
 		indexRows := engine.CalcIndexRows(prev, snap, elapsed)
+		recommendations := engine.CalcRecommendations(snap, metrics, resources, nodeRows, indexRows)
 
 		return SnapshotMsg{
-			Snapshot:  snap,
-			Metrics:   metrics,
-			Resources: resources,
-			NodeRows:  nodeRows,
-			IndexRows: indexRows,
+			Snapshot:        snap,
+			Metrics:         metrics,
+			Resources:       resources,
+			NodeRows:        nodeRows,
+			IndexRows:       indexRows,
+			Recommendations: recommendations,
 		}
 	}
 }

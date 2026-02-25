@@ -15,6 +15,7 @@ type keyMap struct {
 	NextPage   key.Binding
 	CursorUp   key.Binding
 	CursorDown key.Binding
+	Analytics  key.Binding
 }
 
 // keys is the global key map.
@@ -63,7 +64,11 @@ var keys = keyMap{
 		key.WithKeys("down", "j"),
 		key.WithHelp("↓/j", "cursor down"),
 	),
+	Analytics: key.NewBinding(
+		key.WithKeys("a"),
+		key.WithHelp("a", "analytics"),
+	),
 }
 
 // helpText is the full help string displayed in the footer when help is toggled on.
-const helpText = "tab: switch table  /: search  1-9: sort col  ←→: pages  ↑↓: select row  r: refresh  q: quit  ?: close help"
+const helpText = "tab: switch table  /: search  1-9: sort col  ←→: pages  ↑↓: select row  r: refresh  a: analytics  q: quit  ?: close help"

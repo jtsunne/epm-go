@@ -96,14 +96,14 @@ Resource-aware rules — dynamic thresholds derived from `resources.TotalHeapMax
 - Modify: `internal/tui/app.go`
 - Modify: `internal/tui/keys.go`
 
-- [ ] Add `Recommendations []model.Recommendation` to `SnapshotMsg` in `messages.go`
-- [ ] In `fetchCmd` in `app.go`, call `engine.CalcRecommendations(...)` and include result in `SnapshotMsg`
-- [ ] Add `recommendations []model.Recommendation`, `analyticsMode bool`, `analyticsScrollOffset int` fields to `App`
-- [ ] In `Update()` `SnapshotMsg` handler, store `app.recommendations = msg.Recommendations`
-- [ ] Add `Analytics key.Binding` to `keyMap` in `keys.go` (key: `"a"`, help: `"analytics"`)
-- [ ] Update help text to include `a: analytics`
-- [ ] In `Update()` `tea.KeyMsg` handler: toggle `analyticsMode` on `keys.Analytics`; reset scroll on mode switch; `esc` also exits analytics mode; ↑↓ scroll `analyticsScrollOffset` when in analytics mode
-- [ ] Run `make test` — must pass before task 5
+- [x] Add `Recommendations []model.Recommendation` to `SnapshotMsg` in `messages.go`
+- [x] In `fetchCmd` in `app.go`, call `engine.CalcRecommendations(...)` and include result in `SnapshotMsg`
+- [x] Add `recommendations []model.Recommendation`, `analyticsMode bool`, `analyticsScrollOffset int` fields to `App`
+- [x] In `Update()` `SnapshotMsg` handler, store `app.recommendations = msg.Recommendations`
+- [x] Add `Analytics key.Binding` to `keyMap` in `keys.go` (key: `"a"`, help: `"analytics"`)
+- [x] Update help text to include `a: analytics`
+- [x] In `Update()` `tea.KeyMsg` handler: toggle `analyticsMode` on `keys.Analytics`; reset scroll on mode switch; `esc` also exits analytics mode; ↑↓ scroll `analyticsScrollOffset` when in analytics mode
+- [x] Run `make test` — must pass before task 5
 
 ### Task 5: Add analytics renderer
 
