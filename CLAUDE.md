@@ -221,6 +221,8 @@ make integration ES_URI=http://localhost:9200
 - **`_cat` string fields**: `IndexInfo.Pri`, `Rep`, `DocsCount` are strings from the API — parse in `CalcIndexRows`, not in the client
 - **Never store credentials** beyond the lifetime of the process (in-memory `ClientConfig` only)
 - **MetricNotAvailable sentinel**: `model.MetricNotAvailable = -1.0` is returned by all calculator functions when `prev == nil` or elapsed < 1s (delta not computable). `FormatRate` and `FormatLatency` treat any value `< 0` as sentinel and display `"---"`. Safe because the engine clamps all real metrics to `>= 0`. Sparkline history guard in `app.go` prevents sentinel values from entering the history buffer.
+- **`CategoryIndexLifecycle`**: recommendation category (in `model/recommendation.go`) used for date-rollup suggestions (daily→weekly/monthly, weekly→monthly, monthly→yearly) and empty-index deletion candidates. Separate from `CategoryIndexConfig` to keep lifecycle vs. config concerns distinct.
+- **`IndexRow.PriSizeBytes`**: primary shard data size in bytes (int64), populated by `CalcIndexRows` from the already-computed `primarySizeBytes` local variable. Used by `dateRollupRecs` to decide daily→monthly vs. daily→weekly consolidation target (threshold: 100 MiB average primary size per index).
 
 ## lipgloss Layout Patterns
 

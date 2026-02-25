@@ -156,5 +156,5 @@ System indices (prefix `.`) are skipped.
 
 ### Task 7: Update documentation
 
-- [ ] Update `CLAUDE.md`: note `CategoryIndexLifecycle` and `IndexRow.PriSizeBytes`
-- [ ] Move this plan to `docs/plans/completed/`
+- [x] Update `CLAUDE.md`: note `CategoryIndexLifecycle` and `IndexRow.PriSizeBytes`
+- [x] Move this plan to `docs/plans/completed/`
