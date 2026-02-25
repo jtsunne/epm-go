@@ -58,10 +58,10 @@ Add a full-screen Analytics view (key `a`) that displays actionable recommendati
 **Files:**
 - Create: `internal/model/recommendation.go`
 
-- [ ] Define `RecommendationSeverity` type with constants: `SeverityNormal`, `SeverityWarning`, `SeverityCritical`
-- [ ] Define `RecommendationCategory` type with constants: `CategoryResourcePressure`, `CategoryShardHealth`, `CategoryIndexConfig`, `CategoryHotspot`
-- [ ] Define `Recommendation` struct: `Severity RecommendationSeverity`, `Category RecommendationCategory`, `Title string`, `Detail string`
-- [ ] Run `make test` — must pass before task 3
+- [x] Define `RecommendationSeverity` type with constants: `SeverityNormal`, `SeverityWarning`, `SeverityCritical`
+- [x] Define `RecommendationCategory` type with constants: `CategoryResourcePressure`, `CategoryShardHealth`, `CategoryIndexConfig`, `CategoryHotspot`
+- [x] Define `Recommendation` struct: `Severity RecommendationSeverity`, `Category RecommendationCategory`, `Title string`, `Detail string`
+- [x] Run `make test` — must pass before task 3
 
 ### Task 3: Resource-aware CalcRecommendations
 
