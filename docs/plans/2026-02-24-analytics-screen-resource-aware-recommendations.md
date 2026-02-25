@@ -111,14 +111,14 @@ Resource-aware rules — dynamic thresholds derived from `resources.TotalHeapMax
 - Create: `internal/tui/analytics.go`
 - Modify: `internal/tui/app.go`
 
-- [ ] Implement `renderAnalytics(app *App) string` in `analytics.go`
-- [ ] Title bar: `"Analytics — Cluster Recommendations"` with `[a/esc: back]` right-aligned
-- [ ] Group recommendations by category (ResourcePressure, ShardHealth, IndexConfig, Hotspot); render category header + items
-- [ ] Each item: severity badge (`[CRITICAL]`/`[WARN]`/`[OK]`) colored red/yellow/green + title + detail (detail wraps to next line, indented)
-- [ ] Show `"No issues found — cluster looks healthy"` in green when list is empty
-- [ ] Apply `analyticsScrollOffset` for scrolling; show scroll hint when content exceeds terminal height
-- [ ] In `app.go` `View()`: when `analyticsMode == true`, render header + analytics + footer
-- [ ] Run `make test` — must pass before task 6
+- [x] Implement `renderAnalytics(app *App) string` in `analytics.go`
+- [x] Title bar: `"Analytics — Cluster Recommendations"` with `[a/esc: back]` right-aligned
+- [x] Group recommendations by category (ResourcePressure, ShardHealth, IndexConfig, Hotspot); render category header + items
+- [x] Each item: severity badge (`[CRITICAL]`/`[WARN]`/`[OK]`) colored red/yellow/green + title + detail (detail wraps to next line, indented)
+- [x] Show `"No issues found — cluster looks healthy"` in green when list is empty
+- [x] Apply `analyticsScrollOffset` for scrolling; show scroll hint when content exceeds terminal height
+- [x] In `app.go` `View()`: when `analyticsMode == true`, render header + analytics + footer
+- [x] Run `make test` — must pass before task 6
 
 ### Task 6: Verify acceptance criteria
 

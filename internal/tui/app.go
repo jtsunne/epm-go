@@ -237,6 +237,14 @@ func (app *App) View() string {
 	if h := renderHeader(app); h != "" {
 		parts = append(parts, h)
 	}
+
+	// Analytics mode: replace dashboard with the recommendations screen.
+	if app.analyticsMode {
+		parts = append(parts, renderAnalytics(app))
+		parts = append(parts, renderFooter(app))
+		return strings.Join(parts, "\n")
+	}
+
 	if o := renderOverview(app); o != "" {
 		parts = append(parts, o)
 	}
