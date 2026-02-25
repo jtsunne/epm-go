@@ -269,12 +269,12 @@ func TestCalcRecommendations_TwoDataNodes_NoSPOF(t *testing.T) {
 	assert.False(t, hasRec(recs, model.SeverityWarning, "Single data node"))
 }
 
-// Heap hotspot: spread > 30% triggers warning.
+// Heap hotspot: spread > 30% on data nodes triggers warning.
 func TestCalcRecommendations_HeapHotspot(t *testing.T) {
 	snap := makeSnap("green", 0, 0)
 	nodeRows := []model.NodeRow{
-		{Name: "node1", HeapMaxBytes: oneGiBInt64, HeapUsedBytes: oneGiBInt64 * 9 / 10},  // 90%
-		{Name: "node2", HeapMaxBytes: oneGiBInt64, HeapUsedBytes: oneGiBInt64 * 5 / 10},  // 50%
+		{Name: "node1", Role: "d", HeapMaxBytes: oneGiBInt64, HeapUsedBytes: oneGiBInt64 * 9 / 10},  // 90%
+		{Name: "node2", Role: "d", HeapMaxBytes: oneGiBInt64, HeapUsedBytes: oneGiBInt64 * 5 / 10},  // 50%
 	}
 	recs := CalcRecommendations(snap, model.ClusterResources{}, nodeRows, nil)
 	assert.True(t, hasRec(recs, model.SeverityWarning, "heap utilization"))
@@ -284,8 +284,8 @@ func TestCalcRecommendations_HeapHotspot(t *testing.T) {
 func TestCalcRecommendations_HeapHotspot_Fine(t *testing.T) {
 	snap := makeSnap("green", 0, 0)
 	nodeRows := []model.NodeRow{
-		{Name: "node1", HeapMaxBytes: oneGiBInt64, HeapUsedBytes: oneGiBInt64 * 7 / 10},  // 70%
-		{Name: "node2", HeapMaxBytes: oneGiBInt64, HeapUsedBytes: oneGiBInt64 * 5 / 10},  // 50%
+		{Name: "node1", Role: "d", HeapMaxBytes: oneGiBInt64, HeapUsedBytes: oneGiBInt64 * 7 / 10},  // 70%
+		{Name: "node2", Role: "d", HeapMaxBytes: oneGiBInt64, HeapUsedBytes: oneGiBInt64 * 5 / 10},  // 50%
 	}
 	recs := CalcRecommendations(snap, model.ClusterResources{}, nodeRows, nil)
 	assert.False(t, hasRec(recs, model.SeverityWarning, "heap utilization"))
@@ -295,17 +295,33 @@ func TestCalcRecommendations_HeapHotspot_Fine(t *testing.T) {
 func TestCalcRecommendations_HeapHotspot_SingleNode(t *testing.T) {
 	snap := makeSnap("green", 0, 0)
 	nodeRows := []model.NodeRow{
-		{Name: "node1", HeapMaxBytes: oneGiBInt64, HeapUsedBytes: oneGiBInt64},
+		{Name: "node1", Role: "d", HeapMaxBytes: oneGiBInt64, HeapUsedBytes: oneGiBInt64},
 	}
 	recs := CalcRecommendations(snap, model.ClusterResources{}, nodeRows, nil)
 	assert.False(t, hasRec(recs, model.SeverityWarning, "heap utilization"))
 }
 
+// Heap hotspot: spread between master and data node must NOT trigger warning —
+// only data-role nodes are compared.
+func TestCalcRecommendations_HeapHotspot_MasterExcluded(t *testing.T) {
+	snap := makeSnap("green", 0, 0)
+	nodeRows := []model.NodeRow{
+		// Dedicated master: tiny heap, very low utilisation.
+		{Name: "master1", Role: "m", HeapMaxBytes: oneGiBInt64, HeapUsedBytes: oneGiBInt64 * 1 / 10},  // 10%
+		// Data node: large heap, high utilisation.
+		{Name: "data1", Role: "d", HeapMaxBytes: oneGiBInt64, HeapUsedBytes: oneGiBInt64 * 8 / 10},  // 80%
+	}
+	// Spread = 70pp > 30pp, but master is excluded → only 1 data node → no hotspot warning.
+	recs := CalcRecommendations(snap, model.ClusterResources{}, nodeRows, nil)
+	assert.False(t, hasRec(recs, model.SeverityWarning, "heap utilization"),
+		"spread between master and data node must not trigger hotspot warning")
+}
+
 func TestCalcRecommendations_HotspotDetail(t *testing.T) {
 	snap := makeSnap("green", 0, 0)
 	nodeRows := []model.NodeRow{
-		{Name: "node1", HeapMaxBytes: oneGiBInt64, HeapUsedBytes: oneGiBInt64 * 95 / 100}, // 95%
-		{Name: "node2", HeapMaxBytes: oneGiBInt64, HeapUsedBytes: oneGiBInt64 * 40 / 100}, // 40%
+		{Name: "node1", Role: "d", HeapMaxBytes: oneGiBInt64, HeapUsedBytes: oneGiBInt64 * 95 / 100}, // 95%
+		{Name: "node2", Role: "d", HeapMaxBytes: oneGiBInt64, HeapUsedBytes: oneGiBInt64 * 40 / 100}, // 40%
 	}
 	recs := CalcRecommendations(snap, model.ClusterResources{}, nodeRows, nil)
 	for _, r := range recs {
@@ -377,7 +393,7 @@ func TestDateRollupRecs_Daily_SmallSize_SuggestsMonthly(t *testing.T) {
 			TotalShards:  2,
 		})
 	}
-	recs, _, _ := dateRollupRecs(rows)
+	recs, _, _, _ := dateRollupRecs(rows)
 	assert.Len(t, recs, 1)
 	assert.Equal(t, model.SeverityWarning, recs[0].Severity)
 	assert.Contains(t, recs[0].Title, "monthly")
@@ -394,7 +410,7 @@ func TestDateRollupRecs_Daily_LargeSize_SuggestsWeekly(t *testing.T) {
 			TotalShards:  2,
 		})
 	}
-	recs, _, _ := dateRollupRecs(rows)
+	recs, _, _, _ := dateRollupRecs(rows)
 	assert.Len(t, recs, 1)
 	assert.Equal(t, model.SeverityWarning, recs[0].Severity)
 	assert.Contains(t, recs[0].Title, "weekly")
@@ -411,9 +427,10 @@ func TestDateRollupRecs_Daily_BelowThreshold(t *testing.T) {
 			TotalShards:  2,
 		})
 	}
-	recs, savedIdx, savedShards := dateRollupRecs(rows)
+	recs, savedIdx, totalGroupIdx, savedShards := dateRollupRecs(rows)
 	assert.Empty(t, recs)
 	assert.Equal(t, 0, savedIdx)
+	assert.Equal(t, 0, totalGroupIdx)
 	assert.Equal(t, 0, savedShards)
 }
 
@@ -427,7 +444,7 @@ func TestDateRollupRecs_Weekly_AtThreshold(t *testing.T) {
 			TotalShards:  2,
 		})
 	}
-	recs, _, _ := dateRollupRecs(rows)
+	recs, _, _, _ := dateRollupRecs(rows)
 	assert.Len(t, recs, 1)
 	assert.Equal(t, model.SeverityWarning, recs[0].Severity)
 	assert.Contains(t, recs[0].Title, "monthly")
@@ -443,7 +460,7 @@ func TestDateRollupRecs_Monthly_AtThreshold(t *testing.T) {
 			TotalShards:  2,
 		})
 	}
-	recs, _, _ := dateRollupRecs(rows)
+	recs, _, _, _ := dateRollupRecs(rows)
 	assert.Len(t, recs, 1)
 	assert.Equal(t, model.SeverityWarning, recs[0].Severity)
 	assert.Contains(t, recs[0].Title, "yearly")
@@ -466,7 +483,7 @@ func TestDateRollupRecs_MultipleGroups(t *testing.T) {
 			TotalShards:  2,
 		})
 	}
-	recs, _, _ := dateRollupRecs(rows)
+	recs, _, _, _ := dateRollupRecs(rows)
 	assert.Len(t, recs, 2)
 	hasMonthly, hasWeekly := false, false
 	for _, rec := range recs {
@@ -491,9 +508,10 @@ func TestDateRollupRecs_SystemIndicesSkipped(t *testing.T) {
 			TotalShards:  2,
 		})
 	}
-	recs, savedIdx, savedShards := dateRollupRecs(rows)
+	recs, savedIdx, totalGroupIdx, savedShards := dateRollupRecs(rows)
 	assert.Empty(t, recs)
 	assert.Equal(t, 0, savedIdx)
+	assert.Equal(t, 0, totalGroupIdx)
 	assert.Equal(t, 0, savedShards)
 }
 
@@ -508,7 +526,7 @@ func TestDateRollupRecs_DailyNotConfusedWithMonthly(t *testing.T) {
 			TotalShards:  2,
 		})
 	}
-	recs, _, _ := dateRollupRecs(rows)
+	recs, _, _, _ := dateRollupRecs(rows)
 	assert.Len(t, recs, 1, "daily indices must produce exactly one recommendation, not two")
 	assert.Contains(t, recs[0].Title, "daily")
 }
@@ -525,8 +543,9 @@ func TestDateRollupRecs_ImpactCounts(t *testing.T) {
 			TotalShards:  2,
 		})
 	}
-	_, savedIdx, savedShards := dateRollupRecs(rows)
+	_, savedIdx, totalGroupIdx, savedShards := dateRollupRecs(rows)
 	assert.Equal(t, 6, savedIdx)
+	assert.Equal(t, 7, totalGroupIdx)
 	assert.Equal(t, 12, savedShards)
 }
 
@@ -551,10 +570,11 @@ func TestDateRollupRecs_CrossYearGrouping(t *testing.T) {
 			TotalShards:  2,
 		})
 	}
-	recs, savedIdx, savedShards := dateRollupRecs(rows)
+	recs, savedIdx, totalGroupIdx, savedShards := dateRollupRecs(rows)
 	assert.Len(t, recs, 2, "should generate one recommendation per year")
 	// Each group: N=7, M=ceil(7/30)=1, savedIndices=6, avgShardDensity=2, savedShards=12.
 	assert.Equal(t, 12, savedIdx, "savedIndices = 6 per year × 2 years")
+	assert.Equal(t, 14, totalGroupIdx, "totalGroupIndices = 7 per year × 2 years")
 	assert.Equal(t, 24, savedShards, "savedShards = 12 per year × 2 years")
 	// Verify titles reference distinct years.
 	assert.Contains(t, recs[0].Title, "2023")
@@ -616,7 +636,7 @@ func TestEmptyIndexRecs_SkipsUnknownDocCount(t *testing.T) {
 
 func TestCalcRecommendations_ClusterImpactSummary(t *testing.T) {
 	// 7 daily app-logs indices at 50 MiB primary, 2 shards each → monthly rollup.
-	// savedIndices=6, savedShards=12.
+	// totalGroupIndices=7, savedIndices=6, savedShards=12, remainingIdx=1.
 	// activeShards=100, heap=10 GiB → currentRatio=10.0/GB, estimatedRatio=8.8/GB.
 	snap := makeSnap("green", 100, 0)
 	resources := model.ClusterResources{
@@ -641,6 +661,10 @@ func TestCalcRecommendations_ClusterImpactSummary(t *testing.T) {
 	assert.NotNil(t, summary, "expected a cluster impact summary recommendation")
 	if summary != nil {
 		assert.Contains(t, summary.Title, "impact summary")
-		assert.Contains(t, summary.Detail, "shards")
+		// Detail must show "consolidate 7 indices into 1" (not just eliminated count).
+		assert.Contains(t, summary.Detail, "consolidate 7 indices into 1")
+		assert.Contains(t, summary.Detail, "12 shards")
+		assert.Contains(t, summary.Detail, "10.0")
+		assert.Contains(t, summary.Detail, "8.8")
 	}
 }

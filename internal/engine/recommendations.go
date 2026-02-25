@@ -229,7 +229,7 @@ func CalcRecommendations(
 	result = append(result, heapHotspotRecs(nodeRows)...)
 
 	// Index lifecycle: date-rollup consolidation suggestions.
-	rollupRecs, savedIdx, savedShards := dateRollupRecs(indexRows)
+	rollupRecs, savedIdx, totalGroupIdx, savedShards := dateRollupRecs(indexRows)
 	result = append(result, rollupRecs...)
 
 	// Index lifecycle: empty index detection.
@@ -244,14 +244,15 @@ func CalcRecommendations(
 			estimatedShards = 0
 		}
 		estimatedRatio := float64(estimatedShards) / totalHeapGB
+		remainingIdx := totalGroupIdx - savedIdx
 		result = append(result, model.Recommendation{
 			Severity: model.SeverityNormal,
 			Category: model.CategoryIndexLifecycle,
 			Title:    "Rollup impact summary",
 			Detail: fmt.Sprintf(
-				"Applying all rollup suggestions would eliminate ~%d indices (~%d shards). "+
+				"Applying all rollup suggestions would consolidate %d indices into %d, saving ~%d shards. "+
 					"Shard/GB heap: current %.1f → estimated %.1f after rollup.",
-				savedIdx, savedShards, currentRatio, estimatedRatio,
+				totalGroupIdx, remainingIdx, savedShards, currentRatio, estimatedRatio,
 			),
 		})
 	}
@@ -268,9 +269,9 @@ type dateRollupGroupKey struct {
 
 // dateRollupRecs analyses date-patterned indices and emits consolidation
 // recommendations when enough indices exist to justify a rollup. Returns the
-// recommendations plus aggregate savedIndices and savedShards counts for use in
-// the cluster-level impact summary.
-func dateRollupRecs(indexRows []model.IndexRow) (recs []model.Recommendation, savedIndices int, savedShards int) {
+// recommendations plus aggregate savedIndices, totalGroupIndices, and savedShards
+// counts for use in the cluster-level impact summary.
+func dateRollupRecs(indexRows []model.IndexRow) (recs []model.Recommendation, savedIndices int, totalGroupIndices int, savedShards int) {
 	// Group indices by (granularity, base).
 	groups := make(map[dateRollupGroupKey][]model.IndexRow)
 
@@ -372,19 +373,21 @@ func dateRollupRecs(indexRows []model.IndexRow) (recs []model.Recommendation, sa
 		grpSavedIndices := n - m
 		grpSavedShards := grpSavedIndices * avgShardDensity
 
-		var sizePerConsolidatedMiB float64
-		if m > 0 {
-			sizePerConsolidatedMiB = float64(sumPriBytes) / float64(m) / float64(oneMiBInt64)
-		}
+		sizePerConsolidatedMiB := float64(sumPriBytes) / float64(m) / float64(oneMiBInt64)
 
 		savedIndices += grpSavedIndices
+		totalGroupIndices += n
 		savedShards += grpSavedShards
 
+		indexWord := "indices"
+		if m == 1 {
+			indexWord = "index"
+		}
 		detail := fmt.Sprintf(
 			"Current: %d indices, avg %.0f MiB primary/index, total %.2f GiB primary. "+
-				"After consolidation to %s: ~%d %s indices, ~%d fewer shards, ~%.0f MiB per consolidated index.",
+				"After consolidation to %s: ~%d %s %s, ~%d fewer shards, ~%.0f MiB per consolidated index.",
 			n, avgPriMiB, totalPriGiB,
-			target, m, target, grpSavedShards, sizePerConsolidatedMiB,
+			target, m, target, indexWord, grpSavedShards, sizePerConsolidatedMiB,
 		)
 
 		recs = append(recs, model.Recommendation{
@@ -395,7 +398,7 @@ func dateRollupRecs(indexRows []model.IndexRow) (recs []model.Recommendation, sa
 		})
 	}
 
-	return recs, savedIndices, savedShards
+	return recs, savedIndices, totalGroupIndices, savedShards
 }
 
 // emptyIndexRecs returns a warning recommendation when three or more non-system
@@ -430,7 +433,10 @@ func emptyIndexRecs(indexRows []model.IndexRow) []model.Recommendation {
 }
 
 // heapHotspotRecs returns a warning recommendation when heap utilisation spread
-// across nodes exceeds 30 percentage points, or nil when the cluster is healthy.
+// across data-role nodes exceeds 30 percentage points, or nil when the cluster
+// is healthy. Only data-role nodes are considered to avoid false positives from
+// dedicated master nodes, which typically have smaller and differently-utilized
+// heaps than data nodes.
 func heapHotspotRecs(nodeRows []model.NodeRow) []model.Recommendation {
 	if len(nodeRows) < 2 {
 		return nil
@@ -439,6 +445,10 @@ func heapHotspotRecs(nodeRows []model.NodeRow) []model.Recommendation {
 	first := true
 	for _, n := range nodeRows {
 		if n.HeapMaxBytes <= 0 {
+			continue
+		}
+		// Skip non-data nodes (e.g. dedicated masters) to avoid spurious spread warnings.
+		if !strings.ContainsAny(n.Role, "dhwcfs") {
 			continue
 		}
 		util := float64(n.HeapUsedBytes) / float64(n.HeapMaxBytes)
