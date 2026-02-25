@@ -128,6 +128,7 @@ func TestCalcRecommendations_CPUCritical(t *testing.T) {
 	resources := model.ClusterResources{AvgCPUPercent: 95}
 	recs := CalcRecommendations(snap, resources, nil, nil)
 	assert.True(t, hasRec(recs, model.SeverityCritical, "CPU pressure"))
+	assert.False(t, hasRec(recs, model.SeverityWarning, "CPU usage"), "critical CPU must not also emit warning")
 }
 
 func TestCalcRecommendations_CPUWarning(t *testing.T) {
@@ -143,6 +144,7 @@ func TestCalcRecommendations_JVMCritical(t *testing.T) {
 	resources := model.ClusterResources{AvgJVMHeapPercent: 90, TotalHeapMaxBytes: 8 * oneGiBInt64}
 	recs := CalcRecommendations(snap, resources, nil, nil)
 	assert.True(t, hasRec(recs, model.SeverityCritical, "JVM heap pressure"))
+	assert.False(t, hasRec(recs, model.SeverityWarning, "JVM heap usage"), "critical JVM must not also emit warning")
 	// Detail should mention total heap GB.
 	for _, r := range recs {
 		if strings.Contains(r.Title, "JVM heap pressure") {
@@ -163,6 +165,7 @@ func TestCalcRecommendations_StorageCritical(t *testing.T) {
 	resources := model.ClusterResources{StoragePercent: 92}
 	recs := CalcRecommendations(snap, resources, nil, nil)
 	assert.True(t, hasRec(recs, model.SeverityCritical, "storage usage"))
+	assert.False(t, hasRec(recs, model.SeverityWarning, "storage usage"), "critical storage must not also emit warning")
 }
 
 func TestCalcRecommendations_StorageWarning(t *testing.T) {
@@ -170,6 +173,7 @@ func TestCalcRecommendations_StorageWarning(t *testing.T) {
 	resources := model.ClusterResources{StoragePercent: 85}
 	recs := CalcRecommendations(snap, resources, nil, nil)
 	assert.True(t, hasRec(recs, model.SeverityWarning, "storage usage"))
+	assert.False(t, hasRec(recs, model.SeverityCritical, "storage usage"), "storage warning must not also emit critical")
 }
 
 func TestCalcRecommendations_ZeroReplicaIndices(t *testing.T) {

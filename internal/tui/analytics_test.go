@@ -22,6 +22,7 @@ func TestCategoryLabel(t *testing.T) {
 		{model.CategoryShardHealth, "Shard Health"},
 		{model.CategoryIndexConfig, "Index Configuration"},
 		{model.CategoryHotspot, "Hotspot"},
+		{model.CategoryIndexLifecycle, "Index Lifecycle"},
 		{model.RecommendationCategory(99), "Other"},
 	}
 	for _, tc := range cases {

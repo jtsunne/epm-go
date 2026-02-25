@@ -87,7 +87,7 @@ Makefile
 All 5 endpoints are GET-only, JSON, with `filter_path` to reduce response size. Stable across ES 6.x–9.x.
 
 ```
-GET /_cluster/health?filter_path=cluster_name,status,number_of_nodes,active_shards
+GET /_cluster/health?filter_path=cluster_name,status,number_of_nodes,active_shards,unassigned_shards
 GET /_cat/nodes?v&format=json&h=node.role,name,ip&s=node.role,ip
 GET /_nodes/stats/indices,os,jvm,fs?filter_path=nodes.*.name,...
 GET /_cat/indices?v&format=json&h=index,pri,rep,pri.store.size,store.size,docs.count&s=index

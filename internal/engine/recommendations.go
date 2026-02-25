@@ -122,24 +122,23 @@ func CalcRecommendations(
 
 	// Shard-to-heap ratio — resource-aware dynamic threshold.
 	if resources.TotalHeapMaxBytes > 0 {
-		heapGB := totalHeapGB
 		activeShards := snap.Health.ActiveShards
-		shardPerGB := float64(activeShards) / heapGB
-		maxIdeal := int(20 * heapGB)
+		shardPerGB := float64(activeShards) / totalHeapGB
+		maxIdeal := int(20 * totalHeapGB)
 		switch {
 		case shardPerGB > 40:
 			result = append(result, model.Recommendation{
 				Severity: model.SeverityCritical,
 				Category: model.CategoryShardHealth,
 				Title:    "Too many shards per GB heap (critical)",
-				Detail:   fmt.Sprintf("Cluster has %d shards across %.1f GB heap (%.0f/GB). Ideal max: %d shards. Remove unused indices or reduce primary shard count.", activeShards, heapGB, shardPerGB, maxIdeal),
+				Detail:   fmt.Sprintf("Cluster has %d shards across %.1f GB heap (%.0f/GB). Ideal max: %d shards. Remove unused indices or reduce primary shard count.", activeShards, totalHeapGB, shardPerGB, maxIdeal),
 			})
 		case shardPerGB > 20:
 			result = append(result, model.Recommendation{
 				Severity: model.SeverityWarning,
 				Category: model.CategoryShardHealth,
 				Title:    "Too many shards per GB heap",
-				Detail:   fmt.Sprintf("Cluster has %d shards across %.1f GB heap (%.0f/GB). Ideal max: %d shards. Remove unused indices or reduce primary shard count.", activeShards, heapGB, shardPerGB, maxIdeal),
+				Detail:   fmt.Sprintf("Cluster has %d shards across %.1f GB heap (%.0f/GB). Ideal max: %d shards. Remove unused indices or reduce primary shard count.", activeShards, totalHeapGB, shardPerGB, maxIdeal),
 			})
 		}
 	}
@@ -161,16 +160,15 @@ func CalcRecommendations(
 
 	// Zero-replica indices.
 	if zeroReplicaCount > 0 {
+		detail := fmt.Sprintf("%d indices have no replicas. A single node failure will cause data loss.", zeroReplicaCount)
+		if zeroReplicaCount == 1 {
+			detail = "1 index has no replicas. A single node failure will cause data loss."
+		}
 		result = append(result, model.Recommendation{
 			Severity: model.SeverityWarning,
 			Category: model.CategoryIndexConfig,
 			Title:    "Indices without replicas",
-			Detail: func() string {
-				if zeroReplicaCount == 1 {
-					return "1 index has no replicas. A single node failure will cause data loss."
-				}
-				return fmt.Sprintf("%d indices have no replicas. A single node failure will cause data loss.", zeroReplicaCount)
-			}(),
+			Detail:   detail,
 		})
 	}
 
@@ -205,7 +203,6 @@ func CalcRecommendations(
 
 	// Data-to-heap ratio.
 	if resources.TotalHeapMaxBytes > 0 && totalIndexSizeBytes > 0 {
-		heapGB := totalHeapGB
 		dataGB := float64(totalIndexSizeBytes) / float64(oneGiBInt64)
 		ratio := float64(totalIndexSizeBytes) / float64(resources.TotalHeapMaxBytes)
 		if ratio > 30 {
@@ -213,7 +210,7 @@ func CalcRecommendations(
 				Severity: model.SeverityWarning,
 				Category: model.CategoryResourcePressure,
 				Title:    "High data-to-heap ratio",
-				Detail:   fmt.Sprintf("Index data (%.1f GB) is %.0f× total heap (%.1f GB). Elastic recommends ≤30× for search workloads. Add data nodes or reduce index retention.", dataGB, ratio, heapGB),
+				Detail:   fmt.Sprintf("Index data (%.1f GB) is %.0f× total heap (%.1f GB). Elastic recommends ≤30× for search workloads. Add data nodes or reduce index retention.", dataGB, ratio, totalHeapGB),
 			})
 		}
 	}
@@ -240,14 +237,13 @@ func CalcRecommendations(
 
 	// Cluster-level impact summary for rollup recommendations.
 	if savedShards > 0 && resources.TotalHeapMaxBytes > 0 {
-		heapGB := totalHeapGB
 		activeShards := snap.Health.ActiveShards
-		currentRatio := float64(activeShards) / heapGB
+		currentRatio := float64(activeShards) / totalHeapGB
 		estimatedShards := activeShards - savedShards
 		if estimatedShards < 0 {
 			estimatedShards = 0
 		}
-		estimatedRatio := float64(estimatedShards) / heapGB
+		estimatedRatio := float64(estimatedShards) / totalHeapGB
 		result = append(result, model.Recommendation{
 			Severity: model.SeverityNormal,
 			Category: model.CategoryIndexLifecycle,
@@ -275,10 +271,7 @@ type dateRollupGroupKey struct {
 // the cluster-level impact summary.
 func dateRollupRecs(indexRows []model.IndexRow) (recs []model.Recommendation, savedIndices int, savedShards int) {
 	// Group indices by (granularity, base).
-	type groupData struct {
-		indices []model.IndexRow
-	}
-	groups := make(map[dateRollupGroupKey]*groupData)
+	groups := make(map[dateRollupGroupKey][]model.IndexRow)
 
 	for _, idx := range indexRows {
 		// Skip system indices.
@@ -295,10 +288,7 @@ func dateRollupRecs(indexRows []model.IndexRow) (recs []model.Recommendation, sa
 		} else {
 			continue
 		}
-		if groups[key] == nil {
-			groups[key] = &groupData{}
-		}
-		groups[key].indices = append(groups[key].indices, idx)
+		groups[key] = append(groups[key], idx)
 	}
 
 	// Sort keys for deterministic output order.
@@ -315,7 +305,7 @@ func dateRollupRecs(indexRows []model.IndexRow) (recs []model.Recommendation, sa
 
 	for _, key := range keys {
 		group := groups[key]
-		n := len(group.indices)
+		n := len(group)
 
 		// Determine minimum count threshold, consolidation target, and period size.
 		var minCount, periodSize int
@@ -328,7 +318,7 @@ func dateRollupRecs(indexRows []model.IndexRow) (recs []model.Recommendation, sa
 			}
 			// Size-aware: small daily indices skip the weekly step and go straight to monthly.
 			var sumPri int64
-			for _, idx := range group.indices {
+			for _, idx := range group {
 				sumPri += idx.PriSizeBytes
 			}
 			avgPriSize := sumPri / int64(n)
@@ -360,7 +350,7 @@ func dateRollupRecs(indexRows []model.IndexRow) (recs []model.Recommendation, sa
 		// Compute impact metrics.
 		var sumPriBytes int64
 		var sumTotalShards int
-		for _, idx := range group.indices {
+		for _, idx := range group {
 			sumPriBytes += idx.PriSizeBytes
 			sumTotalShards += idx.TotalShards
 		}

@@ -155,7 +155,7 @@ Critical state adds a `!` suffix to the value and turns the card border red.
 
 Press `a` to switch from the dashboard to the Analytics screen. The screen shows a list of actionable recommendations derived from the current cluster snapshot.
 
-Recommendations are grouped into four categories:
+Recommendations are grouped into five categories:
 
 | Category | What it checks |
 |----------|----------------|
@@ -163,8 +163,9 @@ Recommendations are grouped into four categories:
 | Shard Health | Cluster status (red/yellow), unassigned shards, shard-to-heap ratio, single data node |
 | Index Configuration | Indices without replicas, oversized shards (> 50 GB), over-sharding (avg shard < 1 GB) |
 | Hotspot | Uneven JVM heap utilization across nodes (spread > 30 pp) |
+| Index Lifecycle | Date-patterned indices suitable for rollup consolidation (daily/weekly/monthly); empty deletion candidates |
 
-Each recommendation is labelled `[CRITICAL]` or `[WARN]`. When no issues are found, the screen shows "No issues found — cluster looks healthy".
+Each recommendation is labelled `[CRITICAL]`, `[WARN]`, or `[OK]` (informational impact summary). When no issues are found, the screen shows "No issues found — cluster looks healthy".
 
 Use `↑`/`↓` or `j`/`k` to scroll. Press `a` or `Esc` to return to the dashboard.
 
