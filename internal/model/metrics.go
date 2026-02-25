@@ -20,6 +20,7 @@ type ClusterResources struct {
 	StorageUsedBytes  int64
 	StorageTotalBytes int64
 	StoragePercent    float64
+	TotalHeapMaxBytes int64
 }
 
 // NodeRow holds display-ready data for a single row in the node table.
@@ -32,6 +33,8 @@ type NodeRow struct {
 	SearchRate    float64 // ops/sec
 	IndexLatency  float64 // ms/op
 	SearchLatency float64 // ms/op
+	HeapMaxBytes  int64
+	HeapUsedBytes int64
 }
 
 // IndexRow holds display-ready data for a single row in the index table.
@@ -39,7 +42,10 @@ type IndexRow struct {
 	Name           string
 	PrimaryShards  int
 	TotalShards    int
+	RepKnown       bool    // true when the replica count was successfully parsed (not "-")
+	DocCountKnown  bool    // true when docs.count was successfully parsed (not "-")
 	TotalSizeBytes int64
+	PriSizeBytes   int64   // primary data bytes, excluding replicas
 	AvgShardSize   int64
 	DocCount       int64
 	IndexingRate   float64 // ops/sec (primaries)

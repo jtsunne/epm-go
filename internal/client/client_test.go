@@ -33,7 +33,7 @@ func TestGetClusterHealth(t *testing.T) {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"cluster_name":"test-cluster","status":"green","number_of_nodes":3,"active_shards":42}`))
+		_, _ = w.Write([]byte(`{"cluster_name":"test-cluster","status":"green","number_of_nodes":3,"active_shards":42,"unassigned_shards":5}`))
 	}))
 	defer srv.Close()
 
@@ -53,6 +53,9 @@ func TestGetClusterHealth(t *testing.T) {
 	}
 	if health.ActiveShards != 42 {
 		t.Errorf("ActiveShards = %d, want 42", health.ActiveShards)
+	}
+	if health.UnassignedShards != 5 {
+		t.Errorf("UnassignedShards = %d, want 5", health.UnassignedShards)
 	}
 }
 

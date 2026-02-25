@@ -51,15 +51,18 @@ internal/
     snapshot.go              # Snapshot: result of one poll cycle
     metrics.go               # PerformanceMetrics, ClusterResources, NodeRow, IndexRow
     history.go               # SparklineHistory ring buffer (cap 60)
+    recommendation.go        # Recommendation type, severity/category constants
   engine/
     poller.go                # FetchAll: 5 endpoints in parallel via errgroup
     calculator.go            # CalcClusterMetrics, CalcClusterResources, CalcNodeRows, CalcIndexRows
     calculator_test.go       # Table-driven tests for all metric formulas
     poller_test.go
+    recommendations.go       # CalcRecommendations: resource-aware cluster recommendations
+    recommendations_test.go  # Table-driven tests for recommendation rules
   tui/
     app.go                   # Root bubbletea Model: Init/Update/View
     messages.go              # SnapshotMsg, FetchErrorMsg, TickMsg
-    keys.go                  # Key bindings (q, r, tab, /, 1-9, ←→, ↑↓/j/k)
+    keys.go                  # Key bindings (q, r, tab, /, 1-9, ←→, ↑↓/j/k, a)
     styles.go                # All lipgloss styles and color constants
     header.go                # Header bar renderer
     footer.go                # Footer bar renderer (help text / key hints)
@@ -71,6 +74,7 @@ internal/
     indextable.go            # IndexTableModel (9 columns)           (Phase 5)
     nodetable.go             # NodeTableModel (7 columns)            (Phase 5)
     thresholds.go            # Threshold severity functions for alert coloring (Phase 6)
+    analytics.go             # renderAnalytics: full-screen recommendations view
   format/
     format.go                # FormatBytes, FormatRate, FormatLatency, FormatNumber, FormatPercent
     format_test.go
@@ -83,7 +87,7 @@ Makefile
 All 5 endpoints are GET-only, JSON, with `filter_path` to reduce response size. Stable across ES 6.x–9.x.
 
 ```
-GET /_cluster/health?filter_path=cluster_name,status,number_of_nodes,active_shards
+GET /_cluster/health?filter_path=cluster_name,status,number_of_nodes,active_shards,unassigned_shards
 GET /_cat/nodes?v&format=json&h=node.role,name,ip&s=node.role,ip
 GET /_nodes/stats/indices,os,jvm,fs?filter_path=nodes.*.name,...
 GET /_cat/indices?v&format=json&h=index,pri,rep,pri.store.size,store.size,docs.count&s=index
@@ -159,6 +163,7 @@ Overview cards change color when thresholds are exceeded — no alert history or
 | `esc` | Close search |
 | `←` / `→` | Previous / next page |
 | `?` | Toggle help footer |
+| `a` | Toggle Analytics screen |
 
 ## Color Coding
 
@@ -216,6 +221,8 @@ make integration ES_URI=http://localhost:9200
 - **`_cat` string fields**: `IndexInfo.Pri`, `Rep`, `DocsCount` are strings from the API — parse in `CalcIndexRows`, not in the client
 - **Never store credentials** beyond the lifetime of the process (in-memory `ClientConfig` only)
 - **MetricNotAvailable sentinel**: `model.MetricNotAvailable = -1.0` is returned by all calculator functions when `prev == nil` or elapsed < 1s (delta not computable). `FormatRate` and `FormatLatency` treat any value `< 0` as sentinel and display `"---"`. Safe because the engine clamps all real metrics to `>= 0`. Sparkline history guard in `app.go` prevents sentinel values from entering the history buffer.
+- **`CategoryIndexLifecycle`**: recommendation category (in `model/recommendation.go`) used for date-rollup suggestions (daily→weekly/monthly, weekly→monthly, monthly→yearly) and empty-index deletion candidates. Separate from `CategoryIndexConfig` to keep lifecycle vs. config concerns distinct.
+- **`IndexRow.PriSizeBytes`**: primary shard data size in bytes (int64), populated by `CalcIndexRows` from the already-computed `primarySizeBytes` local variable. Used by `dateRollupRecs` to decide daily→monthly vs. daily→weekly consolidation target (threshold: 100 MiB average primary size per index).
 
 ## lipgloss Layout Patterns
 

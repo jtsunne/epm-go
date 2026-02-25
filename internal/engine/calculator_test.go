@@ -277,6 +277,7 @@ func TestCalcClusterResources_CPUAverageSkipsZeros(t *testing.T) {
 func TestCalcClusterResources_JVMHeapPercentage(t *testing.T) {
 	// node1: 3GB used / 4GB max = 75%; node2: 1GB used / 2GB max = 50%
 	// average = (75 + 50) / 2 = 62.5%
+	// TotalHeapMaxBytes = 4GB + 2GB = 6GB
 	const gb = int64(1 << 30)
 	snap := &model.Snapshot{
 		NodeStats: client.NodeStatsResponse{
@@ -288,10 +289,11 @@ func TestCalcClusterResources_JVMHeapPercentage(t *testing.T) {
 	}
 	got := CalcClusterResources(snap)
 	assert.InDelta(t, 62.5, got.AvgJVMHeapPercent, 1e-6)
+	assert.Equal(t, 6*gb, got.TotalHeapMaxBytes)
 }
 
 func TestCalcClusterResources_JVMSkipsZeroHeap(t *testing.T) {
-	// node1: 75%; node2: heap_max=0 → skipped
+	// node1: 75%; node2: heap_max=0 → skipped (not counted in TotalHeapMaxBytes)
 	const gb = int64(1 << 30)
 	snap := &model.Snapshot{
 		NodeStats: client.NodeStatsResponse{
@@ -303,6 +305,7 @@ func TestCalcClusterResources_JVMSkipsZeroHeap(t *testing.T) {
 	}
 	got := CalcClusterResources(snap)
 	assert.InDelta(t, 75.0, got.AvgJVMHeapPercent, 1e-6)
+	assert.Equal(t, 4*gb, got.TotalHeapMaxBytes)
 }
 
 func TestCalcClusterResources_JVMIncludesZeroHeapUsed(t *testing.T) {
@@ -355,6 +358,7 @@ func TestCalcClusterResources_NilFields(t *testing.T) {
 	assert.Equal(t, int64(0), got.StorageTotalBytes)
 	assert.Equal(t, int64(0), got.StorageUsedBytes)
 	assert.Equal(t, 0.0, got.StoragePercent)
+	assert.Equal(t, int64(0), got.TotalHeapMaxBytes)
 }
 
 // makeIndexStats builds an IndexStatEntry with given primaries and total values.
@@ -445,6 +449,28 @@ func TestCalcIndexRows_ShardCountParsing(t *testing.T) {
 	// AvgShardSize = primarySizeBytes / pri = 500MB / 5 = 100MB
 	assert.Equal(t, int64(100*1024*1024), rows[0].AvgShardSize)
 	assert.Equal(t, int64(1000*1024*1024), rows[0].TotalSizeBytes)
+	assert.Equal(t, int64(500*1024*1024), rows[0].PriSizeBytes)
+}
+
+func TestCalcIndexRows_PriSizeBytes(t *testing.T) {
+	// PriSizeBytes must reflect the primaries store bytes from _stats,
+	// not the total (which includes replicas).
+	const priBytes = int64(200 * 1024 * 1024)  // 200 MiB
+	const totBytes = int64(600 * 1024 * 1024)  // 600 MiB (3 replicas worth)
+	curr := &model.Snapshot{
+		Indices: []client.IndexInfo{
+			{Index: "myidx", Pri: "2", Rep: "2", DocsCount: "0"},
+		},
+		IndexStats: client.IndexStatsResponse{
+			Indices: map[string]client.IndexStatEntry{
+				"myidx": makeIndexStats(0, 0, -1, -1, -1, -1, -1, -1, priBytes, totBytes),
+			},
+		},
+	}
+	rows := CalcIndexRows(nil, curr, 10*time.Second)
+	assert.Len(t, rows, 1)
+	assert.Equal(t, priBytes, rows[0].PriSizeBytes)
+	assert.Equal(t, totBytes, rows[0].TotalSizeBytes)
 }
 
 func TestCalcIndexRows_PrimariesForIndexing(t *testing.T) {
@@ -636,4 +662,39 @@ func TestCalcNodeRows_TooShortInterval(t *testing.T) {
 	assert.Equal(t, model.MetricNotAvailable, rows[0].SearchRate)
 	assert.Equal(t, model.MetricNotAvailable, rows[0].IndexLatency)
 	assert.Equal(t, model.MetricNotAvailable, rows[0].SearchLatency)
+}
+
+func TestCalcNodeRows_HeapBytes(t *testing.T) {
+	const gb = int64(1 << 30)
+	curr := &model.Snapshot{
+		Nodes: []client.NodeInfo{
+			{Name: "node-a", NodeRole: "d", IP: "10.0.0.1"},
+		},
+		NodeStats: client.NodeStatsResponse{
+			Nodes: map[string]client.NodePerformanceStats{
+				"id1": {
+					Name: "node-a",
+					JVM:  makeNodeJVM(3*gb, 4*gb),
+				},
+			},
+		},
+	}
+	rows := CalcNodeRows(nil, curr, 10*time.Second)
+	assert.Len(t, rows, 1)
+	assert.Equal(t, 4*gb, rows[0].HeapMaxBytes)
+	assert.Equal(t, 3*gb, rows[0].HeapUsedBytes)
+}
+
+func TestCalcNodeRows_HeapBytesNilJVM(t *testing.T) {
+	curr := &model.Snapshot{
+		NodeStats: client.NodeStatsResponse{
+			Nodes: map[string]client.NodePerformanceStats{
+				"id1": {Name: "node-a", JVM: nil},
+			},
+		},
+	}
+	rows := CalcNodeRows(nil, curr, 10*time.Second)
+	assert.Len(t, rows, 1)
+	assert.Equal(t, int64(0), rows[0].HeapMaxBytes)
+	assert.Equal(t, int64(0), rows[0].HeapUsedBytes)
 }
