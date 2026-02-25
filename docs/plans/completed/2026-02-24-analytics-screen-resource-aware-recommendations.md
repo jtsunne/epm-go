@@ -132,6 +132,6 @@ Resource-aware rules — dynamic thresholds derived from `resources.TotalHeapMax
 
 ### Task 7: Update documentation
 
-- [ ] Update `CLAUDE.md` project structure: add `analytics.go` to `tui/`, `recommendation.go` to `model/`, `recommendations.go` to `engine/`
-- [ ] Update `CLAUDE.md` Keyboard Shortcuts table: add `a` → Toggle Analytics screen
-- [ ] Move this plan to `docs/plans/completed/`
+- [x] Update `CLAUDE.md` project structure: add `analytics.go` to `tui/`, `recommendation.go` to `model/`, `recommendations.go` to `engine/`
+- [x] Update `CLAUDE.md` Keyboard Shortcuts table: add `a` → Toggle Analytics screen
+- [x] Move this plan to `docs/plans/completed/`

@@ -51,15 +51,18 @@ internal/
     snapshot.go              # Snapshot: result of one poll cycle
     metrics.go               # PerformanceMetrics, ClusterResources, NodeRow, IndexRow
     history.go               # SparklineHistory ring buffer (cap 60)
+    recommendation.go        # Recommendation type, severity/category constants
   engine/
     poller.go                # FetchAll: 5 endpoints in parallel via errgroup
     calculator.go            # CalcClusterMetrics, CalcClusterResources, CalcNodeRows, CalcIndexRows
     calculator_test.go       # Table-driven tests for all metric formulas
     poller_test.go
+    recommendations.go       # CalcRecommendations: resource-aware cluster recommendations
+    recommendations_test.go  # Table-driven tests for recommendation rules
   tui/
     app.go                   # Root bubbletea Model: Init/Update/View
     messages.go              # SnapshotMsg, FetchErrorMsg, TickMsg
-    keys.go                  # Key bindings (q, r, tab, /, 1-9, ←→, ↑↓/j/k)
+    keys.go                  # Key bindings (q, r, tab, /, 1-9, ←→, ↑↓/j/k, a)
     styles.go                # All lipgloss styles and color constants
     header.go                # Header bar renderer
     footer.go                # Footer bar renderer (help text / key hints)
@@ -71,6 +74,7 @@ internal/
     indextable.go            # IndexTableModel (9 columns)           (Phase 5)
     nodetable.go             # NodeTableModel (7 columns)            (Phase 5)
     thresholds.go            # Threshold severity functions for alert coloring (Phase 6)
+    analytics.go             # renderAnalytics: full-screen recommendations view
   format/
     format.go                # FormatBytes, FormatRate, FormatLatency, FormatNumber, FormatPercent
     format_test.go
@@ -159,6 +163,7 @@ Overview cards change color when thresholds are exceeded — no alert history or
 | `esc` | Close search |
 | `←` / `→` | Previous / next page |
 | `?` | Toggle help footer |
+| `a` | Toggle Analytics screen |
 
 ## Color Coding
 
