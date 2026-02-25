@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -356,4 +357,241 @@ func TestCalcRecommendations_TieredDataNodes_SingleNode_SPOF(t *testing.T) {
 	}
 	recs := CalcRecommendations(snap, model.ClusterResources{}, nodeRows, nil)
 	assert.True(t, hasRec(recs, model.SeverityWarning, "Single data node"), "single warm-tier node must trigger SPOF")
+}
+
+// ---------------------------------------------------------------------------
+// dateRollupRecs tests
+// ---------------------------------------------------------------------------
+
+func TestDateRollupRecs_Daily_SmallSize_SuggestsMonthly(t *testing.T) {
+	// 50 MiB primary/index < 100 MiB threshold → target should be monthly.
+	var rows []model.IndexRow
+	for i := 1; i <= 7; i++ {
+		rows = append(rows, model.IndexRow{
+			Name:         fmt.Sprintf("app-logs-2024-01-%02d", i),
+			PriSizeBytes: 50 * oneMiBInt64,
+			TotalShards:  2,
+		})
+	}
+	recs, _, _ := dateRollupRecs(rows)
+	assert.Len(t, recs, 1)
+	assert.Equal(t, model.SeverityWarning, recs[0].Severity)
+	assert.Contains(t, recs[0].Title, "monthly")
+	assert.NotContains(t, recs[0].Title, "weekly")
+}
+
+func TestDateRollupRecs_Daily_LargeSize_SuggestsWeekly(t *testing.T) {
+	// 200 MiB primary/index >= 100 MiB threshold → target should be weekly.
+	var rows []model.IndexRow
+	for i := 1; i <= 7; i++ {
+		rows = append(rows, model.IndexRow{
+			Name:         fmt.Sprintf("app-logs-2024-01-%02d", i),
+			PriSizeBytes: 200 * oneMiBInt64,
+			TotalShards:  2,
+		})
+	}
+	recs, _, _ := dateRollupRecs(rows)
+	assert.Len(t, recs, 1)
+	assert.Equal(t, model.SeverityWarning, recs[0].Severity)
+	assert.Contains(t, recs[0].Title, "weekly")
+	assert.NotContains(t, recs[0].Title, "monthly")
+}
+
+func TestDateRollupRecs_Daily_BelowThreshold(t *testing.T) {
+	// 6 indices < 7 minimum → no recommendation.
+	var rows []model.IndexRow
+	for i := 1; i <= 6; i++ {
+		rows = append(rows, model.IndexRow{
+			Name:         fmt.Sprintf("app-logs-2024-01-%02d", i),
+			PriSizeBytes: 50 * oneMiBInt64,
+			TotalShards:  2,
+		})
+	}
+	recs, savedIdx, savedShards := dateRollupRecs(rows)
+	assert.Empty(t, recs)
+	assert.Equal(t, 0, savedIdx)
+	assert.Equal(t, 0, savedShards)
+}
+
+func TestDateRollupRecs_Weekly_AtThreshold(t *testing.T) {
+	// 4 weekly indices >= 4 minimum → consolidate to monthly.
+	var rows []model.IndexRow
+	for i := 1; i <= 4; i++ {
+		rows = append(rows, model.IndexRow{
+			Name:         fmt.Sprintf("app-logs-2024-W%02d", i),
+			PriSizeBytes: 200 * oneMiBInt64,
+			TotalShards:  2,
+		})
+	}
+	recs, _, _ := dateRollupRecs(rows)
+	assert.Len(t, recs, 1)
+	assert.Equal(t, model.SeverityWarning, recs[0].Severity)
+	assert.Contains(t, recs[0].Title, "monthly")
+}
+
+func TestDateRollupRecs_Monthly_AtThreshold(t *testing.T) {
+	// 12 monthly indices >= 12 minimum → consolidate to yearly.
+	var rows []model.IndexRow
+	for i := 1; i <= 12; i++ {
+		rows = append(rows, model.IndexRow{
+			Name:         fmt.Sprintf("app-logs-2024-%02d", i),
+			PriSizeBytes: 500 * oneMiBInt64,
+			TotalShards:  2,
+		})
+	}
+	recs, _, _ := dateRollupRecs(rows)
+	assert.Len(t, recs, 1)
+	assert.Equal(t, model.SeverityWarning, recs[0].Severity)
+	assert.Contains(t, recs[0].Title, "yearly")
+}
+
+func TestDateRollupRecs_MultipleGroups(t *testing.T) {
+	// app-logs: 7 daily at 50 MiB → monthly; metrics: 7 daily at 200 MiB → weekly.
+	var rows []model.IndexRow
+	for i := 1; i <= 7; i++ {
+		rows = append(rows, model.IndexRow{
+			Name:         fmt.Sprintf("app-logs-2024-01-%02d", i),
+			PriSizeBytes: 50 * oneMiBInt64,
+			TotalShards:  2,
+		})
+	}
+	for i := 1; i <= 7; i++ {
+		rows = append(rows, model.IndexRow{
+			Name:         fmt.Sprintf("metrics-2024-01-%02d", i),
+			PriSizeBytes: 200 * oneMiBInt64,
+			TotalShards:  2,
+		})
+	}
+	recs, _, _ := dateRollupRecs(rows)
+	assert.Len(t, recs, 2)
+	hasMonthly, hasWeekly := false, false
+	for _, rec := range recs {
+		if strings.Contains(rec.Title, "monthly") {
+			hasMonthly = true
+		}
+		if strings.Contains(rec.Title, "weekly") {
+			hasWeekly = true
+		}
+	}
+	assert.True(t, hasMonthly, "expected a monthly consolidation recommendation")
+	assert.True(t, hasWeekly, "expected a weekly consolidation recommendation")
+}
+
+func TestDateRollupRecs_SystemIndicesSkipped(t *testing.T) {
+	// System indices (prefix ".") must never produce recommendations.
+	var rows []model.IndexRow
+	for i := 1; i <= 10; i++ {
+		rows = append(rows, model.IndexRow{
+			Name:         fmt.Sprintf(".system-2024-01-%02d", i),
+			PriSizeBytes: 50 * oneMiBInt64,
+			TotalShards:  2,
+		})
+	}
+	recs, savedIdx, savedShards := dateRollupRecs(rows)
+	assert.Empty(t, recs)
+	assert.Equal(t, 0, savedIdx)
+	assert.Equal(t, 0, savedShards)
+}
+
+func TestDateRollupRecs_DailyNotConfusedWithMonthly(t *testing.T) {
+	// Daily indices (YYYY-MM-DD) must not be double-counted as monthly (YYYY-MM).
+	// The if-else-if priority chain ensures each index is classified exactly once.
+	var rows []model.IndexRow
+	for i := 1; i <= 7; i++ {
+		rows = append(rows, model.IndexRow{
+			Name:         fmt.Sprintf("app-logs-2024-01-%02d", i),
+			PriSizeBytes: 50 * oneMiBInt64,
+			TotalShards:  2,
+		})
+	}
+	recs, _, _ := dateRollupRecs(rows)
+	assert.Len(t, recs, 1, "daily indices must produce exactly one recommendation, not two")
+	assert.Contains(t, recs[0].Title, "daily")
+}
+
+func TestDateRollupRecs_ImpactCounts(t *testing.T) {
+	// 7 daily at 50 MiB, 2 shards each → monthly (periodSize=30).
+	// M = ceil(7/30) = 1; savedIndices = 7-1 = 6.
+	// avgShardDensity = 14/7 = 2; savedShards = 6*2 = 12.
+	var rows []model.IndexRow
+	for i := 1; i <= 7; i++ {
+		rows = append(rows, model.IndexRow{
+			Name:         fmt.Sprintf("app-logs-2024-01-%02d", i),
+			PriSizeBytes: 50 * oneMiBInt64,
+			TotalShards:  2,
+		})
+	}
+	_, savedIdx, savedShards := dateRollupRecs(rows)
+	assert.Equal(t, 6, savedIdx)
+	assert.Equal(t, 12, savedShards)
+}
+
+// ---------------------------------------------------------------------------
+// emptyIndexRecs tests
+// ---------------------------------------------------------------------------
+
+func TestEmptyIndexRecs_BelowThreshold(t *testing.T) {
+	rows := []model.IndexRow{
+		{Name: "empty1", DocCount: 0, TotalSizeBytes: 0},
+		{Name: "empty2", DocCount: 0, TotalSizeBytes: 0},
+	}
+	recs := emptyIndexRecs(rows)
+	assert.Empty(t, recs)
+}
+
+func TestEmptyIndexRecs_AtThreshold(t *testing.T) {
+	rows := []model.IndexRow{
+		{Name: "empty1", DocCount: 0, TotalSizeBytes: 0},
+		{Name: "empty2", DocCount: 0, TotalSizeBytes: 0},
+		{Name: "empty3", DocCount: 0, TotalSizeBytes: 0},
+	}
+	recs := emptyIndexRecs(rows)
+	assert.Len(t, recs, 1)
+	assert.Equal(t, model.SeverityWarning, recs[0].Severity)
+	assert.Equal(t, model.CategoryIndexLifecycle, recs[0].Category)
+}
+
+func TestEmptyIndexRecs_SystemSkipped(t *testing.T) {
+	rows := []model.IndexRow{
+		{Name: ".system1", DocCount: 0, TotalSizeBytes: 0},
+		{Name: ".system2", DocCount: 0, TotalSizeBytes: 0},
+		{Name: ".system3", DocCount: 0, TotalSizeBytes: 0},
+	}
+	recs := emptyIndexRecs(rows)
+	assert.Empty(t, recs)
+}
+
+// ---------------------------------------------------------------------------
+// CalcRecommendations cluster impact summary test
+// ---------------------------------------------------------------------------
+
+func TestCalcRecommendations_ClusterImpactSummary(t *testing.T) {
+	// 7 daily app-logs indices at 50 MiB primary, 2 shards each → monthly rollup.
+	// savedIndices=6, savedShards=12.
+	// activeShards=100, heap=10 GiB → currentRatio=10.0/GB, estimatedRatio=8.8/GB.
+	snap := makeSnap("green", 100, 0)
+	resources := model.ClusterResources{
+		TotalHeapMaxBytes: 10 * oneGiBInt64,
+	}
+	var indexRows []model.IndexRow
+	for i := 1; i <= 7; i++ {
+		indexRows = append(indexRows, model.IndexRow{
+			Name:         fmt.Sprintf("app-logs-2024-01-%02d", i),
+			PriSizeBytes: 50 * oneMiBInt64,
+			TotalShards:  2,
+		})
+	}
+	recs := CalcRecommendations(snap, resources, nil, indexRows)
+	var summary *model.Recommendation
+	for i := range recs {
+		if recs[i].Category == model.CategoryIndexLifecycle && recs[i].Severity == model.SeverityNormal {
+			summary = &recs[i]
+			break
+		}
+	}
+	assert.NotNil(t, summary, "expected a cluster impact summary recommendation")
+	if summary != nil {
+		assert.Contains(t, summary.Title, "impact summary")
+		assert.Contains(t, summary.Detail, "shards")
+	}
 }

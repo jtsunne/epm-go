@@ -131,20 +131,20 @@ System indices (prefix `.`) are skipped.
 **Files:**
 - Modify: `internal/engine/recommendations_test.go`
 
-- [ ] `TestDateRollupRecs_Daily_SmallSize_SuggestsMonthly` — 7 daily indices at 50 MiB primary each; expect Warning containing "monthly" (not "weekly")
-- [ ] `TestDateRollupRecs_Daily_LargeSize_SuggestsWeekly` — 7 daily indices at 200 MiB primary each; expect Warning containing "weekly"
-- [ ] `TestDateRollupRecs_Daily_BelowThreshold` — 6 daily indices, no recommendation
-- [ ] `TestDateRollupRecs_Weekly_AtThreshold` — 4 weekly indices, expect Warning containing "monthly"
-- [ ] `TestDateRollupRecs_Monthly_AtThreshold` — 12 monthly indices, expect Warning containing "yearly"
-- [ ] `TestDateRollupRecs_MultipleGroups` — 7 daily "app-logs" (small) and 7 daily "metrics" (large); expect 2 recs with different targets
-- [ ] `TestDateRollupRecs_SystemIndicesSkipped` — system index names never trigger
-- [ ] `TestDateRollupRecs_DailyNotConfusedWithMonthly` — YYYY.MM.DD indices not double-counted as monthly
-- [ ] `TestDateRollupRecs_ImpactCounts` — verify savedIndices and savedShards return values are correct
-- [ ] `TestEmptyIndexRecs_BelowThreshold` — 2 empty indices, no recommendation
-- [ ] `TestEmptyIndexRecs_AtThreshold` — 3 empty indices, expect Warning
-- [ ] `TestEmptyIndexRecs_SystemSkipped` — only system empty indices, no recommendation
-- [ ] `TestCalcRecommendations_ClusterImpactSummary` — feed CalcRecommendations with rollup-eligible indices and heap data; expect an IndexLifecycle summary recommendation containing shard count and ratio info
-- [ ] Run `make test` — must pass before task 6
+- [x] `TestDateRollupRecs_Daily_SmallSize_SuggestsMonthly` — 7 daily indices at 50 MiB primary each; expect Warning containing "monthly" (not "weekly")
+- [x] `TestDateRollupRecs_Daily_LargeSize_SuggestsWeekly` — 7 daily indices at 200 MiB primary each; expect Warning containing "weekly"
+- [x] `TestDateRollupRecs_Daily_BelowThreshold` — 6 daily indices, no recommendation
+- [x] `TestDateRollupRecs_Weekly_AtThreshold` — 4 weekly indices, expect Warning containing "monthly"
+- [x] `TestDateRollupRecs_Monthly_AtThreshold` — 12 monthly indices, expect Warning containing "yearly"
+- [x] `TestDateRollupRecs_MultipleGroups` — 7 daily "app-logs" (small) and 7 daily "metrics" (large); expect 2 recs with different targets
+- [x] `TestDateRollupRecs_SystemIndicesSkipped` — system index names never trigger
+- [x] `TestDateRollupRecs_DailyNotConfusedWithMonthly` — YYYY.MM.DD indices not double-counted as monthly
+- [x] `TestDateRollupRecs_ImpactCounts` — verify savedIndices and savedShards return values are correct
+- [x] `TestEmptyIndexRecs_BelowThreshold` — 2 empty indices, no recommendation
+- [x] `TestEmptyIndexRecs_AtThreshold` — 3 empty indices, expect Warning
+- [x] `TestEmptyIndexRecs_SystemSkipped` — only system empty indices, no recommendation
+- [x] `TestCalcRecommendations_ClusterImpactSummary` — feed CalcRecommendations with rollup-eligible indices and heap data; expect an IndexLifecycle summary recommendation containing shard count and ratio info
+- [x] Run `make test` — must pass before task 6
 
 ### Task 6: Verify acceptance criteria
 
