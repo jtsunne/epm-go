@@ -154,7 +154,12 @@ func CalcRecommendations(
 			Severity: model.SeverityWarning,
 			Category: model.CategoryIndexConfig,
 			Title:    "Indices without replicas",
-			Detail:   fmt.Sprintf("%d indices have no replicas. A single node failure will cause data loss.", zeroReplicaCount),
+			Detail: func() string {
+			if zeroReplicaCount == 1 {
+				return "1 index has no replicas. A single node failure will cause data loss."
+			}
+			return fmt.Sprintf("%d indices have no replicas. A single node failure will cause data loss.", zeroReplicaCount)
+		}(),
 		})
 	}
 

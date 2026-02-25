@@ -271,6 +271,28 @@ func TestApp_AnalyticsModeScrolling(t *testing.T) {
 	assert.Equal(t, 0, app.analyticsScrollOffset)
 }
 
+// TestApp_AnalyticsModeScrollDownCap verifies that pressing ↓ many times does not
+// grow analyticsScrollOffset without bound.
+func TestApp_AnalyticsModeScrollDownCap(t *testing.T) {
+	app := NewApp(nil, 10*time.Second)
+	app.analyticsMode = true
+	app.recommendations = []model.Recommendation{
+		{Severity: model.SeverityWarning, Category: model.CategoryShardHealth, Title: "Item A"},
+		{Severity: model.SeverityWarning, Category: model.CategoryShardHealth, Title: "Item B"},
+	}
+
+	// Press ↓ far more times than there are content lines.
+	for i := 0; i < 500; i++ {
+		newModel, _ := app.Update(tea.KeyMsg{Type: tea.KeyDown})
+		app = newModel.(*App)
+	}
+
+	// Cap is len(recs)*6+20 = 2*6+20 = 32; stored offset must not exceed it.
+	expectedCap := len(app.recommendations)*6 + 20
+	assert.LessOrEqual(t, app.analyticsScrollOffset, expectedCap,
+		"scroll offset must be bounded; got %d, cap %d", app.analyticsScrollOffset, expectedCap)
+}
+
 // TestApp_AnalyticsModeViewContainsTitle verifies View() renders analytics title bar.
 func TestApp_AnalyticsModeViewContainsTitle(t *testing.T) {
 	app := NewApp(nil, 10*time.Second)

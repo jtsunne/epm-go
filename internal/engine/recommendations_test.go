@@ -181,7 +181,7 @@ func TestCalcRecommendations_ZeroReplicaIndices(t *testing.T) {
 	assert.True(t, hasRec(recs, model.SeverityWarning, "without replicas"))
 	for _, r := range recs {
 		if strings.Contains(r.Title, "without replicas") {
-			assert.Contains(t, r.Detail, "1 indices") // only myindex, not .system
+			assert.Contains(t, r.Detail, "1 index has") // singular: only myindex, not .system
 		}
 	}
 }
