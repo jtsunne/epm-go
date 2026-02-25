@@ -208,12 +208,33 @@ func TestRenderAnalytics_ScrollOffsetClampsToMax(t *testing.T) {
 		{Severity: model.SeverityWarning, Category: model.CategoryShardHealth, Title: "Item A"},
 	}
 
-	// Should not panic, should clamp gracefully, and the recommendation must be visible.
+	// View-side clamping: renderAnalytics must never panic and must show content
+	// despite the out-of-range stored offset (clamped locally for display only).
 	result := renderAnalytics(app)
 	assert.NotEmpty(t, result)
 	stripped := stripANSI(result)
-	assert.Contains(t, stripped, "Item A", "clamped offset should still show recommendation content")
-	assert.LessOrEqual(t, app.analyticsScrollOffset, 9999, "offset must be clamped, not grown")
+	assert.Contains(t, stripped, "Item A", "view-side clamping should still show recommendation content")
+}
+
+// TestApp_WindowResizeClampsScrollOffset verifies that a terminal resize event
+// (WindowSizeMsg) clamps analyticsScrollOffset to the new content maximum so
+// subsequent CursorUp presses respond immediately without working off stale debt.
+func TestApp_WindowResizeClampsScrollOffset(t *testing.T) {
+	app := makeAnalyticsApp()
+	app.analyticsMode = true
+	app.recommendations = []model.Recommendation{
+		{Severity: model.SeverityWarning, Category: model.CategoryShardHealth, Title: "Item A"},
+	}
+	// Set an offset far beyond what a small terminal allows.
+	app.analyticsScrollOffset = 9999
+
+	// Simulate a terminal resize.
+	newModel, _ := app.Update(tea.WindowSizeMsg{Width: 100, Height: 30})
+	app = newModel.(*App)
+
+	max := analyticsMaxOffset(app)
+	assert.LessOrEqual(t, app.analyticsScrollOffset, max,
+		"resize must clamp stored offset to the real content maximum")
 }
 
 // TestApp_AnalyticsModeToggle verifies that pressing 'a' enters and exits analytics mode.

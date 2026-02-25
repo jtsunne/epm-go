@@ -536,8 +536,8 @@ func TestDateRollupRecs_ImpactCounts(t *testing.T) {
 
 func TestEmptyIndexRecs_BelowThreshold(t *testing.T) {
 	rows := []model.IndexRow{
-		{Name: "empty1", DocCount: 0, TotalSizeBytes: 0},
-		{Name: "empty2", DocCount: 0, TotalSizeBytes: 0},
+		{Name: "empty1", DocCount: 0, TotalSizeBytes: 0, DocCountKnown: true},
+		{Name: "empty2", DocCount: 0, TotalSizeBytes: 0, DocCountKnown: true},
 	}
 	recs := emptyIndexRecs(rows)
 	assert.Empty(t, recs)
@@ -545,9 +545,9 @@ func TestEmptyIndexRecs_BelowThreshold(t *testing.T) {
 
 func TestEmptyIndexRecs_AtThreshold(t *testing.T) {
 	rows := []model.IndexRow{
-		{Name: "empty1", DocCount: 0, TotalSizeBytes: 0},
-		{Name: "empty2", DocCount: 0, TotalSizeBytes: 0},
-		{Name: "empty3", DocCount: 0, TotalSizeBytes: 0},
+		{Name: "empty1", DocCount: 0, TotalSizeBytes: 0, DocCountKnown: true},
+		{Name: "empty2", DocCount: 0, TotalSizeBytes: 0, DocCountKnown: true},
+		{Name: "empty3", DocCount: 0, TotalSizeBytes: 0, DocCountKnown: true},
 	}
 	recs := emptyIndexRecs(rows)
 	assert.Len(t, recs, 1)
@@ -557,12 +557,26 @@ func TestEmptyIndexRecs_AtThreshold(t *testing.T) {
 
 func TestEmptyIndexRecs_SystemSkipped(t *testing.T) {
 	rows := []model.IndexRow{
-		{Name: ".system1", DocCount: 0, TotalSizeBytes: 0},
-		{Name: ".system2", DocCount: 0, TotalSizeBytes: 0},
-		{Name: ".system3", DocCount: 0, TotalSizeBytes: 0},
+		{Name: ".system1", DocCount: 0, TotalSizeBytes: 0, DocCountKnown: true},
+		{Name: ".system2", DocCount: 0, TotalSizeBytes: 0, DocCountKnown: true},
+		{Name: ".system3", DocCount: 0, TotalSizeBytes: 0, DocCountKnown: true},
 	}
 	recs := emptyIndexRecs(rows)
 	assert.Empty(t, recs)
+}
+
+// TestEmptyIndexRecs_SkipsUnknownDocCount verifies that closed or unavailable
+// indices (where ES returns "-" for docs.count, parsed as DocCountKnown=false)
+// are not misclassified as empty deletion candidates.
+func TestEmptyIndexRecs_SkipsUnknownDocCount(t *testing.T) {
+	rows := []model.IndexRow{
+		// DocCountKnown=false simulates a closed index where ES returned "-".
+		{Name: "closed1", DocCount: 0, TotalSizeBytes: 0, DocCountKnown: false},
+		{Name: "closed2", DocCount: 0, TotalSizeBytes: 0, DocCountKnown: false},
+		{Name: "closed3", DocCount: 0, TotalSizeBytes: 0, DocCountKnown: false},
+	}
+	recs := emptyIndexRecs(rows)
+	assert.Empty(t, recs, "closed/unavailable indices must not be flagged as deletion candidates")
 }
 
 // ---------------------------------------------------------------------------

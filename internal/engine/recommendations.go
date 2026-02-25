@@ -403,7 +403,7 @@ func emptyIndexRecs(indexRows []model.IndexRow) []model.Recommendation {
 		if strings.HasPrefix(idx.Name, ".") {
 			continue
 		}
-		if idx.DocCount == 0 && idx.TotalSizeBytes == 0 {
+		if idx.DocCountKnown && idx.DocCount == 0 && idx.TotalSizeBytes == 0 {
 			names = append(names, idx.Name)
 		}
 	}

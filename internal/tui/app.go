@@ -92,6 +92,11 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		app.width = msg.Width
 		app.height = msg.Height
 		app.computeTablePageSizes()
+		if app.analyticsScrollOffset > 0 {
+			if max := analyticsMaxOffset(app); app.analyticsScrollOffset > max {
+				app.analyticsScrollOffset = max
+			}
+		}
 
 	case SnapshotMsg:
 		app.fetching = false
@@ -116,6 +121,11 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				IndexLatency:  msg.Metrics.IndexLatency,
 				SearchLatency: msg.Metrics.SearchLatency,
 			})
+		}
+		if app.analyticsScrollOffset > 0 {
+			if max := analyticsMaxOffset(app); app.analyticsScrollOffset > max {
+				app.analyticsScrollOffset = max
+			}
 		}
 		app.consecutiveFails = 0
 		app.lastError = nil

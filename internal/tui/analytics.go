@@ -107,9 +107,9 @@ func buildAnalyticsLines(recs []model.Recommendation, width int) []string {
 			lines = append(lines, "  "+catHeader)
 			for _, r := range catRecs {
 				badge := severityBadge(r.Severity)
-				lines = append(lines, fmt.Sprintf("  %s %s", badge, r.Title))
+				lines = append(lines, fmt.Sprintf("  %s %s", badge, sanitize(r.Title)))
 				if r.Detail != "" {
-					wrapped := wrapText(r.Detail, width-6)
+					wrapped := wrapText(sanitize(r.Detail), width-6)
 					for _, dline := range strings.Split(wrapped, "\n") {
 						lines = append(lines, "    "+dline)
 					}
