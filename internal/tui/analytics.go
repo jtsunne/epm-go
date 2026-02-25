@@ -73,52 +73,16 @@ func wrapText(text string, maxWidth int) string {
 	return strings.Join(lines, "\n")
 }
 
-// renderAnalytics renders the analytics title bar followed by the scrollable
-// recommendations list. The caller (View) renders the cluster header above and
-// footer below; renderAnalytics accounts for those heights when computing the
-// available content height so the full layout exactly fills the terminal.
-func renderAnalytics(app *App) string {
-	width := app.width
-	if width <= 0 {
-		width = 80
-	}
-	height := app.height
-	if height <= 0 {
-		height = 24
-	}
-
-	// Title bar: left title + right hint, styled like the cluster header.
-	const titleText = "Analytics — Cluster Recommendations"
-	hintText := StyleDim.Render("[a/esc: back]")
-	hintVW := lipgloss.Width(hintText)
-	titleVW := lipgloss.Width(titleText)
-	innerWidth := width - 2 // StyleHeader has Padding(0,1) -> 1 char per side
-	gap := innerWidth - titleVW - hintVW
-	if gap < 1 {
-		gap = 1
-	}
-	titleRow := titleText + strings.Repeat(" ", gap) + hintText
-	titleBar := StyleHeader.Width(width).MaxWidth(width).Render(titleRow)
-	titleH := lipgloss.Height(titleBar)
-
-	// Available lines for scrollable content: total height minus the sections
-	// rendered outside this function (cluster header, analytics title, footer).
-	headerH := renderedHeight(renderHeader(app))
-	footerH := renderedHeight(renderFooter(app))
-	availH := height - headerH - titleH - footerH
-	if availH < 1 {
-		availH = 1
-	}
-
-	// Build the full list of content lines.
+// buildAnalyticsLines returns the full list of rendered content lines for the
+// analytics view. Extracted so the same logic can be used both during rendering
+// and when computing the maximum scroll offset in Update().
+func buildAnalyticsLines(recs []model.Recommendation, width int) []string {
 	var lines []string
-	recs := app.recommendations
 	if len(recs) == 0 {
 		lines = append(lines, "")
 		lines = append(lines, "  "+StyleGreen.Bold(true).Render("No issues found — cluster looks healthy"))
 		lines = append(lines, "")
 	} else {
-		// Render categories in a fixed display order.
 		categories := []model.RecommendationCategory{
 			model.CategoryResourcePressure,
 			model.CategoryShardHealth,
@@ -150,6 +114,90 @@ func renderAnalytics(app *App) string {
 			}
 		}
 	}
+	return lines
+}
+
+// renderAnalyticsTitle renders the title bar for the analytics screen and
+// returns the styled string. Extracted so that both renderAnalytics and
+// analyticsMaxOffset measure the same rendered height instead of assuming a
+// constant of 1 line (which breaks on narrow terminals where the title wraps).
+func renderAnalyticsTitle(width int) string {
+	const titleText = "Analytics — Cluster Recommendations"
+	hintText := StyleDim.Render("[a/esc: back]")
+	hintVW := lipgloss.Width(hintText)
+	titleVW := lipgloss.Width(titleText)
+	innerWidth := width - 2 // StyleHeader has Padding(0,1) -> 1 char per side
+	gap := innerWidth - titleVW - hintVW
+	if gap < 1 {
+		gap = 1
+	}
+	titleRow := titleText + strings.Repeat(" ", gap) + hintText
+	return StyleHeader.Width(width).MaxWidth(width).Render(titleRow)
+}
+
+// analyticsMaxOffset returns the maximum valid analyticsScrollOffset for the
+// current app state. Called from Update() to clamp the stored offset after a
+// CursorDown key event, preventing overscroll debt where the stored offset
+// exceeds the real content bound and subsequent CursorUp presses appear
+// non-responsive because the display stays clamped until the debt is paid down.
+func analyticsMaxOffset(app *App) int {
+	width := app.width
+	if width <= 0 {
+		width = 80
+	}
+	height := app.height
+	if height <= 0 {
+		height = 24
+	}
+	headerH := renderedHeight(renderHeader(app))
+	titleH := renderedHeight(renderAnalyticsTitle(width))
+	footerH := renderedHeight(renderFooter(app))
+	availH := height - headerH - titleH - footerH
+	if availH < 1 {
+		availH = 1
+	}
+	lines := buildAnalyticsLines(app.recommendations, width)
+	overflows := len(lines) > availH
+	contentH := availH
+	if overflows && contentH > 1 {
+		contentH--
+	}
+	max := len(lines) - contentH
+	if max < 0 {
+		max = 0
+	}
+	return max
+}
+
+// renderAnalytics renders the analytics title bar followed by the scrollable
+// recommendations list. The caller (View) renders the cluster header above and
+// footer below; renderAnalytics accounts for those heights when computing the
+// available content height so the full layout exactly fills the terminal.
+func renderAnalytics(app *App) string {
+	width := app.width
+	if width <= 0 {
+		width = 80
+	}
+	height := app.height
+	if height <= 0 {
+		height = 24
+	}
+
+	// Title bar: left title + right hint, styled like the cluster header.
+	titleBar := renderAnalyticsTitle(width)
+	titleH := lipgloss.Height(titleBar)
+
+	// Available lines for scrollable content: total height minus the sections
+	// rendered outside this function (cluster header, analytics title, footer).
+	headerH := renderedHeight(renderHeader(app))
+	footerH := renderedHeight(renderFooter(app))
+	availH := height - headerH - titleH - footerH
+	if availH < 1 {
+		availH = 1
+	}
+
+	// Build the full list of content lines.
+	lines := buildAnalyticsLines(app.recommendations, width)
 
 	// When content overflows, reserve the last line for a scroll hint.
 	overflows := len(lines) > availH

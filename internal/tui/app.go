@@ -177,12 +177,8 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			case key.Matches(msg, keys.CursorDown):
 				app.analyticsScrollOffset++
-				// Prevent unbounded growth: conservative upper bound so that the
-				// stored offset never drifts far above the real max (which is
-				// computed precisely in renderAnalytics). 6 lines/rec + 20 covers
-				// all category headers and wrapped detail lines with room to spare.
-				if cap := len(app.recommendations)*6 + 20; app.analyticsScrollOffset > cap {
-					app.analyticsScrollOffset = cap
+				if max := analyticsMaxOffset(app); app.analyticsScrollOffset > max {
+					app.analyticsScrollOffset = max
 				}
 			}
 			return app, nil

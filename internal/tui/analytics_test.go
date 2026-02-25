@@ -255,7 +255,25 @@ func TestApp_EscExitsAnalyticsMode(t *testing.T) {
 // TestApp_AnalyticsModeScrolling verifies ↑↓ scrolling while in analytics mode.
 func TestApp_AnalyticsModeScrolling(t *testing.T) {
 	app := NewApp(nil, 10*time.Second)
+	app.width = 80
+	app.height = 12 // small enough to force overflow with the recommendations below
 	app.analyticsMode = true
+	// 4 categories × 3 items = 20 content lines; with height=12 maxOffset ≈ 12,
+	// so starting at offset 5 and scrolling down to 6 is within valid range.
+	app.recommendations = []model.Recommendation{
+		{Severity: model.SeverityWarning, Category: model.CategoryResourcePressure, Title: "CPU high A"},
+		{Severity: model.SeverityWarning, Category: model.CategoryResourcePressure, Title: "CPU high B"},
+		{Severity: model.SeverityWarning, Category: model.CategoryResourcePressure, Title: "CPU high C"},
+		{Severity: model.SeverityWarning, Category: model.CategoryShardHealth, Title: "Shard A"},
+		{Severity: model.SeverityWarning, Category: model.CategoryShardHealth, Title: "Shard B"},
+		{Severity: model.SeverityWarning, Category: model.CategoryShardHealth, Title: "Shard C"},
+		{Severity: model.SeverityWarning, Category: model.CategoryIndexConfig, Title: "Index A"},
+		{Severity: model.SeverityWarning, Category: model.CategoryIndexConfig, Title: "Index B"},
+		{Severity: model.SeverityWarning, Category: model.CategoryIndexConfig, Title: "Index C"},
+		{Severity: model.SeverityWarning, Category: model.CategoryHotspot, Title: "Hot A"},
+		{Severity: model.SeverityWarning, Category: model.CategoryHotspot, Title: "Hot B"},
+		{Severity: model.SeverityWarning, Category: model.CategoryHotspot, Title: "Hot C"},
+	}
 	app.analyticsScrollOffset = 5
 
 	// Scroll down.
@@ -275,10 +293,14 @@ func TestApp_AnalyticsModeScrolling(t *testing.T) {
 	assert.Equal(t, 0, app.analyticsScrollOffset)
 }
 
-// TestApp_AnalyticsModeScrollDownCap verifies that pressing ↓ many times does not
-// grow analyticsScrollOffset without bound.
+// TestApp_AnalyticsModeScrollDownCap verifies that pressing ↓ many times clamps
+// analyticsScrollOffset to the real content maximum. Without clamping, the stored
+// offset can accumulate overscroll debt: pressing ↑ would decrement the stored
+// value but the display would remain frozen at the bottom until the debt is paid.
 func TestApp_AnalyticsModeScrollDownCap(t *testing.T) {
 	app := NewApp(nil, 10*time.Second)
+	app.width = 100
+	app.height = 30
 	app.analyticsMode = true
 	app.recommendations = []model.Recommendation{
 		{Severity: model.SeverityWarning, Category: model.CategoryShardHealth, Title: "Item A"},
@@ -286,15 +308,17 @@ func TestApp_AnalyticsModeScrollDownCap(t *testing.T) {
 	}
 
 	// Press ↓ far more times than there are content lines.
-	for i := 0; i < 500; i++ {
+	const presses = 500
+	for i := 0; i < presses; i++ {
 		newModel, _ := app.Update(tea.KeyMsg{Type: tea.KeyDown})
 		app = newModel.(*App)
 	}
 
-	// Cap is len(recs)*6+20 = 2*6+20 = 32; stored offset must not exceed it.
-	expectedCap := len(app.recommendations)*6 + 20
-	assert.LessOrEqual(t, app.analyticsScrollOffset, expectedCap,
-		"scroll offset must be bounded; got %d, cap %d", app.analyticsScrollOffset, expectedCap)
+	// Stored offset must be clamped to the real content maximum, not the raw
+	// press count. With only 2 items the content fits within the terminal
+	// (width=100, height=30), so the maximum scroll offset is 0.
+	assert.Equal(t, 0, app.analyticsScrollOffset,
+		"stored offset should be clamped to the real content max, not the press count")
 }
 
 // TestApp_AnalyticsModeViewContainsTitle verifies View() renders analytics title bar.
