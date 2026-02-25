@@ -41,6 +41,12 @@ func CalcNodeRows(prev, curr *model.Snapshot, elapsed time.Duration) []model.Nod
 			row.IP = info.IP
 		}
 
+		// Populate heap bytes from JVM stats (zero when JVM data is absent).
+		if node.JVM != nil {
+			row.HeapMaxBytes = node.JVM.Mem.HeapMaxInBytes
+			row.HeapUsedBytes = node.JVM.Mem.HeapUsedInBytes
+		}
+
 		if enoughTime {
 			prevNode, hasPrev := prev.NodeStats.Nodes[nodeID]
 			if hasPrev && node.Indices != nil && prevNode.Indices != nil {
@@ -229,6 +235,7 @@ func CalcClusterResources(snap *model.Snapshot) model.ClusterResources {
 	var jvmCount int
 	var storageTotalBytes int64
 	var storageUsedBytes int64
+	var totalHeapMaxBytes int64
 
 	for _, node := range snap.NodeStats.Nodes {
 		// CPU: use os.cpu.percent, skip zeros.
@@ -248,6 +255,7 @@ func CalcClusterResources(snap *model.Snapshot) model.ClusterResources {
 				heapPercent := float64(heapUsed) / float64(heapMax) * 100
 				jvmSum += heapPercent
 				jvmCount++
+				totalHeapMaxBytes += heapMax
 			}
 		}
 
@@ -272,6 +280,7 @@ func CalcClusterResources(snap *model.Snapshot) model.ClusterResources {
 		StorageUsedBytes:  storageUsedBytes,
 		StorageTotalBytes: storageTotalBytes,
 		StoragePercent:    storagePercent,
+		TotalHeapMaxBytes: totalHeapMaxBytes,
 	}
 }
 

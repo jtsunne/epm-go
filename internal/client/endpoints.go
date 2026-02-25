@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	endpointClusterHealth = "/_cluster/health?filter_path=cluster_name,status,number_of_nodes,active_shards"
+	endpointClusterHealth = "/_cluster/health?filter_path=cluster_name,status,number_of_nodes,active_shards,unassigned_shards,number_of_pending_tasks"
 	endpointNodes         = "/_cat/nodes?v&format=json&h=node.role,name,ip&s=node.role,ip"
 	endpointNodeStats     = "/_nodes/stats/indices,os,jvm,fs?filter_path=nodes.*.name,nodes.*.host,nodes.*.ip,nodes.*.roles,nodes.*.indices.indexing.index_total,nodes.*.indices.indexing.index_time_in_millis,nodes.*.indices.search.query_total,nodes.*.indices.search.query_time_in_millis,nodes.*.os.cpu.percent,nodes.*.jvm.mem.heap_used_in_bytes,nodes.*.jvm.mem.heap_max_in_bytes,nodes.*.fs.total.total_in_bytes,nodes.*.fs.total.available_in_bytes"
 	endpointIndices       = "/_cat/indices?v&format=json&h=index,pri,rep,pri.store.size,store.size,docs.count&s=index"

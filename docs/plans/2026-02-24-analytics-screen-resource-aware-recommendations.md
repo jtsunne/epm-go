@@ -42,16 +42,16 @@ Add a full-screen Analytics view (key `a`) that displays actionable recommendati
 - Modify: `internal/engine/calculator_test.go`
 - Modify: `internal/client/client_test.go`
 
-- [ ] Add `unassigned_shards,number_of_pending_tasks` to `endpointClusterHealth` filter_path in `endpoints.go`
-- [ ] Add `UnassignedShards int` and `NumberOfPendingTasks int` to `ClusterHealth` struct in `types.go`
-- [ ] Add `TotalHeapMaxBytes int64` to `ClusterResources` in `model/metrics.go`
-- [ ] Add `HeapMaxBytes int64` and `HeapUsedBytes int64` to `NodeRow` in `model/metrics.go`
-- [ ] In `CalcClusterResources`: sum `node.JVM.Mem.HeapMaxInBytes` across all nodes into `TotalHeapMaxBytes`
-- [ ] In `CalcNodeRows`: populate `row.HeapMaxBytes` and `row.HeapUsedBytes` from `node.JVM.Mem` (zero when JVM is nil)
-- [ ] Update health fixture JSON in `client_test.go` to include `unassigned_shards` and `number_of_pending_tasks`
-- [ ] Update `CalcClusterResources` tests in `calculator_test.go` to assert `TotalHeapMaxBytes`
-- [ ] Update `CalcNodeRows` tests to assert `HeapMaxBytes` and `HeapUsedBytes`
-- [ ] Run `make test` — must pass before task 2
+- [x] Add `unassigned_shards,number_of_pending_tasks` to `endpointClusterHealth` filter_path in `endpoints.go`
+- [x] Add `UnassignedShards int` and `NumberOfPendingTasks int` to `ClusterHealth` struct in `types.go`
+- [x] Add `TotalHeapMaxBytes int64` to `ClusterResources` in `model/metrics.go`
+- [x] Add `HeapMaxBytes int64` and `HeapUsedBytes int64` to `NodeRow` in `model/metrics.go`
+- [x] In `CalcClusterResources`: sum `node.JVM.Mem.HeapMaxInBytes` across all nodes into `TotalHeapMaxBytes`
+- [x] In `CalcNodeRows`: populate `row.HeapMaxBytes` and `row.HeapUsedBytes` from `node.JVM.Mem` (zero when JVM is nil)
+- [x] Update health fixture JSON in `client_test.go` to include `unassigned_shards` and `number_of_pending_tasks`
+- [x] Update `CalcClusterResources` tests in `calculator_test.go` to assert `TotalHeapMaxBytes`
+- [x] Update `CalcNodeRows` tests to assert `HeapMaxBytes` and `HeapUsedBytes`
+- [x] Run `make test` — must pass before task 2
 
 ### Task 2: Add Recommendation model type
 
