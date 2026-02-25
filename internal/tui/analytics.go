@@ -152,8 +152,7 @@ func renderAnalytics(app *App) string {
 		contentH--
 	}
 
-	// Clamp scroll offset to valid range and write back so up-scrolling is
-	// immediately responsive regardless of how far down the user scrolled.
+	// Clamp scroll offset to valid range (read-only; model state is not mutated in View).
 	maxOffset := len(lines) - contentH
 	if maxOffset < 0 {
 		maxOffset = 0
@@ -162,7 +161,6 @@ func renderAnalytics(app *App) string {
 	if offset > maxOffset {
 		offset = maxOffset
 	}
-	app.analyticsScrollOffset = offset
 
 	// Slice visible content lines.
 	end := offset + contentH
