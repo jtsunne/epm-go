@@ -73,21 +73,21 @@ Implement `CalcRecommendations(snap *model.Snapshot, metrics model.PerformanceMe
 
 Resource-aware rules — dynamic thresholds derived from `resources.TotalHeapMaxBytes`:
 
-- [ ] **Shard-to-heap ratio**: `ratio = activeShards / (TotalHeapMaxBytes / 1GiB)`; warning if > 20/GB, critical if > 40/GB. Detail: "Cluster has X shards across Y GB heap (Z/GB). Ideal max: [20*Y] shards. Remove unused indices or reduce primary shard count."
-- [ ] **Average shard size (oversized)**: `avgGB = sum(indexRow.TotalSizeBytes) / sum(indexRow.TotalShards) / 1GiB`; warning if avg > 50GB. Detail: "Average shard size X GB exceeds 50 GB. Large shards slow recovery and rebalancing. Split high-volume indices."
-- [ ] **Over-sharding (undersized)**: warning if avg < 1GB and total shard count > 10 per data node. Detail: "Average shard size X MB is very small across Z shards. Over-sharding wastes heap. Merge small indices or increase ILM rollover size."
-- [ ] **Data-to-heap ratio**: `ratio = sum(indexRow.TotalSizeBytes) / TotalHeapMaxBytes`; warning if > 30. Detail: "Index data (X GB) is Y× total heap (Z GB). Elastic recommends ≤30× for search workloads. Add data nodes or reduce index retention."
-- [ ] **CPU pressure**: warning if AvgCPUPercent > 80%, critical if > 90%. Detail: "Average cluster CPU at X%. Critical load risks query timeouts. Add data nodes or reduce indexing throughput."
-- [ ] **JVM heap pressure (with absolute values)**: warning if AvgJVMHeapPercent > 75%, critical if > 85%. Detail includes TotalHeapMaxBytes: "Average JVM heap at X% (Y GB total heap). At critical levels GC pauses impact latency. Increase node heap (max 32 GB) or add nodes."
-- [ ] **Storage pressure**: warning if StoragePercent > 80%, critical if > 90%
-- [ ] **Unassigned shards**: critical if UnassignedShards > 0. Detail: "X unassigned shards detected. Check node availability and disk space."
-- [ ] **Cluster status**: critical if status == "red", warning if "yellow"
-- [ ] **Single data node SPOF**: warning if data node count == 1. Detail: "Only 1 data node — no replica can be assigned. Add a second data node for high availability."
-- [ ] **Zero-replica indices** (non-system): warning if any `IndexRow.TotalShards == IndexRow.PrimaryShards`. Detail: "X indices have no replicas. A single node failure will cause data loss."
-- [ ] **Per-node heap hotspot**: warning if `max(HeapUsedBytes/HeapMaxBytes) - min(HeapUsedBytes/HeapMaxBytes) > 0.30` across nodes. Detail: "Uneven heap utilization across nodes (high: X%, low: Y%). Rebalance shards with `_cluster/reroute` or enable `cluster.routing.rebalance.enable`."
-- [ ] Return empty slice (not nil) when `snap == nil` or data is unavailable
-- [ ] Write table-driven tests covering: small-RAM scenario (4GB heap, 200 shards triggers critical), large-RAM scenario (64GB heap, 200 shards is fine), avg shard size checks, data-to-heap ratio, hotspot detection, zero-replica check
-- [ ] Run `make test` — must pass before task 4
+- [x] **Shard-to-heap ratio**: `ratio = activeShards / (TotalHeapMaxBytes / 1GiB)`; warning if > 20/GB, critical if > 40/GB. Detail: "Cluster has X shards across Y GB heap (Z/GB). Ideal max: [20*Y] shards. Remove unused indices or reduce primary shard count."
+- [x] **Average shard size (oversized)**: `avgGB = sum(indexRow.TotalSizeBytes) / sum(indexRow.TotalShards) / 1GiB`; warning if avg > 50GB. Detail: "Average shard size X GB exceeds 50 GB. Large shards slow recovery and rebalancing. Split high-volume indices."
+- [x] **Over-sharding (undersized)**: warning if avg < 1GB and total shard count > 10 per data node. Detail: "Average shard size X MB is very small across Z shards. Over-sharding wastes heap. Merge small indices or increase ILM rollover size."
+- [x] **Data-to-heap ratio**: `ratio = sum(indexRow.TotalSizeBytes) / TotalHeapMaxBytes`; warning if > 30. Detail: "Index data (X GB) is Y× total heap (Z GB). Elastic recommends ≤30× for search workloads. Add data nodes or reduce index retention."
+- [x] **CPU pressure**: warning if AvgCPUPercent > 80%, critical if > 90%. Detail: "Average cluster CPU at X%. Critical load risks query timeouts. Add data nodes or reduce indexing throughput."
+- [x] **JVM heap pressure (with absolute values)**: warning if AvgJVMHeapPercent > 75%, critical if > 85%. Detail includes TotalHeapMaxBytes: "Average JVM heap at X% (Y GB total heap). At critical levels GC pauses impact latency. Increase node heap (max 32 GB) or add nodes."
+- [x] **Storage pressure**: warning if StoragePercent > 80%, critical if > 90%
+- [x] **Unassigned shards**: critical if UnassignedShards > 0. Detail: "X unassigned shards detected. Check node availability and disk space."
+- [x] **Cluster status**: critical if status == "red", warning if "yellow"
+- [x] **Single data node SPOF**: warning if data node count == 1. Detail: "Only 1 data node — no replica can be assigned. Add a second data node for high availability."
+- [x] **Zero-replica indices** (non-system): warning if any `IndexRow.TotalShards == IndexRow.PrimaryShards`. Detail: "X indices have no replicas. A single node failure will cause data loss."
+- [x] **Per-node heap hotspot**: warning if `max(HeapUsedBytes/HeapMaxBytes) - min(HeapUsedBytes/HeapMaxBytes) > 0.30` across nodes. Detail: "Uneven heap utilization across nodes (high: X%, low: Y%). Rebalance shards with `_cluster/reroute` or enable `cluster.routing.rebalance.enable`."
+- [x] Return empty slice (not nil) when `snap == nil` or data is unavailable
+- [x] Write table-driven tests covering: small-RAM scenario (4GB heap, 200 shards triggers critical), large-RAM scenario (64GB heap, 200 shards is fine), avg shard size checks, data-to-heap ratio, hotspot detection, zero-replica check
+- [x] Run `make test` — must pass before task 4
 
 ### Task 4: Wire recommendations into app state and SnapshotMsg
 
