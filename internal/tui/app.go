@@ -68,6 +68,14 @@ type App struct {
 	deleteStatus       string
 	deleteStatusErr    bool // true when deleteStatus represents an error
 	pendingRefresh     bool // true when delete succeeded but a stale fetch was in-flight
+
+	// Settings state
+	settingsMode             bool
+	settingsForm             SettingsFormModel
+	settingsStatus           string
+	settingsStatusErr        bool // true when settingsStatus represents an error
+	settingsPendingRefresh   bool // true when settings update succeeded but a stale fetch was in-flight
+	settingsNonce            int  // incremented each time a settings session opens; stale responses are dropped
 }
 
 // NewApp creates a new App with the given ES client and poll interval.
@@ -124,6 +132,42 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			app.pendingRefresh = true
 		}
 
+	case SettingsLoadedMsg:
+		if !app.settingsMode {
+			break // settings form was closed before response arrived — discard
+		}
+		if msg.Nonce != app.settingsNonce {
+			break // stale response from a prior session — discard
+		}
+		if msg.Err != nil {
+			app.settingsForm.loadErr = sanitize(msg.Err.Error())
+			app.settingsForm.loading = false
+		} else {
+			app.settingsForm.applySettings(msg.Values)
+		}
+
+	case SettingsResultMsg:
+		if msg.Nonce != app.settingsNonce {
+			break // stale response from a prior session — discard
+		}
+		app.settingsMode = false
+		if msg.Err != nil {
+			app.settingsStatus = fmt.Sprintf("Settings update failed: %s", sanitize(msg.Err.Error()))
+			app.settingsStatusErr = true
+		} else {
+			app.settingsStatus = fmt.Sprintf("Settings updated for %d index(es)", len(msg.Names))
+			app.settingsStatusErr = false
+			// Trigger an immediate refresh so the index table reflects the new settings.
+			if !app.fetching {
+				app.fetching = true
+				app.tickGen++
+				return app, fetchCmd(app.client, app.current, app.pollInterval)
+			}
+			// A stale fetch is already in-flight; refresh after it lands so the
+			// status message is not cleared before the user sees it.
+			app.settingsPendingRefresh = true
+		}
+
 	case SnapshotMsg:
 		app.fetching = false
 		// Clear delete status only when this is the post-delete (or normal) refresh.
@@ -132,6 +176,13 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if !app.pendingRefresh {
 			app.deleteStatus = ""
 			app.deleteStatusErr = false
+		}
+		// Clear settings status only when this is the post-settings (or normal) refresh.
+		// If settingsPendingRefresh is set, the SnapshotMsg arrived from the stale
+		// in-flight fetch that started before the settings update; keep the status.
+		if !app.settingsPendingRefresh {
+			app.settingsStatus = ""
+			app.settingsStatusErr = false
 		}
 		app.previous = app.current
 		app.current = msg.Snapshot
@@ -167,11 +218,12 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		app.nextRetryAt = time.Time{}
 		app.countdownGen++ // invalidate any pending countdown tick
 		app.tickGen++
-		if app.pendingRefresh {
-			// A delete completed while a stale fetch was in-flight. Immediately
-			// issue a fresh fetch now that the stale one has landed, so the index
-			// list reflects the deletion without waiting for the next poll tick.
+		if app.pendingRefresh || app.settingsPendingRefresh {
+			// A delete or settings update completed while a stale fetch was in-flight.
+			// Issue a fresh fetch now that the stale one has landed so the index list
+			// reflects the change without waiting for the next poll tick.
 			app.pendingRefresh = false
+			app.settingsPendingRefresh = false
 			app.fetching = true
 			return app, fetchCmd(app.client, app.current, app.pollInterval)
 		}
@@ -180,8 +232,11 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case FetchErrorMsg:
 		app.fetching = false
 		app.pendingRefresh = false
+		app.settingsPendingRefresh = false
 		app.deleteStatus = ""
 		app.deleteStatusErr = false
+		app.settingsStatus = ""
+		app.settingsStatusErr = false
 		app.consecutiveFails++
 		app.lastError = msg.Err
 		app.connState = stateDisconnected
@@ -235,6 +290,27 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return app, nil
 		}
 
+		// In settings mode, route all keys through the form; check state flags for submit/cancel.
+		if app.settingsMode {
+			var formCmd tea.Cmd
+			app.settingsForm, formCmd = app.settingsForm.Update(msg)
+			if app.settingsForm.submitted {
+				app.settingsForm.submitted = false
+				changed := app.settingsForm.changedSettings()
+				app.settingsMode = false // exit immediately to prevent double-submit
+				if len(changed) > 0 {
+					return app, settingsUpdateCmd(app.client, app.settingsForm.names, changed, app.settingsNonce)
+				}
+				return app, nil
+			}
+			if app.settingsForm.cancelled {
+				app.settingsForm.cancelled = false
+				app.settingsMode = false
+				return app, nil
+			}
+			return app, formCmd
+		}
+
 		// In analytics mode only esc/a close it, ↑↓ scroll, all others are ignored.
 		if app.analyticsMode {
 			switch {
@@ -282,6 +358,31 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				app.deleteStatus = ""
 				app.deleteStatusErr = false
 			}
+		case key.Matches(msg, keys.EditSettings) && app.activeTable == 0:
+			names := app.indexTable.selectedNames()
+			if len(names) == 0 {
+				if name := app.indexTable.cursorRowName(); name != "" {
+					names = []string{name}
+				}
+			}
+			if len(names) > 0 {
+				// Extract node names and IPs from the current snapshot for routing suggestions.
+				var nodeNames, nodeIPs []string
+				for _, nr := range app.nodeRows {
+					if nr.Name != "" {
+						nodeNames = append(nodeNames, nr.Name)
+					}
+					if nr.IP != "" {
+						nodeIPs = append(nodeIPs, nr.IP)
+					}
+				}
+				app.settingsNonce++
+				app.settingsForm = buildSettingsForm(names, nodeNames, nodeIPs)
+				app.settingsMode = true
+				app.settingsStatus = ""
+				app.settingsStatusErr = false
+				return app, settingsLoadCmd(app.client, names[0], app.settingsNonce)
+			}
 		case key.Matches(msg, keys.Analytics):
 			app.analyticsMode = true
 			app.analyticsScrollOffset = 0
@@ -327,6 +428,13 @@ func (app *App) View() string {
 	// Delete confirm mode: replace dashboard with the confirmation screen.
 	if app.deleteConfirmMode {
 		parts = append(parts, renderDeleteConfirm(app))
+		parts = append(parts, renderFooter(app))
+		return strings.Join(parts, "\n")
+	}
+
+	// Settings mode: replace dashboard with the settings form.
+	if app.settingsMode {
+		parts = append(parts, renderSettingsForm(app))
 		parts = append(parts, renderFooter(app))
 		return strings.Join(parts, "\n")
 	}

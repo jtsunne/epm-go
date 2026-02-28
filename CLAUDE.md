@@ -76,6 +76,7 @@ internal/
     thresholds.go            # Threshold severity functions for alert coloring (Phase 6)
     analytics.go             # renderAnalytics: full-screen recommendations view
     delete.go                # renderDeleteConfirm + deleteCmd (index deletion confirmation overlay)
+    settings.go              # SettingsFormModel, settingsLoadCmd, settingsUpdateCmd, renderSettingsForm
   format/
     format.go                # FormatBytes, FormatRate, FormatLatency, FormatNumber, FormatPercent
     format_test.go
@@ -94,9 +95,13 @@ GET /_nodes/stats/indices,os,jvm,fs?filter_path=nodes.*.name,...
 GET /_cat/indices?v&format=json&h=index,pri,rep,pri.store.size,store.size,docs.count&s=index
 GET /_stats?filter_path=indices.*.primaries.indexing...,indices.*.total.search...
 GET /_cat/allocation?format=json&h=node,shards,disk.percent&s=node
+GET /<name>/_settings?filter_path=*.settings.index.number_of_replicas,...
+PUT /<names,comma-joined>/_settings  (JSON body of changed dotted-key→value pairs; only changed fields sent)
 ```
 
 Full `filter_path` values are in `internal/client/endpoints.go`.
+
+The PUT `/_settings` endpoint is the only write-mutating operation. `doPutJSON` on `DefaultClient` is the HTTP transport helper for PUT requests with a JSON body — it mirrors `doDelete` shape. Used exclusively by `UpdateIndexSettings`.
 
 ## Key Metric Formulas
 
@@ -168,6 +173,7 @@ Overview cards change color when thresholds are exceeded — no alert history or
 | `a` | Toggle Analytics screen |
 | `space` | Toggle selection on index row (multi-select) |
 | `d` | Delete selected index(es) (with confirmation) |
+| `e` | Edit settings for selected/cursor index(es) |
 
 ## Color Coding
 
@@ -241,6 +247,7 @@ Follow existing patterns in the file being modified before introducing new ones.
 - **`CategoryIndexLifecycle`**: recommendation category (in `model/recommendation.go`) used for date-rollup suggestions (daily→weekly/monthly, weekly→monthly, monthly→yearly) and empty-index deletion candidates. Separate from `CategoryIndexConfig` to keep lifecycle vs. config concerns distinct.
 - **`IndexRow.PriSizeBytes`**: primary shard data size in bytes (int64), populated by `CalcIndexRows` from the already-computed `primarySizeBytes` local variable. Used by `dateRollupRecs` to decide daily→monthly vs. daily→weekly consolidation target (threshold: 100 MiB average primary size per index).
 - **`deleteConfirmMode`**: UI overlay mode (like `analyticsMode`) — when true, `View()` renders header + `renderDeleteConfirm` + footer instead of the dashboard. Only `y`, `n`, and `esc` are processed; all other keys are blocked. State fields: `deleteConfirmMode bool`, `pendingDeleteNames []string`, `deleteStatus string`, `deleteStatusErr bool`. `deleteStatus` is cleared on the next `SnapshotMsg` or `FetchErrorMsg`. `deleteStatusErr` controls footer color (red vs green).
+- **`settingsMode`**: UI overlay mode (like `deleteConfirmMode`) — when true, `View()` renders header + `renderSettingsForm` + footer instead of the dashboard. Key events are routed to `SettingsFormModel.Update()`; `ctrl+s` submits changed fields via `settingsUpdateCmd` and exits settingsMode immediately (prevents double-submit); `esc` cancels. Field navigation: `↑`/`↓` and `Tab`/`Shift+Tab` are equivalent (Tab does NOT move focus outside the form). State fields: `settingsMode bool`, `settingsForm SettingsFormModel`, `settingsStatus string`, `settingsStatusErr bool`, `settingsPendingRefresh bool`. `settingsPendingRefresh` mirrors `pendingRefresh` for delete: protects `settingsStatus` from the stale in-flight SnapshotMsg when a fetch was already in-flight at the time the settings update completed. Node names/IPs for routing allocation suggestions are extracted from the current snapshot at form open time (no extra API call).
 
 ## lipgloss Layout Patterns
 

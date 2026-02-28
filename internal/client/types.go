@@ -125,3 +125,48 @@ type AllocationInfo struct {
 	Shards      string `json:"shards"`
 	DiskPercent string `json:"disk.percent"`
 }
+
+// IndexAllocationFilter holds the _name and _ip filter values for a routing allocation filter.
+// All values are strings as returned by the ES settings API.
+type IndexAllocationFilter struct {
+	Name string `json:"_name,omitempty"`
+	IP   string `json:"_ip,omitempty"`
+}
+
+// IndexAllocationSettings holds routing allocation sub-settings.
+type IndexAllocationSettings struct {
+	Include           IndexAllocationFilter `json:"include,omitempty"`
+	Exclude           IndexAllocationFilter `json:"exclude,omitempty"`
+	Require           IndexAllocationFilter `json:"require,omitempty"`
+	TotalShardsPerNode string               `json:"total_shards_per_node,omitempty"`
+}
+
+// IndexRoutingSettings holds routing settings nested under index.routing.
+type IndexRoutingSettings struct {
+	Allocation IndexAllocationSettings `json:"allocation,omitempty"`
+}
+
+// IndexMappingTotalFields holds the total_fields limit setting.
+type IndexMappingTotalFields struct {
+	Limit string `json:"limit,omitempty"`
+}
+
+// IndexMappingSettings holds mapping settings nested under index.mapping.
+type IndexMappingSettings struct {
+	TotalFields IndexMappingTotalFields `json:"total_fields,omitempty"`
+}
+
+// IndexBlocksSettings holds block settings nested under index.blocks.
+type IndexBlocksSettings struct {
+	ReadOnlyAllowDelete string `json:"read_only_allow_delete,omitempty"`
+}
+
+// IndexSettingsValues holds the dynamic settings we expose for editing.
+// All numeric values are strings as returned by the ES settings API.
+type IndexSettingsValues struct {
+	NumberOfReplicas string               `json:"number_of_replicas,omitempty"`
+	RefreshInterval  string               `json:"refresh_interval,omitempty"`
+	Routing          IndexRoutingSettings `json:"routing,omitempty"`
+	Mapping          IndexMappingSettings `json:"mapping,omitempty"`
+	Blocks           IndexBlocksSettings  `json:"blocks,omitempty"`
+}

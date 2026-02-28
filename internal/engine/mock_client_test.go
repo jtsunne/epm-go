@@ -9,13 +9,15 @@ import (
 
 // MockESClient implements client.ESClient for testing.
 type MockESClient struct {
-	HealthFn      func(ctx context.Context) (*client.ClusterHealth, error)
-	NodesFn       func(ctx context.Context) ([]client.NodeInfo, error)
-	NodeStatsFn   func(ctx context.Context) (*client.NodeStatsResponse, error)
-	IndicesFn     func(ctx context.Context) ([]client.IndexInfo, error)
-	IndexStatsFn  func(ctx context.Context) (*client.IndexStatsResponse, error)
-	AllocationFn  func(ctx context.Context) ([]client.AllocationInfo, error)
-	DeleteIndexFn func(ctx context.Context, names []string) error
+	HealthFn              func(ctx context.Context) (*client.ClusterHealth, error)
+	NodesFn               func(ctx context.Context) ([]client.NodeInfo, error)
+	NodeStatsFn           func(ctx context.Context) (*client.NodeStatsResponse, error)
+	IndicesFn             func(ctx context.Context) ([]client.IndexInfo, error)
+	IndexStatsFn          func(ctx context.Context) (*client.IndexStatsResponse, error)
+	AllocationFn          func(ctx context.Context) ([]client.AllocationInfo, error)
+	DeleteIndexFn         func(ctx context.Context, names []string) error
+	GetIndexSettingsFn    func(ctx context.Context, name string) (*client.IndexSettingsValues, error)
+	UpdateIndexSettingsFn func(ctx context.Context, names []string, settings map[string]any) error
 }
 
 func (m *MockESClient) GetClusterHealth(ctx context.Context) (*client.ClusterHealth, error) {
@@ -63,6 +65,20 @@ func (m *MockESClient) GetAllocation(ctx context.Context) ([]client.AllocationIn
 func (m *MockESClient) DeleteIndex(ctx context.Context, names []string) error {
 	if m.DeleteIndexFn != nil {
 		return m.DeleteIndexFn(ctx, names)
+	}
+	return nil
+}
+
+func (m *MockESClient) GetIndexSettings(ctx context.Context, name string) (*client.IndexSettingsValues, error) {
+	if m.GetIndexSettingsFn != nil {
+		return m.GetIndexSettingsFn(ctx, name)
+	}
+	return &client.IndexSettingsValues{NumberOfReplicas: "1", RefreshInterval: "1s"}, nil
+}
+
+func (m *MockESClient) UpdateIndexSettings(ctx context.Context, names []string, settings map[string]any) error {
+	if m.UpdateIndexSettingsFn != nil {
+		return m.UpdateIndexSettingsFn(ctx, names, settings)
 	}
 	return nil
 }

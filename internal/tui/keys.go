@@ -18,6 +18,7 @@ type keyMap struct {
 	Analytics    key.Binding
 	ToggleSelect key.Binding
 	DeleteKey    key.Binding
+	EditSettings key.Binding
 }
 
 // keys is the global key map.
@@ -78,7 +79,11 @@ var keys = keyMap{
 		key.WithKeys("d"),
 		key.WithHelp("d", "delete index"),
 	),
+	EditSettings: key.NewBinding(
+		key.WithKeys("e"),
+		key.WithHelp("e", "edit settings"),
+	),
 }
 
 // helpText is the full help string displayed in the footer when help is toggled on.
-const helpText = "tab: switch table  /: search  1-9: sort col  ←→: pages  ↑↓: select row  space: select  d: delete  r: refresh  a: analytics  q: quit  ?: close help"
+const helpText = "tab: switch table  /: search  1-9: sort col  ←→: pages  ↑↓: select row  space: select  d: delete  e: edit settings  r: refresh  a: analytics  q: quit  ?: close help"

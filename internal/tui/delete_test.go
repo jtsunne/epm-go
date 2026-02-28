@@ -17,7 +17,9 @@ import (
 
 // tuiMockClient is a minimal ESClient implementation for tui-package tests.
 type tuiMockClient struct {
-	deleteIndexFn func(ctx context.Context, names []string) error
+	deleteIndexFn         func(ctx context.Context, names []string) error
+	getIndexSettingsFn    func(ctx context.Context, name string) (*client.IndexSettingsValues, error)
+	updateIndexSettingsFn func(ctx context.Context, names []string, settings map[string]any) error
 }
 
 func (m *tuiMockClient) GetClusterHealth(ctx context.Context) (*client.ClusterHealth, error) {
@@ -41,6 +43,18 @@ func (m *tuiMockClient) GetAllocation(ctx context.Context) ([]client.AllocationI
 func (m *tuiMockClient) DeleteIndex(ctx context.Context, names []string) error {
 	if m.deleteIndexFn != nil {
 		return m.deleteIndexFn(ctx, names)
+	}
+	return nil
+}
+func (m *tuiMockClient) GetIndexSettings(ctx context.Context, name string) (*client.IndexSettingsValues, error) {
+	if m.getIndexSettingsFn != nil {
+		return m.getIndexSettingsFn(ctx, name)
+	}
+	return &client.IndexSettingsValues{NumberOfReplicas: "1", RefreshInterval: "1s"}, nil
+}
+func (m *tuiMockClient) UpdateIndexSettings(ctx context.Context, names []string, settings map[string]any) error {
+	if m.updateIndexSettingsFn != nil {
+		return m.updateIndexSettingsFn(ctx, names, settings)
 	}
 	return nil
 }

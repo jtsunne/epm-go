@@ -3,6 +3,7 @@ package tui
 import (
 	"time"
 
+	"github.com/jtsunne/epm-go/internal/client"
 	"github.com/jtsunne/epm-go/internal/model"
 )
 
@@ -35,4 +36,20 @@ type CountdownTickMsg struct{ Gen int }
 type DeleteResultMsg struct {
 	Names []string
 	Err   error
+}
+
+// SettingsLoadedMsg delivers current index settings from ES for pre-populating the form.
+// Nonce must match App.settingsNonce; stale responses from a prior session are dropped.
+type SettingsLoadedMsg struct {
+	Values *client.IndexSettingsValues
+	Err    error
+	Nonce  int
+}
+
+// SettingsResultMsg reports the outcome of an UpdateIndexSettings operation.
+// Nonce must match App.settingsNonce; stale responses from a prior session are dropped.
+type SettingsResultMsg struct {
+	Names []string
+	Err   error
+	Nonce int
 }

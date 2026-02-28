@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -142,6 +143,46 @@ func (c *DefaultClient) doDelete(ctx context.Context, path string) error {
 	return nil
 }
 
+// doPutJSON performs a PUT request with a JSON body to the given path (relative to BaseURL).
+// It sets Content-Type and Accept: application/json headers and Basic Auth if credentials are configured.
+// Returns an error on non-2xx status.
+func (c *DefaultClient) doPutJSON(ctx context.Context, path string, body []byte) error {
+	urlStr := strings.TrimRight(c.config.BaseURL, "/") + path
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, urlStr, bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	if c.config.Username != "" || c.config.Password != "" {
+		req.SetBasicAuth(c.config.Username, c.config.Password)
+	}
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return fmt.Errorf("do request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	const maxResponseBytes = 32 * 1024 * 1024
+	respBody, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBytes+1))
+	if err != nil {
+		return fmt.Errorf("read body: %w", err)
+	}
+	if len(respBody) > maxResponseBytes {
+		return fmt.Errorf("response body exceeds %d MB limit", maxResponseBytes/(1024*1024))
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("unexpected status %d: %s", resp.StatusCode, truncate(respBody, 200))
+	}
+
+	return nil
+}
+
 // DeleteIndex deletes one or more indices by name.
 // Names are joined with commas into a single DELETE /<names> request.
 func (c *DefaultClient) DeleteIndex(ctx context.Context, names []string) error {
@@ -157,4 +198,108 @@ func (c *DefaultClient) DeleteIndex(ctx context.Context, names []string) error {
 		return fmt.Errorf("DeleteIndex: %w", err)
 	}
 	return nil
+}
+
+const endpointIndexSettingsFilterPath = "filter_path=*.settings.index.number_of_replicas,*.settings.index.refresh_interval,*.settings.index.routing.allocation.*,*.settings.index.mapping.total_fields.limit,*.settings.index.blocks.read_only_allow_delete"
+
+// GetIndexSettings fetches the dynamic settings for a single index.
+// Returns the settings from the first index in the response (usually the only one).
+func (c *DefaultClient) GetIndexSettings(ctx context.Context, name string) (*IndexSettingsValues, error) {
+	if name == "" {
+		return nil, fmt.Errorf("GetIndexSettings: name must not be empty")
+	}
+	escaped := url.PathEscape(name)
+	path := "/" + escaped + "/_settings?" + endpointIndexSettingsFilterPath
+	body, err := c.doGet(ctx, path)
+	if err != nil {
+		return nil, fmt.Errorf("GetIndexSettings: %w", err)
+	}
+
+	// Response shape: { "<index-name>": { "settings": { "index": { ... } } } }
+	var raw map[string]struct {
+		Settings struct {
+			Index IndexSettingsValues `json:"index"`
+		} `json:"settings"`
+	}
+	if err := json.Unmarshal(body, &raw); err != nil {
+		return nil, fmt.Errorf("GetIndexSettings decode: %w", err)
+	}
+	for _, entry := range raw {
+		result := entry.Settings.Index
+		return &result, nil
+	}
+	return nil, fmt.Errorf("GetIndexSettings: no index found in response")
+}
+
+// UpdateIndexSettings applies the given settings map to one or more indices via PUT.
+// keys in the settings map use full dotted notation (e.g. "index.number_of_replicas"),
+// which are converted to the nested JSON structure ES expects.
+// A no-op (empty settings map) returns nil immediately without an HTTP call.
+func (c *DefaultClient) UpdateIndexSettings(ctx context.Context, names []string, settings map[string]any) error {
+	if len(names) == 0 {
+		return fmt.Errorf("UpdateIndexSettings: names must not be empty")
+	}
+	if len(settings) == 0 {
+		return nil
+	}
+
+	nested := buildNestedMap(settings)
+	data, err := json.Marshal(nested)
+	if err != nil {
+		return fmt.Errorf("UpdateIndexSettings marshal: %w", err)
+	}
+
+	escaped := make([]string, len(names))
+	for i, n := range names {
+		escaped[i] = url.PathEscape(n)
+	}
+	path := "/" + strings.Join(escaped, ",") + "/_settings"
+
+	if err := c.doPutJSON(ctx, path, data); err != nil {
+		return fmt.Errorf("UpdateIndexSettings: %w", err)
+	}
+	return nil
+}
+
+// buildNestedMap converts a flat map with dotted keys into a nested map.
+// e.g. {"index.number_of_replicas": "2"} becomes {"index": {"number_of_replicas": "2"}}
+// Multiple keys sharing a common prefix are merged rather than overwritten.
+func buildNestedMap(flat map[string]any) map[string]any {
+	result := make(map[string]any)
+	for key, val := range flat {
+		parts := strings.SplitN(key, ".", 2)
+		if len(parts) == 1 {
+			result[key] = val
+			continue
+		}
+		sub, ok := result[parts[0]].(map[string]any)
+		if !ok {
+			sub = make(map[string]any)
+			result[parts[0]] = sub
+		}
+		for k, v := range buildNestedMap(map[string]any{parts[1]: val}) {
+			if existingSub, ok := sub[k].(map[string]any); ok {
+				if newSub, ok := v.(map[string]any); ok {
+					mergeNestedMaps(existingSub, newSub)
+					continue
+				}
+			}
+			sub[k] = v
+		}
+	}
+	return result
+}
+
+// mergeNestedMaps merges src into dst recursively. When both dst[k] and src[k]
+// are maps, they are merged; otherwise src[k] overwrites dst[k].
+func mergeNestedMaps(dst, src map[string]any) {
+	for k, v := range src {
+		if existingSub, ok := dst[k].(map[string]any); ok {
+			if newSub, ok := v.(map[string]any); ok {
+				mergeNestedMaps(existingSub, newSub)
+				continue
+			}
+		}
+		dst[k] = v
+	}
 }

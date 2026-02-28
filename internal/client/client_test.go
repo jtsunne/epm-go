@@ -2,6 +2,8 @@ package client
 
 import (
 	"context"
+	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -562,5 +564,325 @@ func TestDeleteIndex_EmptyNames(t *testing.T) {
 	}
 	if received {
 		t.Error("DeleteIndex with empty names must not send any HTTP request")
+	}
+}
+
+func TestGetIndexSettings(t *testing.T) {
+	fixture := `{
+		"my-index": {
+			"settings": {
+				"index": {
+					"number_of_replicas": "1",
+					"refresh_interval": "5s",
+					"routing": {
+						"allocation": {
+							"include": {"_name": "node-1,node-2", "_ip": "10.0.0.1"},
+							"exclude": {"_name": "", "_ip": ""},
+							"require": {"_name": "", "_ip": ""},
+							"total_shards_per_node": "-1"
+						}
+					},
+					"mapping": {
+						"total_fields": {"limit": "2000"}
+					},
+					"blocks": {
+						"read_only_allow_delete": "false"
+					}
+				}
+			}
+		}
+	}`
+
+	var gotPath, gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		gotQuery = r.URL.RawQuery
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(fixture))
+	}))
+	defer srv.Close()
+
+	c := newTestClient(t, srv.URL)
+	vals, err := c.GetIndexSettings(context.Background(), "my-index")
+	if err != nil {
+		t.Fatalf("GetIndexSettings: %v", err)
+	}
+
+	if gotPath != "/my-index/_settings" {
+		t.Errorf("path = %q, want /my-index/_settings", gotPath)
+	}
+	if !strings.Contains(gotQuery, "filter_path") {
+		t.Errorf("filter_path missing from query: %q", gotQuery)
+	}
+	if vals.NumberOfReplicas != "1" {
+		t.Errorf("NumberOfReplicas = %q, want %q", vals.NumberOfReplicas, "1")
+	}
+	if vals.RefreshInterval != "5s" {
+		t.Errorf("RefreshInterval = %q, want %q", vals.RefreshInterval, "5s")
+	}
+	if vals.Routing.Allocation.Include.Name != "node-1,node-2" {
+		t.Errorf("Routing.Allocation.Include.Name = %q, want %q", vals.Routing.Allocation.Include.Name, "node-1,node-2")
+	}
+	if vals.Routing.Allocation.TotalShardsPerNode != "-1" {
+		t.Errorf("TotalShardsPerNode = %q, want %q", vals.Routing.Allocation.TotalShardsPerNode, "-1")
+	}
+	if vals.Mapping.TotalFields.Limit != "2000" {
+		t.Errorf("Mapping.TotalFields.Limit = %q, want %q", vals.Mapping.TotalFields.Limit, "2000")
+	}
+	if vals.Blocks.ReadOnlyAllowDelete != "false" {
+		t.Errorf("Blocks.ReadOnlyAllowDelete = %q, want %q", vals.Blocks.ReadOnlyAllowDelete, "false")
+	}
+}
+
+func TestGetIndexSettings_EmptyName(t *testing.T) {
+	received := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		received = true
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	c := newTestClient(t, srv.URL)
+	_, err := c.GetIndexSettings(context.Background(), "")
+	if err == nil {
+		t.Fatal("expected error for empty name, got nil")
+	}
+	if received {
+		t.Error("GetIndexSettings with empty name must not send any HTTP request")
+	}
+}
+
+func TestGetIndexSettings_EmptyResponse(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	defer srv.Close()
+
+	c := newTestClient(t, srv.URL)
+	_, err := c.GetIndexSettings(context.Background(), "missing-index")
+	if err == nil {
+		t.Fatal("expected error for empty response, got nil")
+	}
+}
+
+func TestUpdateIndexSettings_Success(t *testing.T) {
+	var gotMethod, gotPath, gotContentType string
+	var gotBody []byte
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		gotContentType = r.Header.Get("Content-Type")
+		var err error
+		gotBody, err = io.ReadAll(r.Body)
+		if err != nil {
+			t.Errorf("read body: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"acknowledged":true}`))
+	}))
+	defer srv.Close()
+
+	c := newTestClient(t, srv.URL)
+	settings := map[string]any{
+		"index.number_of_replicas": "2",
+		"index.refresh_interval":   "30s",
+	}
+	err := c.UpdateIndexSettings(context.Background(), []string{"my-index"}, settings)
+	if err != nil {
+		t.Fatalf("UpdateIndexSettings: %v", err)
+	}
+
+	if gotMethod != http.MethodPut {
+		t.Errorf("method = %q, want PUT", gotMethod)
+	}
+	if gotPath != "/my-index/_settings" {
+		t.Errorf("path = %q, want /my-index/_settings", gotPath)
+	}
+	if !strings.Contains(gotContentType, "application/json") {
+		t.Errorf("Content-Type = %q, want application/json", gotContentType)
+	}
+
+	var parsed map[string]any
+	if err := json.Unmarshal(gotBody, &parsed); err != nil {
+		t.Fatalf("unmarshal sent body: %v", err)
+	}
+	index, ok := parsed["index"].(map[string]any)
+	if !ok {
+		t.Fatalf("body missing index key, got: %v", parsed)
+	}
+	if index["number_of_replicas"] != "2" {
+		t.Errorf("number_of_replicas = %v, want 2", index["number_of_replicas"])
+	}
+	if index["refresh_interval"] != "30s" {
+		t.Errorf("refresh_interval = %v, want 30s", index["refresh_interval"])
+	}
+}
+
+func TestUpdateIndexSettings_BatchPath(t *testing.T) {
+	var gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"acknowledged":true}`))
+	}))
+	defer srv.Close()
+
+	c := newTestClient(t, srv.URL)
+	err := c.UpdateIndexSettings(context.Background(), []string{"idx-a", "idx-b"}, map[string]any{
+		"index.number_of_replicas": "1",
+	})
+	if err != nil {
+		t.Fatalf("UpdateIndexSettings: %v", err)
+	}
+	if gotPath != "/idx-a,idx-b/_settings" {
+		t.Errorf("path = %q, want /idx-a,idx-b/_settings", gotPath)
+	}
+}
+
+func TestUpdateIndexSettings_NoOp(t *testing.T) {
+	received := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		received = true
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	c := newTestClient(t, srv.URL)
+	err := c.UpdateIndexSettings(context.Background(), []string{"my-index"}, map[string]any{})
+	if err != nil {
+		t.Fatalf("UpdateIndexSettings with empty map: %v", err)
+	}
+	if received {
+		t.Error("UpdateIndexSettings with empty settings must not send any HTTP request")
+	}
+}
+
+func TestUpdateIndexSettings_EmptyNames(t *testing.T) {
+	received := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		received = true
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	c := newTestClient(t, srv.URL)
+	err := c.UpdateIndexSettings(context.Background(), []string{}, map[string]any{"index.number_of_replicas": "1"})
+	if err == nil {
+		t.Fatal("expected error on empty names, got nil")
+	}
+	if received {
+		t.Error("UpdateIndexSettings with empty names must not send any HTTP request")
+	}
+}
+
+func TestBuildNestedMap(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    map[string]any
+		wantPath []string // dotted path to check
+		wantVal  any
+	}{
+		{
+			name:     "single level",
+			input:    map[string]any{"key": "val"},
+			wantPath: []string{"key"},
+			wantVal:  "val",
+		},
+		{
+			name:     "two levels",
+			input:    map[string]any{"index.number_of_replicas": "2"},
+			wantPath: []string{"index", "number_of_replicas"},
+			wantVal:  "2",
+		},
+		{
+			name:     "deep nesting",
+			input:    map[string]any{"index.routing.allocation.include._name": "node-1"},
+			wantPath: []string{"index", "routing", "allocation", "include", "_name"},
+			wantVal:  "node-1",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := buildNestedMap(tt.input)
+			// walk the path
+			var cur any = result
+			for i, seg := range tt.wantPath {
+				m, ok := cur.(map[string]any)
+				if !ok {
+					t.Fatalf("step %d: expected map, got %T", i, cur)
+				}
+				cur = m[seg]
+			}
+			if cur != tt.wantVal {
+				t.Errorf("value at path = %v, want %v", cur, tt.wantVal)
+			}
+		})
+	}
+}
+
+// TestBuildNestedMap_MultipleKeys verifies that two dotted keys sharing the
+// same parent prefix are both preserved under that parent — not overwritten.
+func TestBuildNestedMap_MultipleKeys(t *testing.T) {
+	result := buildNestedMap(map[string]any{
+		"index.number_of_replicas": "2",
+		"index.refresh_interval":   "30s",
+	})
+
+	indexMap, ok := result["index"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected result[\"index\"] to be map[string]any, got %T", result["index"])
+	}
+	if got := indexMap["number_of_replicas"]; got != "2" {
+		t.Errorf("number_of_replicas = %v, want \"2\"", got)
+	}
+	if got := indexMap["refresh_interval"]; got != "30s" {
+		t.Errorf("refresh_interval = %v, want \"30s\"", got)
+	}
+}
+
+// TestBuildNestedMap_DeepSharedPrefix verifies that keys sharing a deep
+// common prefix (e.g. routing.allocation.*) are all preserved. Previously
+// the loop overwrote sibling branches at any shared intermediate node.
+func TestBuildNestedMap_DeepSharedPrefix(t *testing.T) {
+	result := buildNestedMap(map[string]any{
+		"index.routing.allocation.include._name": "node-a",
+		"index.routing.allocation.exclude._name": "node-b",
+		"index.routing.allocation.require._name": "node-c",
+		"index.routing.allocation.include._ip":   "1.2.3.4",
+	})
+
+	walk := func(m map[string]any, path ...string) (any, bool) {
+		var cur any = m
+		for _, seg := range path {
+			mm, ok := cur.(map[string]any)
+			if !ok {
+				return nil, false
+			}
+			cur = mm[seg]
+		}
+		return cur, true
+	}
+
+	checks := []struct {
+		path []string
+		want string
+	}{
+		{[]string{"index", "routing", "allocation", "include", "_name"}, "node-a"},
+		{[]string{"index", "routing", "allocation", "exclude", "_name"}, "node-b"},
+		{[]string{"index", "routing", "allocation", "require", "_name"}, "node-c"},
+		{[]string{"index", "routing", "allocation", "include", "_ip"}, "1.2.3.4"},
+	}
+	for _, c := range checks {
+		got, ok := walk(result, c.path...)
+		if !ok {
+			t.Errorf("path %v: intermediate node missing", c.path)
+			continue
+		}
+		if got != c.want {
+			t.Errorf("path %v: got %v, want %v", c.path, got, c.want)
+		}
 	}
 }
