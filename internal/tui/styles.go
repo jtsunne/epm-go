@@ -17,6 +17,7 @@ var (
 	colorPurple     = lipgloss.Color("#8b5cf6")
 	colorIndigo     = lipgloss.Color("#6366f1")
 	colorOrange     = lipgloss.Color("#f97316")
+	colorDiskYellow = lipgloss.Color("#eab308") // Disk% column — spec color
 	colorWhite      = lipgloss.Color("#f8fafc")
 	colorDark       = lipgloss.Color("#1e293b")
 	colorAlt        = lipgloss.Color("#0f172a")

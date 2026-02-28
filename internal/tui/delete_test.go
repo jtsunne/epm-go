@@ -35,6 +35,9 @@ func (m *tuiMockClient) GetIndices(ctx context.Context) ([]client.IndexInfo, err
 func (m *tuiMockClient) GetIndexStats(ctx context.Context) (*client.IndexStatsResponse, error) {
 	return &client.IndexStatsResponse{Indices: map[string]client.IndexStatEntry{}}, nil
 }
+func (m *tuiMockClient) GetAllocation(ctx context.Context) ([]client.AllocationInfo, error) {
+	return []client.AllocationInfo{}, nil
+}
 func (m *tuiMockClient) DeleteIndex(ctx context.Context, names []string) error {
 	if m.deleteIndexFn != nil {
 		return m.deleteIndexFn(ctx, names)

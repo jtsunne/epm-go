@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -19,7 +20,7 @@ type NodeTableModel struct {
 	displayRows []model.NodeRow // after filter + sort applied
 }
 
-// NewNodeTable returns a NodeTableModel with 7-column layout and
+// NewNodeTable returns a NodeTableModel with 9-column layout and
 // default sort by IndexingRate (col 3) descending.
 func NewNodeTable() NodeTableModel {
 	cols := []columnDef{
@@ -30,6 +31,8 @@ func NewNodeTable() NodeTableModel {
 		{Title: "Srch/s",    Width: 8,  SortDesc: true},
 		{Title: "Idx Lat",   Width: 9,  SortDesc: true},
 		{Title: "Srch Lat",  Width: 9,  SortDesc: true},
+		{Title: "Shards",    Width: 7,  SortDesc: true},
+		{Title: "Disk%",     Width: 7,  SortDesc: true},
 	}
 	m := NodeTableModel{
 		tableModel: newTableModel(cols),
@@ -148,6 +151,10 @@ func (m *NodeTableModel) renderTable(app *App) string {
 				return base.Foreground(colorPurple)
 			case 6:
 				return base.Foreground(colorOrange)
+			case 7:
+				return base.Foreground(colorWhite)
+			case 8:
+				return base.Foreground(colorDiskYellow)
 			default:
 				return base.Foreground(colorWhite)
 			}
@@ -202,7 +209,7 @@ func (m *NodeTableModel) renderHeader(title string, page, pageCount int, searchi
 	case searchTerm != "":
 		right = fmt.Sprintf("filter=%q  %s", searchTerm, pageInfo)
 	default:
-		right = fmt.Sprintf("[/: search]  [1-7: sort]  [←→: page]  %s", pageInfo)
+		right = fmt.Sprintf("[/: search]  [1-9: sort]  [←→: page]  %s", pageInfo)
 	}
 
 	return StyleDim.Render(title + "  " + right)
@@ -225,6 +232,16 @@ func nodeCellValue(r model.NodeRow, col int) string {
 		return format.FormatLatency(r.IndexLatency)
 	case 6:
 		return format.FormatLatency(r.SearchLatency)
+	case 7:
+		if r.Shards < 0 {
+			return "---"
+		}
+		return strconv.Itoa(r.Shards)
+	case 8:
+		if r.DiskPercent < 0 {
+			return "---"
+		}
+		return format.FormatPercent(r.DiskPercent)
 	default:
 		return ""
 	}

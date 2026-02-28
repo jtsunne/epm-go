@@ -18,7 +18,7 @@ Terminal dashboard for Elasticsearch cluster performance monitoring. A standalon
 │ Name           │ P/T  │ Size  │ Shard   │  Docs  │Idx/s │Srch/s│ │
 ├──────────────────────────────────────────────────────────────────┤
 │ Node Statistics                                         Page 1/1 │
-│ Name       │ Role │ IP          │ Idx/s │ Srch/s │ ILat │  SLat  │
+│ Name  │ Role │ IP       │ Idx/s │ Srch/s │ ILat │ SLat │Shards│Disk%│
 ├──────────────────────────────────────────────────────────────────┤
 │ tab: switch  /: search  1-9: sort  ←→: pages  r: refresh  q: quit│
 └──────────────────────────────────────────────────────────────────┘
@@ -183,13 +183,14 @@ Use `↑`/`↓` or `j`/`k` to scroll. Press `a` or `Esc` to return to the dashbo
 
 ## Elasticsearch Version Compatibility
 
-Tested with ES 6.x, 7.x, 8.x, and 9.x. All five API endpoints used are stable across these versions:
+Tested with ES 6.x, 7.x, 8.x, and 9.x. All six API endpoints used are stable across these versions:
 
 - `GET /_cluster/health` — cluster status and shard counts
 - `GET /_cat/nodes?format=json` — node roles and IPs
 - `GET /_nodes/stats/indices,os,jvm,fs` — per-node CPU, JVM, disk, and indexing stats
 - `GET /_cat/indices?format=json` — per-index size and document counts
 - `GET /_stats` — cluster-wide indexing and search operation totals
+- `GET /_cat/allocation?format=json` — per-node shard count and disk usage percentage (non-fatal; shows `---` on unsupported ES versions)
 
 `filter_path` is used on all endpoints to minimize response payload size.
 

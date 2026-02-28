@@ -107,7 +107,8 @@ func sortIndexRows(rows []model.IndexRow, col int, desc bool) []model.IndexRow {
 // sortNodeRows returns a sorted copy of rows.
 // Column mapping:
 //
-//	0=Name, 1=Role, 2=IP, 3=IndexingRate, 4=SearchRate, 5=IndexLatency, 6=SearchLatency
+//	0=Name, 1=Role, 2=IP, 3=IndexingRate, 4=SearchRate, 5=IndexLatency, 6=SearchLatency,
+//	7=Shards, 8=DiskPercent
 //
 // Ties are broken by Name ascending.
 func sortNodeRows(rows []model.NodeRow, col int, desc bool) []model.NodeRow {
@@ -169,6 +170,22 @@ func sortNodeRows(rows []model.NodeRow, col int, desc bool) []model.NodeRow {
 				return bSentinel
 			} else if a.SearchLatency != b.SearchLatency {
 				less = a.SearchLatency < b.SearchLatency
+			} else {
+				return strings.ToLower(a.Name) < strings.ToLower(b.Name)
+			}
+		case 7:
+			if aSentinel, bSentinel := a.Shards < 0, b.Shards < 0; aSentinel != bSentinel {
+				return bSentinel
+			} else if a.Shards != b.Shards {
+				less = a.Shards < b.Shards
+			} else {
+				return strings.ToLower(a.Name) < strings.ToLower(b.Name)
+			}
+		case 8:
+			if aSentinel, bSentinel := a.DiskPercent < 0, b.DiskPercent < 0; aSentinel != bSentinel {
+				return bSentinel
+			} else if a.DiskPercent != b.DiskPercent {
+				less = a.DiskPercent < b.DiskPercent
 			} else {
 				return strings.ToLower(a.Name) < strings.ToLower(b.Name)
 			}

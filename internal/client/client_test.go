@@ -440,6 +440,52 @@ func TestInvalidJSONResponse(t *testing.T) {
 	}
 }
 
+func TestGetAllocation(t *testing.T) {
+	fixture := `[
+		{"node":"node-1","shards":"5","disk.percent":"42"},
+		{"node":"node-2","shards":"3","disk.percent":"67"}
+	]`
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(r.URL.Path, "/_cat/allocation") {
+			t.Errorf("unexpected path %q", r.URL.Path)
+		}
+		if !strings.Contains(r.URL.RawQuery, "format=json") {
+			t.Errorf("format=json missing from query: %q", r.URL.RawQuery)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(fixture))
+	}))
+	defer srv.Close()
+
+	c := newTestClient(t, srv.URL)
+	alloc, err := c.GetAllocation(context.Background())
+	if err != nil {
+		t.Fatalf("GetAllocation: %v", err)
+	}
+	if len(alloc) != 2 {
+		t.Fatalf("len(alloc) = %d, want 2", len(alloc))
+	}
+	if alloc[0].Node != "node-1" {
+		t.Errorf("alloc[0].Node = %q, want %q", alloc[0].Node, "node-1")
+	}
+	if alloc[0].Shards != "5" {
+		t.Errorf("alloc[0].Shards = %q, want %q", alloc[0].Shards, "5")
+	}
+	if alloc[0].DiskPercent != "42" {
+		t.Errorf("alloc[0].DiskPercent = %q, want %q", alloc[0].DiskPercent, "42")
+	}
+	if alloc[1].Node != "node-2" {
+		t.Errorf("alloc[1].Node = %q, want %q", alloc[1].Node, "node-2")
+	}
+	if alloc[1].Shards != "3" {
+		t.Errorf("alloc[1].Shards = %q, want %q", alloc[1].Shards, "3")
+	}
+	if alloc[1].DiskPercent != "67" {
+		t.Errorf("alloc[1].DiskPercent = %q, want %q", alloc[1].DiskPercent, "67")
+	}
+}
+
 func TestDeleteIndex_Success(t *testing.T) {
 	var gotMethod, gotPath string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

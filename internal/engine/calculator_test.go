@@ -698,3 +698,74 @@ func TestCalcNodeRows_HeapBytesNilJVM(t *testing.T) {
 	assert.Equal(t, int64(0), rows[0].HeapMaxBytes)
 	assert.Equal(t, int64(0), rows[0].HeapUsedBytes)
 }
+
+func TestCalcNodeRows_AllocationData(t *testing.T) {
+	// node-a has valid allocation data; node-b has no allocation entry.
+	// node-a: shards=12, disk.percent=42.5
+	// node-b: Shards=-1 (sentinel), DiskPercent=-1.0 (sentinel)
+	curr := &model.Snapshot{
+		Nodes: []client.NodeInfo{
+			{Name: "node-a", NodeRole: "d", IP: "10.0.0.1"},
+			{Name: "node-b", NodeRole: "d", IP: "10.0.0.2"},
+		},
+		NodeStats: client.NodeStatsResponse{
+			Nodes: map[string]client.NodePerformanceStats{
+				"id1": {Name: "node-a"},
+				"id2": {Name: "node-b"},
+			},
+		},
+		Allocation: []client.AllocationInfo{
+			{Node: "node-a", Shards: "12", DiskPercent: "42.5"},
+		},
+	}
+	rows := CalcNodeRows(nil, curr, 10*time.Second)
+	assert.Len(t, rows, 2)
+
+	// rows are sorted by name: node-a, node-b
+	byName := make(map[string]model.NodeRow, len(rows))
+	for _, r := range rows {
+		byName[r.Name] = r
+	}
+
+	// node-a: allocation data present
+	assert.Equal(t, 12, byName["node-a"].Shards)
+	assert.InDelta(t, 42.5, byName["node-a"].DiskPercent, 1e-9)
+
+	// node-b: no allocation entry → sentinels
+	assert.Equal(t, -1, byName["node-b"].Shards)
+	assert.Equal(t, -1.0, byName["node-b"].DiskPercent)
+}
+
+func TestCalcNodeRows_AllocationInvalidValues(t *testing.T) {
+	// Allocation entry with non-numeric values should fall back to sentinels.
+	curr := &model.Snapshot{
+		NodeStats: client.NodeStatsResponse{
+			Nodes: map[string]client.NodePerformanceStats{
+				"id1": {Name: "node-a"},
+			},
+		},
+		Allocation: []client.AllocationInfo{
+			{Node: "node-a", Shards: "-", DiskPercent: "n/a"},
+		},
+	}
+	rows := CalcNodeRows(nil, curr, 10*time.Second)
+	assert.Len(t, rows, 1)
+	assert.Equal(t, -1, rows[0].Shards)
+	assert.Equal(t, -1.0, rows[0].DiskPercent)
+}
+
+func TestCalcNodeRows_AllocationEmptySlice(t *testing.T) {
+	// Empty allocation slice: all nodes get sentinel values.
+	curr := &model.Snapshot{
+		NodeStats: client.NodeStatsResponse{
+			Nodes: map[string]client.NodePerformanceStats{
+				"id1": {Name: "node-a"},
+			},
+		},
+		Allocation: []client.AllocationInfo{},
+	}
+	rows := CalcNodeRows(nil, curr, 10*time.Second)
+	assert.Len(t, rows, 1)
+	assert.Equal(t, -1, rows[0].Shards)
+	assert.Equal(t, -1.0, rows[0].DiskPercent)
+}

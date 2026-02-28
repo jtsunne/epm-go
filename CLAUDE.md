@@ -53,7 +53,7 @@ internal/
     history.go               # SparklineHistory ring buffer (cap 60)
     recommendation.go        # Recommendation type, severity/category constants
   engine/
-    poller.go                # FetchAll: 5 endpoints in parallel via errgroup
+    poller.go                # FetchAll: 6 endpoints in parallel via errgroup
     calculator.go            # CalcClusterMetrics, CalcClusterResources, CalcNodeRows, CalcIndexRows
     calculator_test.go       # Table-driven tests for all metric formulas
     poller_test.go
@@ -72,7 +72,7 @@ internal/
     table.go                 # Generic tableModel: sort, paginate, search, cursor navigation, name truncation (Phase 5, 7)
     sort.go                  # sortIndexRows, sortNodeRows, filterIndexRows, filterNodeRows (Phase 5)
     indextable.go            # IndexTableModel (9 columns)           (Phase 5)
-    nodetable.go             # NodeTableModel (7 columns)            (Phase 5)
+    nodetable.go             # NodeTableModel (9 columns)            (Phase 5)
     thresholds.go            # Threshold severity functions for alert coloring (Phase 6)
     analytics.go             # renderAnalytics: full-screen recommendations view
     delete.go                # renderDeleteConfirm + deleteCmd (index deletion confirmation overlay)
@@ -85,7 +85,7 @@ Makefile
 
 ## Elasticsearch API Endpoints
 
-All 5 endpoints are GET-only, JSON, with `filter_path` to reduce response size. Stable across ES 6.x–9.x.
+All 6 endpoints are GET-only, JSON, with `filter_path` to reduce response size. Stable across ES 6.x–9.x.
 
 ```
 GET /_cluster/health?filter_path=cluster_name,status,number_of_nodes,active_shards,unassigned_shards
@@ -93,6 +93,7 @@ GET /_cat/nodes?v&format=json&h=node.role,name,ip&s=node.role,ip
 GET /_nodes/stats/indices,os,jvm,fs?filter_path=nodes.*.name,...
 GET /_cat/indices?v&format=json&h=index,pri,rep,pri.store.size,store.size,docs.count&s=index
 GET /_stats?filter_path=indices.*.primaries.indexing...,indices.*.total.search...
+GET /_cat/allocation?format=json&h=node,shards,disk.percent&s=node
 ```
 
 Full `filter_path` values are in `internal/client/endpoints.go`.
@@ -144,7 +145,7 @@ Overview cards change color when thresholds are exceeded — no alert history or
 │ Name           │ P/T  │ Size   │ Shard │  Docs  │Idx/s│Srch/s│..│  ← indextable.go
 ├──────────────────────────────────────────────────────────────────┤
 │ Node Statistics                                         Page 1/1  │
-│ Name       │ Role │ IP          │ Idx/s │ Srch/s │ ILat │ SLat  │  ← nodetable.go
+│ Name  │ Role │ IP       │ Idx/s │ Srch/s │ ILat │ SLat │Shards│Disk%│  ← nodetable.go
 ├──────────────────────────────────────────────────────────────────┤
 │ tab: switch  /: search  1-9: sort  ←→: pages  r: refresh  q: quit│  ← keys.go
 └──────────────────────────────────────────────────────────────────┘
@@ -190,6 +191,8 @@ Table column colors (indextable / nodetable StyleFunc):
 | Srch/s (col 6 index, col 4 node) | Cyan `#06b6d4` |
 | Idx Lat (col 7 index, col 5 node) | Purple `#8b5cf6` |
 | Srch Lat (col 8 index, col 6 node) | Orange `#f97316` |
+| Shards (col 7 node) | White |
+| Disk% (col 8 node) | Yellow `#eab308` |
 | Role (col 1 node) | Blue `#3b82f6` |
 | Selected row background (multi-select via `space`) | Indigo `#6366f1` (`colorIndigo`) |
 
@@ -218,7 +221,7 @@ Follow existing patterns in the file being modified before introducing new ones.
 ## Testing Conventions
 
 - `cmd/epm/main_test.go` — table-driven tests for `parseESURI`: credential stripping, scheme validation, invalid host detection
-- `internal/client/client_test.go` — httptest server returning fixture JSON for each of the 5 endpoints
+- `internal/client/client_test.go` — httptest server returning fixture JSON for each of the 6 endpoints
 - `internal/engine/calculator_test.go` — table-driven tests with fixture Snapshots; highest-value tests in project
 - `internal/format/format_test.go` — table-driven tests for all formatters
 - `internal/model/history_test.go` — ring-buffer overflow and Values() correctness for SparklineHistory
@@ -248,7 +251,8 @@ Follow existing patterns in the file being modified before introducing new ones.
 
 ## ES Version Compatibility
 
-All 5 endpoints are stable across ES 6.x, 7.x, 8.x, 9.x:
+All 6 endpoints are stable across ES 6.x, 7.x, 8.x, 9.x:
+- `_cat/allocation` may return empty on some ES versions — handled gracefully (non-fatal, Shards/Disk% show "---")
 - `_cat` JSON format (`?format=json`) available since ES 5.0
 - `filter_path` available since ES 1.6
 - No version detection or version-specific code paths
