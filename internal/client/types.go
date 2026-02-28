@@ -118,3 +118,10 @@ type SearchStats struct {
 type StoreStats struct {
 	SizeInBytes int64 `json:"size_in_bytes"`
 }
+
+// AllocationInfo represents a single node entry from /_cat/allocation.
+type AllocationInfo struct {
+	Node        string `json:"node"`
+	Shards      string `json:"shards"`
+	DiskPercent string `json:"disk.percent"`
+}

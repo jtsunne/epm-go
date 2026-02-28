@@ -225,6 +225,58 @@ func TestSortNodeRows_SentinelLastAscending(t *testing.T) {
 	assert.Equal(t, "node-b", sorted[2].Name)  // sentinel last
 }
 
+func TestSortNodeRows_ByShards(t *testing.T) {
+	rows := []model.NodeRow{
+		{Name: "node-a", Shards: 10},
+		{Name: "node-b", Shards: 5},
+		{Name: "node-c", Shards: 20},
+	}
+	sorted := sortNodeRows(rows, 7, true) // descending
+	require.Len(t, sorted, 3)
+	assert.Equal(t, "node-c", sorted[0].Name) // 20
+	assert.Equal(t, "node-a", sorted[1].Name) // 10
+	assert.Equal(t, "node-b", sorted[2].Name) // 5
+}
+
+func TestSortNodeRows_ByDiskPercent(t *testing.T) {
+	rows := []model.NodeRow{
+		{Name: "node-a", DiskPercent: 30.0},
+		{Name: "node-b", DiskPercent: 80.0},
+		{Name: "node-c", DiskPercent: 55.0},
+	}
+	sorted := sortNodeRows(rows, 8, false) // ascending
+	require.Len(t, sorted, 3)
+	assert.Equal(t, "node-a", sorted[0].Name) // 30.0
+	assert.Equal(t, "node-c", sorted[1].Name) // 55.0
+	assert.Equal(t, "node-b", sorted[2].Name) // 80.0
+}
+
+func TestSortNodeRows_ShardsSentinelLast(t *testing.T) {
+	rows := []model.NodeRow{
+		{Name: "node-b", Shards: -1}, // sentinel
+		{Name: "node-a", Shards: 10},
+		{Name: "node-c", Shards: 5},
+	}
+	sorted := sortNodeRows(rows, 7, false) // ascending
+	require.Len(t, sorted, 3)
+	assert.Equal(t, "node-c", sorted[0].Name)  // 5 first
+	assert.Equal(t, "node-a", sorted[1].Name)  // 10 second
+	assert.Equal(t, "node-b", sorted[2].Name)  // sentinel last
+}
+
+func TestSortNodeRows_DiskPercentSentinelLast(t *testing.T) {
+	rows := []model.NodeRow{
+		{Name: "node-b", DiskPercent: -1.0}, // sentinel
+		{Name: "node-a", DiskPercent: 60.0},
+		{Name: "node-c", DiskPercent: 30.0},
+	}
+	sorted := sortNodeRows(rows, 8, false) // ascending
+	require.Len(t, sorted, 3)
+	assert.Equal(t, "node-c", sorted[0].Name)  // 30.0 first
+	assert.Equal(t, "node-a", sorted[1].Name)  // 60.0 second
+	assert.Equal(t, "node-b", sorted[2].Name)  // sentinel last
+}
+
 // ---------- filterNodeRows ----------
 
 func TestFilterNodeRows_ByIP(t *testing.T) {

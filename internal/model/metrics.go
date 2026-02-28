@@ -35,6 +35,8 @@ type NodeRow struct {
 	SearchLatency float64 // ms/op
 	HeapMaxBytes  int64
 	HeapUsedBytes int64
+	Shards        int     // allocated shards; -1 = not in allocation data
+	DiskPercent   float64 // node disk usage %; -1.0 = not available
 }
 
 // IndexRow holds display-ready data for a single row in the index table.

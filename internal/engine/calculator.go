@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"math"
 	"sort"
 	"strconv"
 	"time"
@@ -13,6 +14,7 @@ import (
 // consecutive snapshots. Ported from NodeTable.tsx lines 76-113.
 //
 // Role and IP are looked up from curr.Nodes by matching on node name.
+// Shards and DiskPercent are populated from curr.Allocation keyed by node name.
 // Nodes present in curr but not in prev get zero rates.
 func CalcNodeRows(prev, curr *model.Snapshot, elapsed time.Duration) []model.NodeRow {
 	if curr == nil {
@@ -23,6 +25,16 @@ func CalcNodeRows(prev, curr *model.Snapshot, elapsed time.Duration) []model.Nod
 	nameToNode := make(map[string]client.NodeInfo, len(curr.Nodes))
 	for _, n := range curr.Nodes {
 		nameToNode[n.Name] = n
+	}
+
+	// Build name → AllocationInfo lookup from _cat/allocation endpoint.
+	// Skip rows with empty node name — ES emits these for UNASSIGNED shards.
+	nameToAlloc := make(map[string]client.AllocationInfo, len(curr.Allocation))
+	for _, a := range curr.Allocation {
+		if a.Node == "" {
+			continue
+		}
+		nameToAlloc[a.Node] = a
 	}
 
 	elapsedSec := elapsed.Seconds()
@@ -45,6 +57,23 @@ func CalcNodeRows(prev, curr *model.Snapshot, elapsed time.Duration) []model.Nod
 		if node.JVM != nil {
 			row.HeapMaxBytes = node.JVM.Mem.HeapMaxInBytes
 			row.HeapUsedBytes = node.JVM.Mem.HeapUsedInBytes
+		}
+
+		// Populate Shards and DiskPercent from _cat/allocation data.
+		if alloc, ok := nameToAlloc[node.Name]; ok {
+			if v, err := strconv.Atoi(alloc.Shards); err == nil {
+				row.Shards = v
+			} else {
+				row.Shards = -1
+			}
+			if v, err := strconv.ParseFloat(alloc.DiskPercent, 64); err == nil && !math.IsNaN(v) && !math.IsInf(v, 0) {
+				row.DiskPercent = v
+			} else {
+				row.DiskPercent = -1.0
+			}
+		} else {
+			row.Shards = -1
+			row.DiskPercent = -1.0
 		}
 
 		if enoughTime {

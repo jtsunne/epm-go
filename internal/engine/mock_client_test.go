@@ -14,6 +14,7 @@ type MockESClient struct {
 	NodeStatsFn   func(ctx context.Context) (*client.NodeStatsResponse, error)
 	IndicesFn     func(ctx context.Context) ([]client.IndexInfo, error)
 	IndexStatsFn  func(ctx context.Context) (*client.IndexStatsResponse, error)
+	AllocationFn  func(ctx context.Context) ([]client.AllocationInfo, error)
 	DeleteIndexFn func(ctx context.Context, names []string) error
 }
 
@@ -50,6 +51,13 @@ func (m *MockESClient) GetIndexStats(ctx context.Context) (*client.IndexStatsRes
 		return m.IndexStatsFn(ctx)
 	}
 	return &client.IndexStatsResponse{Indices: map[string]client.IndexStatEntry{}}, nil
+}
+
+func (m *MockESClient) GetAllocation(ctx context.Context) ([]client.AllocationInfo, error) {
+	if m.AllocationFn != nil {
+		return m.AllocationFn(ctx)
+	}
+	return []client.AllocationInfo{}, nil
 }
 
 func (m *MockESClient) DeleteIndex(ctx context.Context, names []string) error {

@@ -21,12 +21,15 @@ func TestFetchAll_AllSuccess(t *testing.T) {
 		"logs-000001": {},
 	}}
 
+	alloc := []client.AllocationInfo{{Node: "node1", Shards: "5", DiskPercent: "42"}}
+
 	mc := &MockESClient{
 		HealthFn:     func(_ context.Context) (*client.ClusterHealth, error) { return health, nil },
 		NodesFn:      func(_ context.Context) ([]client.NodeInfo, error) { return nodes, nil },
 		NodeStatsFn:  func(_ context.Context) (*client.NodeStatsResponse, error) { return nodeStats, nil },
 		IndicesFn:    func(_ context.Context) ([]client.IndexInfo, error) { return indices, nil },
 		IndexStatsFn: func(_ context.Context) (*client.IndexStatsResponse, error) { return indexStats, nil },
+		AllocationFn: func(_ context.Context) ([]client.AllocationInfo, error) { return alloc, nil },
 	}
 
 	snap, err := FetchAll(context.Background(), mc)
@@ -40,7 +43,21 @@ func TestFetchAll_AllSuccess(t *testing.T) {
 	assert.Equal(t, *nodeStats, snap.NodeStats)
 	assert.Equal(t, indices, snap.Indices)
 	assert.Equal(t, *indexStats, snap.IndexStats)
+	assert.Equal(t, alloc, snap.Allocation)
 	assert.False(t, snap.FetchedAt.IsZero())
+}
+
+func TestFetchAll_AllocationFailureIsNonFatal(t *testing.T) {
+	mc := &MockESClient{
+		AllocationFn: func(_ context.Context) ([]client.AllocationInfo, error) {
+			return nil, errMockFailure
+		},
+	}
+
+	snap, err := FetchAll(context.Background(), mc)
+	require.NoError(t, err)
+	require.NotNil(t, snap)
+	assert.Nil(t, snap.Allocation)
 }
 
 func TestFetchAll_PartialFailure(t *testing.T) {

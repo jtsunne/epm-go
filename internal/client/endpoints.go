@@ -16,6 +16,7 @@ const (
 	endpointNodeStats     = "/_nodes/stats/indices,os,jvm,fs?filter_path=nodes.*.name,nodes.*.host,nodes.*.ip,nodes.*.roles,nodes.*.indices.indexing.index_total,nodes.*.indices.indexing.index_time_in_millis,nodes.*.indices.search.query_total,nodes.*.indices.search.query_time_in_millis,nodes.*.os.cpu.percent,nodes.*.jvm.mem.heap_used_in_bytes,nodes.*.jvm.mem.heap_max_in_bytes,nodes.*.fs.total.total_in_bytes,nodes.*.fs.total.available_in_bytes"
 	endpointIndices       = "/_cat/indices?v&format=json&h=index,pri,rep,pri.store.size,store.size,docs.count&s=index"
 	endpointIndexStats    = "/_stats?filter_path=indices.*.primaries.indexing.index_total,indices.*.primaries.indexing.index_time_in_millis,indices.*.total.indexing.index_total,indices.*.total.indexing.index_time_in_millis,indices.*.total.search.query_total,indices.*.total.search.query_time_in_millis,indices.*.primaries.search.query_total,indices.*.primaries.search.query_time_in_millis,indices.*.primaries.store.size_in_bytes,indices.*.total.store.size_in_bytes"
+	endpointAllocation    = "/_cat/allocation?format=json&h=node,shards,disk.percent&s=node"
 )
 
 // GetClusterHealth fetches cluster health from /_cluster/health.
@@ -70,6 +71,20 @@ func (c *DefaultClient) GetIndices(ctx context.Context) ([]IndexInfo, error) {
 	var result []IndexInfo
 	if err := json.Unmarshal(body, &result); err != nil {
 		return nil, fmt.Errorf("GetIndices decode: %w", err)
+	}
+	return result, nil
+}
+
+// GetAllocation fetches per-node shard and disk allocation from /_cat/allocation.
+func (c *DefaultClient) GetAllocation(ctx context.Context) ([]AllocationInfo, error) {
+	body, err := c.doGet(ctx, endpointAllocation)
+	if err != nil {
+		return nil, fmt.Errorf("GetAllocation: %w", err)
+	}
+
+	var result []AllocationInfo
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, fmt.Errorf("GetAllocation decode: %w", err)
 	}
 	return result, nil
 }
