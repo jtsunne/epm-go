@@ -201,6 +201,16 @@ make run ARGS="http://localhost:9200"
 make integration ES_URI=http://localhost:9200
 ```
 
+## Pre-Commit Checklist
+
+Before marking any task done or committing:
+1. `make lint` — must pass with no new warnings
+2. `make test` — all tests must pass
+3. `make build` — binary must compile cleanly
+
+Error handling: always wrap with `fmt.Errorf("context: %w", err)`.
+Follow existing patterns in the file being modified before introducing new ones.
+
 ## Testing Conventions
 
 - `cmd/epm/main_test.go` — table-driven tests for `parseESURI`: credential stripping, scheme validation, invalid host detection
