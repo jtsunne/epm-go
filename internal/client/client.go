@@ -17,6 +17,7 @@ type ESClient interface {
 	GetNodeStats(ctx context.Context) (*NodeStatsResponse, error)
 	GetIndices(ctx context.Context) ([]IndexInfo, error)
 	GetIndexStats(ctx context.Context) (*IndexStatsResponse, error)
+	DeleteIndex(ctx context.Context, names []string) error
 	Ping(ctx context.Context) error
 	BaseURL() string
 }

@@ -118,6 +118,18 @@ epm --version
 | `←` / `→` | Previous / next page |
 | `?` | Toggle help footer |
 | `a` | Toggle Analytics screen (in analytics mode: `↑`/`↓` scroll, `a`/`Esc` return to dashboard) |
+| `Space` | Toggle selection on focused index row (multi-select) |
+| `d` | Delete selected index(es) — opens confirmation screen |
+
+## Index Deletion
+
+Press `Space` to toggle selection on rows in the index table (a `✓` prefix marks selected rows). Multiple rows can be selected. Press `d` to open the deletion confirmation screen.
+
+The confirmation screen lists all indices pending deletion with a `WARNING: This action cannot be undone.` message. Press `y` to confirm or `n`/`Esc` to cancel.
+
+After a successful deletion the index list refreshes automatically. The footer briefly shows `Deleted N index(es)` on success or `Delete failed: <reason>` on error.
+
+`Space` and `d` only operate when the index table is focused. They have no effect on the node table or when search mode is active.
 
 ## Metrics Explained
 

@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -60,6 +61,13 @@ type App struct {
 	indexTable  IndexTableModel
 	nodeTable   NodeTableModel
 	activeTable int // 0 = index table, 1 = node table
+
+	// Delete state
+	deleteConfirmMode  bool
+	pendingDeleteNames []string
+	deleteStatus       string
+	deleteStatusErr    bool // true when deleteStatus represents an error
+	pendingRefresh     bool // true when delete succeeded but a stale fetch was in-flight
 }
 
 // NewApp creates a new App with the given ES client and poll interval.
@@ -98,8 +106,33 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
+	case DeleteResultMsg:
+		if msg.Err != nil {
+			app.deleteStatus = fmt.Sprintf("Delete failed: %s", sanitize(msg.Err.Error()))
+			app.deleteStatusErr = true
+		} else {
+			app.deleteStatus = fmt.Sprintf("Deleted %d index(es)", len(msg.Names))
+			app.deleteStatusErr = false
+			// Trigger an immediate refresh so the index list reflects the deletion.
+			if !app.fetching {
+				app.fetching = true
+				app.tickGen++ // invalidate any pending tick to avoid double-fetch
+				return app, fetchCmd(app.client, app.current, app.pollInterval)
+			}
+			// A stale fetch is already in-flight. Mark that we need another
+			// refresh after it completes so the post-delete state is shown.
+			app.pendingRefresh = true
+		}
+
 	case SnapshotMsg:
 		app.fetching = false
+		// Clear delete status only when this is the post-delete (or normal) refresh.
+		// If pendingRefresh is set, this SnapshotMsg arrived from the stale in-flight
+		// fetch that started before the deletion; keep the status until the next fetch.
+		if !app.pendingRefresh {
+			app.deleteStatus = ""
+			app.deleteStatusErr = false
+		}
 		app.previous = app.current
 		app.current = msg.Snapshot
 		app.metrics = msg.Metrics
@@ -134,10 +167,21 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		app.nextRetryAt = time.Time{}
 		app.countdownGen++ // invalidate any pending countdown tick
 		app.tickGen++
+		if app.pendingRefresh {
+			// A delete completed while a stale fetch was in-flight. Immediately
+			// issue a fresh fetch now that the stale one has landed, so the index
+			// list reflects the deletion without waiting for the next poll tick.
+			app.pendingRefresh = false
+			app.fetching = true
+			return app, fetchCmd(app.client, app.current, app.pollInterval)
+		}
 		return app, tickCmd(app.pollInterval, app.tickGen)
 
 	case FetchErrorMsg:
 		app.fetching = false
+		app.pendingRefresh = false
+		app.deleteStatus = ""
+		app.deleteStatusErr = false
 		app.consecutiveFails++
 		app.lastError = msg.Err
 		app.connState = stateDisconnected
@@ -175,6 +219,22 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return app, tea.Quit
 		}
 
+		// In delete confirm mode only y, n, esc are handled; all other keys blocked.
+		if app.deleteConfirmMode {
+			switch {
+			case msg.String() == "y":
+				names := app.pendingDeleteNames
+				app.deleteConfirmMode = false
+				app.pendingDeleteNames = nil
+				app.indexTable.selected = make(map[string]struct{})
+				return app, deleteCmd(app.client, names)
+			case msg.String() == "n", key.Matches(msg, keys.Escape):
+				app.deleteConfirmMode = false
+				app.pendingDeleteNames = nil
+			}
+			return app, nil
+		}
+
 		// In analytics mode only esc/a close it, ↑↓ scroll, all others are ignored.
 		if app.analyticsMode {
 			switch {
@@ -209,6 +269,19 @@ func (app *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		switch {
+		case key.Matches(msg, keys.DeleteKey) && app.activeTable == 0:
+			names := app.indexTable.selectedNames()
+			if len(names) == 0 {
+				if name := app.indexTable.cursorRowName(); name != "" {
+					names = []string{name}
+				}
+			}
+			if len(names) > 0 {
+				app.pendingDeleteNames = names
+				app.deleteConfirmMode = true
+				app.deleteStatus = ""
+				app.deleteStatusErr = false
+			}
 		case key.Matches(msg, keys.Analytics):
 			app.analyticsMode = true
 			app.analyticsScrollOffset = 0
@@ -249,6 +322,13 @@ func (app *App) View() string {
 
 	if h := renderHeader(app); h != "" {
 		parts = append(parts, h)
+	}
+
+	// Delete confirm mode: replace dashboard with the confirmation screen.
+	if app.deleteConfirmMode {
+		parts = append(parts, renderDeleteConfirm(app))
+		parts = append(parts, renderFooter(app))
+		return strings.Join(parts, "\n")
 	}
 
 	// Analytics mode: replace dashboard with the recommendations screen.

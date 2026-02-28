@@ -203,3 +203,160 @@ func TestIndexTableDetailLine_CursorNonZero(t *testing.T) {
 	assert.False(t, strings.HasPrefix(strings.TrimSpace(out), "alpha-index"),
 		"detail line should not show the first row name when cursor is elsewhere")
 }
+
+// TestIndexTableToggleSelect_AddAndRemove verifies that toggleSelect adds a
+// name on first call and removes it on a second call (toggle semantics).
+func TestIndexTableToggleSelect_AddAndRemove(t *testing.T) {
+	m := NewIndexTable()
+	rows := []model.IndexRow{
+		{Name: "logs-2024", IndexingRate: 100.0},
+		{Name: "metrics", IndexingRate: 50.0},
+	}
+	m.SetData(rows)
+
+	// First toggle: should add.
+	m.toggleSelect("logs-2024")
+	assert.Len(t, m.selected, 1)
+	_, exists := m.selected["logs-2024"]
+	assert.True(t, exists, "logs-2024 should be in selected after first toggle")
+
+	// Second toggle: should remove.
+	m.toggleSelect("logs-2024")
+	assert.Len(t, m.selected, 0, "logs-2024 should be removed after second toggle")
+}
+
+// TestIndexTableSelectedNames_ReturnsSorted verifies that selectedNames returns
+// the selected index names in ascending alphabetical order.
+func TestIndexTableSelectedNames_ReturnsSorted(t *testing.T) {
+	m := NewIndexTable()
+	rows := []model.IndexRow{
+		{Name: "zebra", IndexingRate: 300.0},
+		{Name: "alpha", IndexingRate: 200.0},
+		{Name: "mango", IndexingRate: 100.0},
+	}
+	m.SetData(rows)
+
+	m.toggleSelect("zebra")
+	m.toggleSelect("alpha")
+	m.toggleSelect("mango")
+
+	names := m.selectedNames()
+	require.Len(t, names, 3)
+	assert.Equal(t, []string{"alpha", "mango", "zebra"}, names,
+		"selectedNames must return sorted names")
+}
+
+// TestIndexTableSetData_PreservesExistingSelection verifies that calling
+// SetData keeps selections for indices that still exist in the new data.
+func TestIndexTableSetData_PreservesExistingSelection(t *testing.T) {
+	m := NewIndexTable()
+	rows := []model.IndexRow{
+		{Name: "logs-2024", IndexingRate: 100.0},
+		{Name: "metrics", IndexingRate: 50.0},
+	}
+	m.SetData(rows)
+	m.toggleSelect("logs-2024")
+	require.Len(t, m.selected, 1, "precondition: one row selected")
+
+	// SetData with same data — selection must be preserved.
+	m.SetData(rows)
+	assert.Len(t, m.selected, 1, "SetData must preserve selection for still-present indices")
+	_, exists := m.selected["logs-2024"]
+	assert.True(t, exists, "logs-2024 must remain selected after refresh with same data")
+}
+
+// TestIndexTableSetData_ClearsStaleSelection verifies that calling SetData
+// removes selections for indices that are no longer present in the new data.
+func TestIndexTableSetData_ClearsStaleSelection(t *testing.T) {
+	m := NewIndexTable()
+	rows := []model.IndexRow{
+		{Name: "old-index", IndexingRate: 100.0},
+	}
+	m.SetData(rows)
+	m.toggleSelect("old-index")
+	require.Len(t, m.selected, 1, "precondition: one row selected")
+
+	// SetData with data that no longer contains the selected index.
+	newRows := []model.IndexRow{
+		{Name: "new-index", IndexingRate: 200.0},
+	}
+	m.SetData(newRows)
+	assert.Len(t, m.selected, 0, "SetData must clear selection for indices no longer present")
+}
+
+// TestIndexTableSpaceKey_TogglesRowUnderCursor verifies that pressing space
+// when the index table is focused toggles the selection for the row under
+// the cursor, and does NOT advance the cursor or change the page.
+func TestIndexTableSpaceKey_TogglesRowUnderCursor(t *testing.T) {
+	m := NewIndexTable()
+	m.focused = true
+	rows := []model.IndexRow{
+		{Name: "alpha-index", IndexingRate: 300.0},
+		{Name: "beta-index", IndexingRate: 200.0},
+		{Name: "gamma-index", IndexingRate: 100.0},
+	}
+	m.SetData(rows)
+	// After SetData, sorted desc by IndexingRate: alpha, beta, gamma.
+	// cursor=0 → alpha-index.
+
+	space := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{' '}}
+	m, _ = m.Update(space)
+
+	names := m.selectedNames()
+	require.Len(t, names, 1, "one row should be selected after space")
+	assert.Equal(t, "alpha-index", names[0], "the row under cursor should be selected")
+	assert.Equal(t, 0, m.cursor, "cursor must not advance after space")
+
+	// Press space again — should deselect.
+	m, _ = m.Update(space)
+	assert.Len(t, m.selectedNames(), 0, "row should be deselected on second space press")
+}
+
+// TestIndexTableSpaceKey_Unfocused verifies that space does NOT toggle
+// selection when the table is not focused.
+func TestIndexTableSpaceKey_Unfocused(t *testing.T) {
+	m := NewIndexTable()
+	m.focused = false
+	rows := []model.IndexRow{
+		{Name: "alpha-index", IndexingRate: 100.0},
+	}
+	m.SetData(rows)
+
+	space := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{' '}}
+	m, _ = m.Update(space)
+
+	assert.Len(t, m.selectedNames(), 0, "space on unfocused table must not select anything")
+}
+
+// TestIndexTableRender_SelectedRowHasCheckmark verifies that a selected row
+// shows the "✓" prefix in the rendered table output.
+func TestIndexTableRender_SelectedRowHasCheckmark(t *testing.T) {
+	m := NewIndexTable()
+	m.focused = true
+	rows := []model.IndexRow{
+		{Name: "my-index", IndexingRate: 100.0},
+	}
+	m.SetData(rows)
+	m.toggleSelect("my-index")
+
+	out := m.renderTable(nil)
+	assert.True(t, strings.Contains(out, "✓"), "selected row must show checkmark in rendered output")
+}
+
+// TestIndexTableSpaceKey_DuringSearch verifies that space does NOT toggle
+// selection when the table is in search mode (the character must go to the
+// search input, not act as a selection toggle).
+func TestIndexTableSpaceKey_DuringSearch(t *testing.T) {
+	m := NewIndexTable()
+	m.focused = true
+	m.searching = true
+	rows := []model.IndexRow{
+		{Name: "alpha-index", IndexingRate: 100.0},
+	}
+	m.SetData(rows)
+
+	space := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{' '}}
+	m, _ = m.Update(space)
+
+	assert.Len(t, m.selectedNames(), 0, "space during search must not select anything")
+}

@@ -4,6 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"strings"
 )
 
 const (
@@ -82,4 +86,60 @@ func (c *DefaultClient) GetIndexStats(ctx context.Context) (*IndexStatsResponse,
 		return nil, fmt.Errorf("GetIndexStats decode: %w", err)
 	}
 	return &result, nil
+}
+
+// doDelete performs a DELETE request to the given path (relative to BaseURL).
+// It sets Basic Auth if credentials are configured.
+// Returns an error on non-2xx status.
+func (c *DefaultClient) doDelete(ctx context.Context, path string) error {
+	url := strings.TrimRight(c.config.BaseURL, "/") + path
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, nil)
+	if err != nil {
+		return fmt.Errorf("create request: %w", err)
+	}
+
+	req.Header.Set("Accept", "application/json")
+
+	if c.config.Username != "" || c.config.Password != "" {
+		req.SetBasicAuth(c.config.Username, c.config.Password)
+	}
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return fmt.Errorf("do request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	const maxResponseBytes = 32 * 1024 * 1024
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBytes+1))
+	if err != nil {
+		return fmt.Errorf("read body: %w", err)
+	}
+	if len(body) > maxResponseBytes {
+		return fmt.Errorf("response body exceeds %d MB limit", maxResponseBytes/(1024*1024))
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("unexpected status %d: %s", resp.StatusCode, truncate(body, 200))
+	}
+
+	return nil
+}
+
+// DeleteIndex deletes one or more indices by name.
+// Names are joined with commas into a single DELETE /<names> request.
+func (c *DefaultClient) DeleteIndex(ctx context.Context, names []string) error {
+	if len(names) == 0 {
+		return fmt.Errorf("DeleteIndex: names must not be empty")
+	}
+	escaped := make([]string, len(names))
+	for i, n := range names {
+		escaped[i] = url.PathEscape(n)
+	}
+	path := "/" + strings.Join(escaped, ",")
+	if err := c.doDelete(ctx, path); err != nil {
+		return fmt.Errorf("DeleteIndex: %w", err)
+	}
+	return nil
 }
