@@ -30,3 +30,9 @@ type TickMsg struct {
 // the "Retrying in Ns..." countdown in the header stays current.
 // Gen must match App.countdownGen; stale ticks are dropped.
 type CountdownTickMsg struct{ Gen int }
+
+// DeleteResultMsg reports the outcome of a DeleteIndex operation.
+type DeleteResultMsg struct {
+	Names []string
+	Err   error
+}

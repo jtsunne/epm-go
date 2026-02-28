@@ -439,3 +439,82 @@ func TestInvalidJSONResponse(t *testing.T) {
 		t.Error("expected error for invalid JSON, got nil")
 	}
 }
+
+func TestDeleteIndex_Success(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"acknowledged":true}`))
+	}))
+	defer srv.Close()
+
+	c := newTestClient(t, srv.URL)
+	err := c.DeleteIndex(context.Background(), []string{"my-index"})
+	if err != nil {
+		t.Fatalf("DeleteIndex: %v", err)
+	}
+	if gotMethod != http.MethodDelete {
+		t.Errorf("method = %q, want DELETE", gotMethod)
+	}
+	if gotPath != "/my-index" {
+		t.Errorf("path = %q, want /my-index", gotPath)
+	}
+}
+
+func TestDeleteIndex_BatchPath(t *testing.T) {
+	var gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"acknowledged":true}`))
+	}))
+	defer srv.Close()
+
+	c := newTestClient(t, srv.URL)
+	err := c.DeleteIndex(context.Background(), []string{"index-a", "index-b", "index-c"})
+	if err != nil {
+		t.Fatalf("DeleteIndex: %v", err)
+	}
+	if gotPath != "/index-a,index-b,index-c" {
+		t.Errorf("path = %q, want /index-a,index-b,index-c", gotPath)
+	}
+}
+
+func TestDeleteIndex_NotFound(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"error":"index not found"}`))
+	}))
+	defer srv.Close()
+
+	c := newTestClient(t, srv.URL)
+	err := c.DeleteIndex(context.Background(), []string{"missing-index"})
+	if err == nil {
+		t.Fatal("expected error on 404, got nil")
+	}
+	if !strings.Contains(err.Error(), "404") {
+		t.Errorf("error %q does not contain 404", err.Error())
+	}
+}
+
+func TestDeleteIndex_EmptyNames(t *testing.T) {
+	// A server that records whether it received any request.
+	received := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		received = true
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	c := newTestClient(t, srv.URL)
+	err := c.DeleteIndex(context.Background(), []string{})
+	if err == nil {
+		t.Fatal("expected error on empty names slice, got nil")
+	}
+	if received {
+		t.Error("DeleteIndex with empty names must not send any HTTP request")
+	}
+}

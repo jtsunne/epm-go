@@ -75,6 +75,7 @@ internal/
     nodetable.go             # NodeTableModel (7 columns)            (Phase 5)
     thresholds.go            # Threshold severity functions for alert coloring (Phase 6)
     analytics.go             # renderAnalytics: full-screen recommendations view
+    delete.go                # renderDeleteConfirm + deleteCmd (index deletion confirmation overlay)
   format/
     format.go                # FormatBytes, FormatRate, FormatLatency, FormatNumber, FormatPercent
     format_test.go
@@ -164,6 +165,8 @@ Overview cards change color when thresholds are exceeded — no alert history or
 | `←` / `→` | Previous / next page |
 | `?` | Toggle help footer |
 | `a` | Toggle Analytics screen |
+| `space` | Toggle selection on index row (multi-select) |
+| `d` | Delete selected index(es) (with confirmation) |
 
 ## Color Coding
 
@@ -188,6 +191,7 @@ Table column colors (indextable / nodetable StyleFunc):
 | Idx Lat (col 7 index, col 5 node) | Purple `#8b5cf6` |
 | Srch Lat (col 8 index, col 6 node) | Orange `#f97316` |
 | Role (col 1 node) | Blue `#3b82f6` |
+| Selected row background (multi-select via `space`) | Indigo `#6366f1` (`colorIndigo`) |
 
 ## Development
 
@@ -233,6 +237,7 @@ Follow existing patterns in the file being modified before introducing new ones.
 - **MetricNotAvailable sentinel**: `model.MetricNotAvailable = -1.0` is returned by all calculator functions when `prev == nil` or elapsed < 1s (delta not computable). `FormatRate` and `FormatLatency` treat any value `< 0` as sentinel and display `"---"`. Safe because the engine clamps all real metrics to `>= 0`. Sparkline history guard in `app.go` prevents sentinel values from entering the history buffer.
 - **`CategoryIndexLifecycle`**: recommendation category (in `model/recommendation.go`) used for date-rollup suggestions (daily→weekly/monthly, weekly→monthly, monthly→yearly) and empty-index deletion candidates. Separate from `CategoryIndexConfig` to keep lifecycle vs. config concerns distinct.
 - **`IndexRow.PriSizeBytes`**: primary shard data size in bytes (int64), populated by `CalcIndexRows` from the already-computed `primarySizeBytes` local variable. Used by `dateRollupRecs` to decide daily→monthly vs. daily→weekly consolidation target (threshold: 100 MiB average primary size per index).
+- **`deleteConfirmMode`**: UI overlay mode (like `analyticsMode`) — when true, `View()` renders header + `renderDeleteConfirm` + footer instead of the dashboard. Only `y`, `n`, and `esc` are processed; all other keys are blocked. State fields: `deleteConfirmMode bool`, `pendingDeleteNames []string`, `deleteStatus string`, `deleteStatusErr bool`. `deleteStatus` is cleared on the next `SnapshotMsg` or `FetchErrorMsg`. `deleteStatusErr` controls footer color (red vs green).
 
 ## lipgloss Layout Patterns
 

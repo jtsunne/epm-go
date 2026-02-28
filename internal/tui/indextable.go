@@ -2,8 +2,10 @@ package tui
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/lipgloss"
 	ltable "github.com/charmbracelet/lipgloss/table"
 	tea "github.com/charmbracelet/bubbletea"
@@ -15,8 +17,9 @@ import (
 // IndexTableModel is a sortable, paginated, searchable table of index statistics.
 type IndexTableModel struct {
 	tableModel
-	allRows     []model.IndexRow // unfiltered source data
-	displayRows []model.IndexRow // after filter + sort applied
+	allRows     []model.IndexRow    // unfiltered source data
+	displayRows []model.IndexRow    // after filter + sort applied
+	selected    map[string]struct{} // set of selected index names
 }
 
 // NewIndexTable returns an IndexTableModel with 9-column layout and
@@ -35,16 +38,62 @@ func NewIndexTable() IndexTableModel {
 	}
 	m := IndexTableModel{
 		tableModel: newTableModel(cols),
+		selected:   make(map[string]struct{}),
 	}
 	m.sortCol = 5  // IndexingRate
 	m.sortDesc = true
 	return m
 }
 
+// toggleSelect adds the given index name to the selection set if absent,
+// or removes it if already present.
+func (m *IndexTableModel) toggleSelect(name string) {
+	if _, ok := m.selected[name]; ok {
+		delete(m.selected, name)
+	} else {
+		m.selected[name] = struct{}{}
+	}
+}
+
+// selectedNames returns a sorted slice of all currently selected index names.
+func (m *IndexTableModel) selectedNames() []string {
+	names := make([]string, 0, len(m.selected))
+	for name := range m.selected {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
+}
+
+// cursorRowName returns the name of the index row currently under the cursor,
+// or an empty string if there are no rows or the cursor is out of range.
+func (m *IndexTableModel) cursorRowName() string {
+	allIdx := make([]int, len(m.displayRows))
+	for i := range m.displayRows {
+		allIdx[i] = i
+	}
+	pageIdx := currentPageIndices(allIdx, m.page, m.pageSize)
+	if m.cursor < len(pageIdx) {
+		return m.displayRows[pageIdx[m.cursor]].Name
+	}
+	return ""
+}
+
 // SetData applies the current search filter and sort to rows, storing the
-// result as displayRows ready for rendering.
+// result as displayRows ready for rendering. Removes stale selections for
+// indices that no longer exist in the new data; preserves selections for
+// indices that remain present after a refresh.
 func (m *IndexTableModel) SetData(rows []model.IndexRow) {
 	m.allRows = rows
+	newNames := make(map[string]struct{}, len(rows))
+	for _, r := range rows {
+		newNames[r.Name] = struct{}{}
+	}
+	for name := range m.selected {
+		if _, ok := newNames[name]; !ok {
+			delete(m.selected, name)
+		}
+	}
 	filtered := filterIndexRows(m.allRows, m.search)
 	m.displayRows = sortIndexRows(filtered, m.sortCol, m.sortDesc)
 	m.clampPage(len(m.displayRows))
@@ -52,9 +101,19 @@ func (m *IndexTableModel) SetData(rows []model.IndexRow) {
 }
 
 // Update handles keyboard events for sorting, pagination, and search. It
-// delegates to the embedded tableModel and re-applies filter/sort when the
-// sort column, direction, or search term changes.
+// intercepts the space key to toggle row selection, then delegates remaining
+// keys to the embedded tableModel and re-applies filter/sort when needed.
 func (m IndexTableModel) Update(msg tea.Msg) (IndexTableModel, tea.Cmd) {
+	// Intercept space key for selection — must not be in search mode.
+	if keyMsg, ok := msg.(tea.KeyMsg); ok && !m.searching && m.focused {
+		if key.Matches(keyMsg, keys.ToggleSelect) {
+			if name := m.cursorRowName(); name != "" {
+				m.toggleSelect(name)
+			}
+			return m, nil
+		}
+	}
+
 	prevSort := m.sortCol
 	prevDesc := m.sortDesc
 	prevSearch := m.search
@@ -121,6 +180,14 @@ func (m *IndexTableModel) renderTable(app *App) string {
 		return lipgloss.JoinVertical(lipgloss.Left, hdr, StyleDim.Render("  (no indices)"))
 	}
 
+	// Pre-compute which page-relative rows are selected for use in StyleFunc.
+	selectedPageRows := make(map[int]bool, len(m.selected))
+	for i, idx := range pageIdx {
+		if _, ok := m.selected[m.displayRows[idx].Name]; ok {
+			selectedPageRows[i] = true
+		}
+	}
+
 	sortCol := m.sortCol
 	focused := m.focused
 	cursor := m.cursor
@@ -136,6 +203,8 @@ func (m *IndexTableModel) renderTable(app *App) string {
 			base := lipgloss.NewStyle()
 			if focused && row == cursor {
 				base = base.Background(colorSelectedBg)
+			} else if selectedPageRows[row] {
+				base = base.Background(colorIndigo)
 			} else if row%2 == 0 {
 				base = base.Background(colorAlt)
 			}
@@ -164,15 +233,25 @@ func (m *IndexTableModel) renderTable(app *App) string {
 		t = t.Width(app.width)
 	}
 
-	for _, idx := range pageIdx {
+	for i, idx := range pageIdx {
 		r := m.displayRows[idx]
 		cells := make([]string, len(m.columns))
 		for col := range m.columns {
 			cells[col] = indexCellValue(r, col)
 		}
 		// Prevent cell wrapping: truncate name to allocated column width.
+		// For selected rows the "✓ " prefix (2 display chars) is added after
+		// truncation, so truncate to colWidths[0]-2 to keep total width correct.
 		if len(colWidths) > 0 && colWidths[0] > 0 {
-			cells[0] = truncateName(cells[0], colWidths[0])
+			if selectedPageRows[i] {
+				cells[0] = truncateName(cells[0], colWidths[0]-2)
+			} else {
+				cells[0] = truncateName(cells[0], colWidths[0])
+			}
+		}
+		// Prefix selected rows with a checkmark on the name cell.
+		if selectedPageRows[i] {
+			cells[0] = "✓ " + cells[0]
 		}
 		t = t.Row(cells...)
 	}

@@ -9,11 +9,12 @@ import (
 
 // MockESClient implements client.ESClient for testing.
 type MockESClient struct {
-	HealthFn     func(ctx context.Context) (*client.ClusterHealth, error)
-	NodesFn      func(ctx context.Context) ([]client.NodeInfo, error)
-	NodeStatsFn  func(ctx context.Context) (*client.NodeStatsResponse, error)
-	IndicesFn    func(ctx context.Context) ([]client.IndexInfo, error)
-	IndexStatsFn func(ctx context.Context) (*client.IndexStatsResponse, error)
+	HealthFn      func(ctx context.Context) (*client.ClusterHealth, error)
+	NodesFn       func(ctx context.Context) ([]client.NodeInfo, error)
+	NodeStatsFn   func(ctx context.Context) (*client.NodeStatsResponse, error)
+	IndicesFn     func(ctx context.Context) ([]client.IndexInfo, error)
+	IndexStatsFn  func(ctx context.Context) (*client.IndexStatsResponse, error)
+	DeleteIndexFn func(ctx context.Context, names []string) error
 }
 
 func (m *MockESClient) GetClusterHealth(ctx context.Context) (*client.ClusterHealth, error) {
@@ -49,6 +50,13 @@ func (m *MockESClient) GetIndexStats(ctx context.Context) (*client.IndexStatsRes
 		return m.IndexStatsFn(ctx)
 	}
 	return &client.IndexStatsResponse{Indices: map[string]client.IndexStatEntry{}}, nil
+}
+
+func (m *MockESClient) DeleteIndex(ctx context.Context, names []string) error {
+	if m.DeleteIndexFn != nil {
+		return m.DeleteIndexFn(ctx, names)
+	}
+	return nil
 }
 
 func (m *MockESClient) Ping(ctx context.Context) error {
