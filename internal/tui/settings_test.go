@@ -304,6 +304,7 @@ func TestSettingsFormUpdate_CtrlS_BlockedWhileLoading(t *testing.T) {
 
 	m2, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlS})
 	assert.Equal(t, 0, m2.focusedField, "focusedField must be unchanged while loading")
+	assert.False(t, m2.submitted, "ctrl+s while loading must not set submitted flag")
 	assert.Nil(t, cmd, "ctrl+s while loading must return nil cmd")
 }
 

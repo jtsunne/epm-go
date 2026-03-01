@@ -274,12 +274,28 @@ func renderSettingsForm(app *App) string {
 	titleBar := StyleHeader.Width(width).MaxWidth(width).Render(titleRow)
 	titleH := lipgloss.Height(titleBar)
 
+	// When editing multiple indices, show which index values were pre-filled from.
+	var subtitleBar string
+	var subtitleH int
+	if len(form.names) > 1 {
+		subtitleText := StyleDim.Render(fmt.Sprintf("  pre-filled from: %s", sanitize(form.names[0])))
+		subtitleBar = lipgloss.NewStyle().Width(width).Render(subtitleText)
+		subtitleH = lipgloss.Height(subtitleBar)
+	}
+
 	headerH := renderedHeight(renderHeader(app))
 	footerH := renderedHeight(renderFooter(app))
-	availH := height - headerH - titleH - footerH
+	availH := height - headerH - titleH - subtitleH - footerH
 	if availH < 1 {
 		availH = 1
 	}
+
+	// titlePrefix is prepended to all return paths below.
+	titlePrefix := titleBar
+	if subtitleBar != "" {
+		titlePrefix = titleBar + "\n" + subtitleBar
+	}
+
 
 	// Loading state.
 	if form.loading {
@@ -289,7 +305,7 @@ func renderSettingsForm(app *App) string {
 		if availH > 1 {
 			lines[1] = line
 		}
-		return titleBar + "\n" + strings.Join(lines, "\n")
+		return titlePrefix + "\n" + strings.Join(lines, "\n")
 	}
 
 	// Error state.
@@ -300,7 +316,7 @@ func renderSettingsForm(app *App) string {
 		if availH > 1 {
 			lines[1] = line
 		}
-		return titleBar + "\n" + strings.Join(lines, "\n")
+		return titlePrefix + "\n" + strings.Join(lines, "\n")
 	}
 
 	// Compute line counts per field (label row + optional suggestions row).
@@ -365,5 +381,5 @@ func renderSettingsForm(app *App) string {
 		lines = append(lines, "")
 	}
 
-	return titleBar + "\n" + strings.Join(lines[:availH], "\n")
+	return titlePrefix + "\n" + strings.Join(lines[:availH], "\n")
 }
