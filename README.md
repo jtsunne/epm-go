@@ -120,6 +120,7 @@ epm --version
 | `a` | Toggle Analytics screen (in analytics mode: `↑`/`↓` scroll, `a`/`Esc` return to dashboard) |
 | `Space` | Toggle selection on focused index row (multi-select) |
 | `d` | Delete selected index(es) — opens confirmation screen |
+| `e` | Edit settings for selected/cursor index(es) — opens settings form |
 
 ## Index Deletion
 
@@ -130,6 +131,32 @@ The confirmation screen lists all indices pending deletion with a `WARNING: This
 After a successful deletion the index list refreshes automatically. The footer briefly shows `Deleted N index(es)` on success or `Delete failed: <reason>` on error.
 
 `Space` and `d` only operate when the index table is focused. They have no effect on the node table or when search mode is active.
+
+## Index Settings
+
+Press `e` on a focused index row to open the settings editor. If rows are selected with `Space`, the form loads current values from the first selected index and applies any changes to all selected indices on save. With no selection, the cursor row is used.
+
+The form shows 11 editable fields pre-populated with current values from Elasticsearch:
+
+| Field | ES Setting Key |
+|-------|---------------|
+| Replicas | `index.number_of_replicas` |
+| Refresh Interval | `index.refresh_interval` |
+| Allocation Include Name | `index.routing.allocation.include._name` |
+| Allocation Exclude Name | `index.routing.allocation.exclude._name` |
+| Allocation Require Name | `index.routing.allocation.require._name` |
+| Allocation Include IP | `index.routing.allocation.include._ip` |
+| Allocation Exclude IP | `index.routing.allocation.exclude._ip` |
+| Allocation Require IP | `index.routing.allocation.require._ip` |
+| Total Shards Per Node | `index.routing.allocation.total_shards_per_node` |
+| Total Fields Limit | `index.mapping.total_fields.limit` |
+| Read-Only Allow Delete | `index.blocks.read_only_allow_delete` |
+
+Navigate fields with `↑`/`↓` or `Tab`/`Shift+Tab`. Routing allocation fields show available node names and IPs as suggestions based on the current snapshot. Press `Ctrl+S` to save only the changed fields, or `Esc` to cancel.
+
+After saving, the footer briefly shows `Settings updated for N index(es)` on success or the error from Elasticsearch on failure. The index list refreshes automatically after a successful save.
+
+`e` only operates when the index table is focused.
 
 ## Metrics Explained
 

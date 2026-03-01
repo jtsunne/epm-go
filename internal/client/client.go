@@ -19,6 +19,8 @@ type ESClient interface {
 	GetIndexStats(ctx context.Context) (*IndexStatsResponse, error)
 	GetAllocation(ctx context.Context) ([]AllocationInfo, error)
 	DeleteIndex(ctx context.Context, names []string) error
+	GetIndexSettings(ctx context.Context, name string) (*IndexSettingsValues, error)
+	UpdateIndexSettings(ctx context.Context, names []string, settings map[string]any) error
 	Ping(ctx context.Context) error
 	BaseURL() string
 }
