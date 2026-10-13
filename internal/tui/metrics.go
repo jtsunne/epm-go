@@ -15,7 +15,7 @@ import (
 //	│ 1,204.3 /s       │   ← bold, metric color
 //	│ ▁▂▃▅▇█▇▅▃▂       │   ← colored sparkline
 //	╰──────────────────╯
-func renderMetricCard(title, value, unit string, sparkValues []float64, cardWidth int, color lipgloss.Color, titleStyle lipgloss.Style) string {
+func renderMetricCard(title, value, unit string, sparkValues []float64, cardWidth int, color lipgloss.TerminalColor, titleStyle lipgloss.Style) string {
 	// Minimum of 8 avoids zero/negative Width() args.
 	// Narrow mode callers return early before passing cardWidth < 8.
 	// Wide mode callers enforce their own ≥20 floor before passing cardWidth here.

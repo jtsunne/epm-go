@@ -136,9 +136,9 @@ func (m *NodeTableModel) renderTable(app *App) string {
 			}
 			base := lipgloss.NewStyle()
 			if focused && row == cursor {
-				base = base.Background(colorSelectedBg)
+				base = base.Background(colorCursorBg)
 			} else if row%2 == 0 {
-				base = base.Background(colorAlt)
+				base = base.Background(colorSurface)
 			}
 			switch col {
 			case 1:
@@ -152,11 +152,11 @@ func (m *NodeTableModel) renderTable(app *App) string {
 			case 6:
 				return base.Foreground(colorOrange)
 			case 7:
-				return base.Foreground(colorWhite)
+				return base.Foreground(colorFg)
 			case 8:
 				return base.Foreground(colorDiskYellow)
 			default:
-				return base.Foreground(colorWhite)
+				return base.Foreground(colorFg)
 			}
 		}).
 		BorderStyle(lipgloss.NewStyle().Foreground(colorGray)).
