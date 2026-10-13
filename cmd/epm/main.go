@@ -91,6 +91,7 @@ func main() {
 		showVersion       = flag.Bool("version", false, "print version and exit")
 		userFlag          = flag.String("user", "", "Elasticsearch username (overrides URI credentials and ES_USER env var)")
 		passFlag          = flag.String("password", "", "Elasticsearch password (overrides URI credentials and ES_PASSWORD env var)")
+		themeFlag         = flag.String("theme", "auto", "color theme: auto (detect terminal background), light, or dark")
 	)
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "epm %s — Elasticsearch Performance Monitor\n\n", version)
@@ -102,6 +103,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "  epm --user root --password \"s3cr#t!\" https://host:9200\n")
 		fmt.Fprintf(os.Stderr, "  epm --allow-insecure-auth --user elastic --password changeme http://localhost:9200\n")
 		fmt.Fprintf(os.Stderr, "  epm --interval 30s http://localhost:9200\n")
+		fmt.Fprintf(os.Stderr, "  epm --theme light http://localhost:9200\n")
 		fmt.Fprintf(os.Stderr, "  epm --version\n\n")
 		fmt.Fprintf(os.Stderr, "environment variables:\n")
 		fmt.Fprintf(os.Stderr, "  ES_USER       Elasticsearch username (overridden by --user flag)\n")
@@ -120,6 +122,11 @@ func main() {
 	const maxInterval = 300 * time.Second
 	if *interval < minInterval || *interval > maxInterval {
 		fmt.Fprintf(os.Stderr, "error: --interval must be between 5s and 300s (got %s)\n", *interval)
+		os.Exit(1)
+	}
+
+	if err := tui.SetTheme(*themeFlag); err != nil {
+		fmt.Fprintf(os.Stderr, "error: --theme: %v\n", err)
 		os.Exit(1)
 	}
 

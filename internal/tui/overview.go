@@ -116,7 +116,7 @@ func renderOverview(app *App) string {
 	if statusText == "" {
 		statusText = "UNKNOWN"
 	}
-	var statusBg lipgloss.Color
+	var statusBg lipgloss.TerminalColor
 	switch health.Status {
 	case "green":
 		statusBg = colorGreen
@@ -129,7 +129,7 @@ func renderOverview(app *App) string {
 	}
 	card1 := applyHeight(StyleOverviewCard.
 		Background(statusBg).
-		Foreground(colorDark).
+		Foreground(colorOnAccent).
 		Bold(true).
 		Width(cardWidths[0])).
 		Render(statusText + "\nStatus")

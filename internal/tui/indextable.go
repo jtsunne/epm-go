@@ -202,11 +202,11 @@ func (m *IndexTableModel) renderTable(app *App) string {
 			}
 			base := lipgloss.NewStyle()
 			if focused && row == cursor {
-				base = base.Background(colorSelectedBg)
+				base = base.Background(colorCursorBg)
 			} else if selectedPageRows[row] {
-				base = base.Background(colorIndigo)
+				base = base.Background(colorMarkedBg)
 			} else if row%2 == 0 {
-				base = base.Background(colorAlt)
+				base = base.Background(colorSurface)
 			}
 			switch col {
 			case 5:
@@ -218,7 +218,7 @@ func (m *IndexTableModel) renderTable(app *App) string {
 			case 8:
 				return base.Foreground(colorOrange)
 			default:
-				return base.Foreground(colorWhite)
+				return base.Foreground(colorFg)
 			}
 		}).
 		BorderStyle(lipgloss.NewStyle().Foreground(colorGray)).

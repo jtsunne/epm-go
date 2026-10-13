@@ -5,12 +5,15 @@ Go TUI reimplementation of the Chrome extension "Elasticsearch Performance Monit
 ## Usage
 
 ```bash
-epm [--interval 10s] [--insecure] [--user USER] [--password PASS] <elasticsearch-uri>
+epm [--interval 10s] [--insecure] [--user USER] [--password PASS] [--theme auto|light|dark] <elasticsearch-uri>
 
 # Examples
 epm http://localhost:9200
 epm --insecure https://elastic:changeme@prod.example.com:9200
 epm --interval 30s http://localhost:9200
+
+# Color theme: auto-detects terminal background by default; force when detection is wrong (tmux/screen/SSH)
+epm --theme light http://localhost:9200
 
 # Credentials with special characters (# ? % etc.) — use flags instead of URI
 epm --user root --password "op0107##" https://host:9200
@@ -22,20 +25,6 @@ ES_PASSWORD="op0107##" epm --user root https://host:9200
 
 # Credential priority: --user/--password flags > ES_USER/ES_PASSWORD env vars > URI-embedded
 ```
-
-## Tech Stack
-
-| Layer | Library |
-|-------|---------|
-| TUI framework | `charmbracelet/bubbletea` (MVU, `tea.Tick` for polling) |
-| Styling | `charmbracelet/lipgloss` |
-| Tables | `charmbracelet/lipgloss/table` (StyleFunc per-cell coloring) |
-| Text input | `charmbracelet/bubbles/textinput` |
-| Sparklines | Braille chars `▁▂▃▄▅▆▇█` — zero-dependency |
-| HTTP client | `net/http` stdlib — no official ES client |
-| Parallel fetch | `golang.org/x/sync/errgroup` |
-| CLI flags | `stdlib flag` — no Cobra |
-| Testing | `stretchr/testify` + `net/http/httptest` |
 
 ## Project Structure
 
@@ -86,20 +75,7 @@ Makefile
 
 ## Elasticsearch API Endpoints
 
-All 6 endpoints are GET-only, JSON, with `filter_path` to reduce response size. Stable across ES 6.x–9.x.
-
-```
-GET /_cluster/health?filter_path=cluster_name,status,number_of_nodes,active_shards,unassigned_shards
-GET /_cat/nodes?v&format=json&h=node.role,name,ip&s=node.role,ip
-GET /_nodes/stats/indices,os,jvm,fs?filter_path=nodes.*.name,...
-GET /_cat/indices?v&format=json&h=index,pri,rep,pri.store.size,store.size,docs.count&s=index
-GET /_stats?filter_path=indices.*.primaries.indexing...,indices.*.total.search...
-GET /_cat/allocation?format=json&h=node,shards,disk.percent&s=node
-GET /<name>/_settings?filter_path=*.settings.index.number_of_replicas,...
-PUT /<names,comma-joined>/_settings  (JSON body of changed dotted-key→value pairs; only changed fields sent)
-```
-
-Full `filter_path` values are in `internal/client/endpoints.go`.
+6 endpoints, all GET-only except the write path. Full paths and `filter_path` values are in `internal/client/endpoints.go`.
 
 The PUT `/_settings` endpoint is the only write-mutating operation. `doPutJSON` on `DefaultClient` is the HTTP transport helper for PUT requests with a JSON body — it mirrors `doDelete` shape. Used exclusively by `UpdateIndexSettings`.
 
@@ -156,63 +132,11 @@ Overview cards change color when thresholds are exceeded — no alert history or
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-## Keyboard Shortcuts
-
-| Key | Action |
-|-----|--------|
-| `q` / `ctrl+c` | Quit |
-| `r` | Force refresh now |
-| `tab` / `shift+tab` | Switch focused table |
-| `↑` / `k` | Move cursor up in focused table |
-| `↓` / `j` | Move cursor down in focused table |
-| `1`–`9` | Sort by column N |
-| `/` | Search in focused table |
-| `esc` | Close search |
-| `←` / `→` | Previous / next page |
-| `?` | Toggle help footer |
-| `a` | Toggle Analytics screen |
-| `space` | Toggle selection on index row (multi-select) |
-| `d` | Delete selected index(es) (with confirmation) |
-| `e` | Edit settings for selected/cursor index(es) |
-
-## Color Coding
-
-Metric cards (overview + sparkline cards):
-
-| Metric | Color |
-|--------|-------|
-| Indexing Rate | Green `#10b981` |
-| Search Rate | Cyan `#06b6d4` |
-| Index Latency | Amber `#f59e0b` |
-| Search Latency | Red `#ef4444` |
-| Cluster GREEN | Emerald |
-| Cluster YELLOW | Amber |
-| Cluster RED | Red (entire bg tints red) |
-
-Table column colors (indextable / nodetable StyleFunc):
-
-| Column | Color |
-|--------|-------|
-| Idx/s (col 5 index, col 3 node) | Green `#10b981` |
-| Srch/s (col 6 index, col 4 node) | Cyan `#06b6d4` |
-| Idx Lat (col 7 index, col 5 node) | Purple `#8b5cf6` |
-| Srch Lat (col 8 index, col 6 node) | Orange `#f97316` |
-| Shards (col 7 node) | White |
-| Disk% (col 8 node) | Yellow `#eab308` |
-| Role (col 1 node) | Blue `#3b82f6` |
-| Selected row background (multi-select via `space`) | Indigo `#6366f1` (`colorIndigo`) |
+Keyboard shortcuts are in `internal/tui/keys.go`; color constants for metric cards and table columns are in `internal/tui/styles.go`.
 
 ## Development
 
-```bash
-make build    # go build -o bin/epm ./cmd/epm
-make test     # go test -race -count=1 ./...
-make lint     # go vet ./... + staticcheck
-make run ARGS="http://localhost:9200"
-
-# Integration tests (require live ES cluster)
-make integration ES_URI=http://localhost:9200
-```
+See `Makefile` for build/test/lint/run targets (including the `integration` target, which requires a live ES cluster).
 
 ## Pre-Commit Checklist
 
