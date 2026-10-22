@@ -429,21 +429,21 @@ func (app *App) View() string {
 	if app.deleteConfirmMode {
 		parts = append(parts, renderDeleteConfirm(app))
 		parts = append(parts, renderFooter(app))
-		return strings.Join(parts, "\n")
+		return app.renderThemedScreen(strings.Join(parts, "\n"))
 	}
 
 	// Settings mode: replace dashboard with the settings form.
 	if app.settingsMode {
 		parts = append(parts, renderSettingsForm(app))
 		parts = append(parts, renderFooter(app))
-		return strings.Join(parts, "\n")
+		return app.renderThemedScreen(strings.Join(parts, "\n"))
 	}
 
 	// Analytics mode: replace dashboard with the recommendations screen.
 	if app.analyticsMode {
 		parts = append(parts, renderAnalytics(app))
 		parts = append(parts, renderFooter(app))
-		return strings.Join(parts, "\n")
+		return app.renderThemedScreen(strings.Join(parts, "\n"))
 	}
 
 	if o := renderOverview(app); o != "" {
@@ -466,7 +466,20 @@ func (app *App) View() string {
 	}
 	parts = append(parts, renderFooter(app))
 
-	return strings.Join(parts, "\n")
+	return app.renderThemedScreen(strings.Join(parts, "\n"))
+}
+
+// renderThemedScreen paints the entire viewport so Catppuccin remains readable
+// even when the terminal uses a different background color.
+func (app *App) renderThemedScreen(content string) string {
+    if !hasCustomTheme || app.width <= 0 || app.height <= 0 {
+        return content
+    }
+    return lipgloss.NewStyle().
+        Background(colorBase).
+        Width(app.width).
+        Height(app.height).
+        Render(content)
 }
 
 // tickCmd schedules the next poll after duration d, embedding gen so the
