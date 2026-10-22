@@ -129,7 +129,7 @@ func renderOverview(app *App) string {
 	}
 	card1 := applyHeight(StyleOverviewCard.
 		Background(statusBg).
-		Foreground(colorOnAccent).
+		Foreground(statusCardForeground(health.Status)).
 		Bold(true).
 		Width(cardWidths[0])).
 		Render(statusText + "\nStatus")
