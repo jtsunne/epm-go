@@ -52,12 +52,14 @@ func TestAutoAndExplicitThemeBackgroundSelection(t *testing.T) {
 		lipgloss.SetHasDarkBackground(orig)
 	})
 
+	// Auto resets explicit overrides and re-detects the real terminal.
+	// Headless tests must not assume its light/dark value.
 	lipgloss.SetHasDarkBackground(false)
 	if err := SetTheme("auto"); err != nil {
 		t.Fatal(err)
 	}
-	if lipgloss.HasDarkBackground() {
-		t.Fatal("auto theme should preserve detected light terminal background")
+	if hasCustomTheme || colorBase != nil {
+		t.Fatal("auto must restore the adaptive palette without a custom background")
 	}
 	if err := SetTheme("mocha"); err != nil {
 		t.Fatal(err)
