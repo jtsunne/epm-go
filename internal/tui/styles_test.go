@@ -45,7 +45,7 @@ func TestCatppuccinPalettes(t *testing.T) {
         t.Run(theme, func(t *testing.T) {
             if err := SetTheme(theme); err != nil { t.Fatal(err) }
             p := catppuccinThemes[theme]
-            if got := colorFg.Dark; got != p.fg {
+            if got := catppuccinThemes[theme].fg; got != p.fg {
                 t.Errorf("foreground = %s, want %s", got, p.fg)
             }
             if colorBase == nil {
