@@ -46,7 +46,7 @@ type themeColors struct {
 }
 
 var catppuccinThemes = map[string]themeColors{
-	"latte":     {"#40a02b", "#df8e1d", "#d20f39", "#7c7f93", "#1e66f5", "#179299", "#8839ef", "#7287fd", "#fe640b", "#df8e1d", "#4c4f69", "#5c5f77", "#11111b", "#bcc0cc", "#ccd0da", "#bcc0cc", "#e6e9ef", "#eff1f5"},
+	"latte":     {"#40a02b", "#df8e1d", "#d20f39", "#7c7f93", "#1e66f5", "#179299", "#8839ef", "#7287fd", "#fe640b", "#df8e1d", "#4c4f69", "#5c5f77", "#11111b", "#bcc0cc", "#ccd0da", "#dce0e8", "#e6e9ef", "#eff1f5"},
 	"frappe":    {"#a6d189", "#e5c890", "#e78284", "#949cbb", "#8caaee", "#81c8be", "#ca9ee6", "#babbf1", "#ef9f76", "#e5c890", "#c6d0f5", "#b5bfe2", "#11111b", "#51576d", "#414559", "#292c3c", "#51576d", "#303446"},
 	"macchiato": {"#a6da95", "#eed49f", "#ed8796", "#939ab7", "#8aadf4", "#8bd5ca", "#c6a0f6", "#b7bdf8", "#f5a97f", "#eed49f", "#cad3f5", "#b8c0e0", "#11111b", "#494d64", "#363a4f", "#1e2030", "#494d64", "#24273a"},
 	"mocha":     {"#a6e3a1", "#f9e2af", "#f38ba8", "#9399b2", "#89b4fa", "#94e2d5", "#cba6f7", "#b4befe", "#fab387", "#f9e2af", "#cdd6f4", "#bac2de", "#11111b", "#45475a", "#313244", "#585b70", "#45475a", "#1e1e2e"},
