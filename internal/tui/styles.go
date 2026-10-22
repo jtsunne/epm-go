@@ -40,110 +40,110 @@ var (
 // Catppuccin palette v1.8.0: https://github.com/catppuccin/palette
 // Keep palette values centralized and mapped to semantic TUI roles.
 type themeColors struct {
-    green, yellow, red, gray, blue, cyan, purple, indigo, orange, diskYellow string
-    fg, muted, accent, header, surface, cursor, marked, base string
+	green, yellow, red, gray, blue, cyan, purple, indigo, orange, diskYellow string
+	fg, muted, accent, header, surface, cursor, marked, base                 string
 }
 
 var catppuccinThemes = map[string]themeColors{
-    "latte": {"#40a02b", "#df8e1d", "#d20f39", "#7c7f93", "#1e66f5", "#179299", "#8839ef", "#7287fd", "#fe640b", "#df8e1d", "#4c4f69", "#5c5f77", "#11111b", "#bcc0cc", "#ccd0da", "#acb0be", "#bcc0cc", "#eff1f5"},
-    "frappe": {"#a6d189", "#e5c890", "#e78284", "#949cbb", "#8caaee", "#81c8be", "#ca9ee6", "#babbf1", "#ef9f76", "#e5c890", "#c6d0f5", "#b5bfe2", "#11111b", "#51576d", "#414559", "#626880", "#51576d", "#303446"},
-    "macchiato": {"#a6da95", "#eed49f", "#ed8796", "#939ab7", "#8aadf4", "#8bd5ca", "#c6a0f6", "#b7bdf8", "#f5a97f", "#eed49f", "#cad3f5", "#b8c0e0", "#11111b", "#494d64", "#363a4f", "#5b6078", "#494d64", "#24273a"},
-    "mocha": {"#a6e3a1", "#f9e2af", "#f38ba8", "#9399b2", "#89b4fa", "#94e2d5", "#cba6f7", "#b4befe", "#fab387", "#f9e2af", "#cdd6f4", "#bac2de", "#11111b", "#45475a", "#313244", "#585b70", "#45475a", "#1e1e2e"},
+	"latte":     {"#40a02b", "#df8e1d", "#d20f39", "#7c7f93", "#1e66f5", "#179299", "#8839ef", "#7287fd", "#fe640b", "#df8e1d", "#4c4f69", "#5c5f77", "#11111b", "#bcc0cc", "#ccd0da", "#ccd0da", "#e6e9ef", "#eff1f5"},
+	"frappe":    {"#a6d189", "#e5c890", "#e78284", "#949cbb", "#8caaee", "#81c8be", "#ca9ee6", "#babbf1", "#ef9f76", "#e5c890", "#c6d0f5", "#b5bfe2", "#11111b", "#51576d", "#414559", "#414559", "#51576d", "#303446"},
+	"macchiato": {"#a6da95", "#eed49f", "#ed8796", "#939ab7", "#8aadf4", "#8bd5ca", "#c6a0f6", "#b7bdf8", "#f5a97f", "#eed49f", "#cad3f5", "#b8c0e0", "#11111b", "#494d64", "#363a4f", "#363a4f", "#494d64", "#24273a"},
+	"mocha":     {"#a6e3a1", "#f9e2af", "#f38ba8", "#9399b2", "#89b4fa", "#94e2d5", "#cba6f7", "#b4befe", "#fab387", "#f9e2af", "#cdd6f4", "#bac2de", "#11111b", "#45475a", "#313244", "#585b70", "#45475a", "#1e1e2e"},
 }
 
 var colorBase lipgloss.TerminalColor
 var hasCustomTheme bool
 
 func adaptive(hex string) lipgloss.AdaptiveColor {
-    return lipgloss.AdaptiveColor{Light: hex, Dark: hex}
+	return lipgloss.AdaptiveColor{Light: hex, Dark: hex}
 }
 
 func applyThemeColors(p themeColors) {
-    colorGreen = adaptive(p.green)
-    colorYellow = adaptive(p.yellow)
-    colorRed = adaptive(p.red)
-    colorGray = adaptive(p.gray)
-    colorBlue = adaptive(p.blue)
-    colorCyan = adaptive(p.cyan)
-    colorPurple = adaptive(p.purple)
-    colorIndigo = adaptive(p.indigo)
-    colorOrange = adaptive(p.orange)
-    colorDiskYellow = adaptive(p.diskYellow)
-    colorFg = adaptive(p.fg)
-    colorFgMuted = adaptive(p.muted)
-    colorOnAccent = adaptive(p.accent)
-    colorHeaderBg = adaptive(p.header)
-    colorSurface = adaptive(p.surface)
-    colorCursorBg = adaptive(p.cursor)
-    colorMarkedBg = adaptive(p.marked)
-    colorBase = lipgloss.Color(p.base)
+	colorGreen = adaptive(p.green)
+	colorYellow = adaptive(p.yellow)
+	colorRed = adaptive(p.red)
+	colorGray = adaptive(p.gray)
+	colorBlue = adaptive(p.blue)
+	colorCyan = adaptive(p.cyan)
+	colorPurple = adaptive(p.purple)
+	colorIndigo = adaptive(p.indigo)
+	colorOrange = adaptive(p.orange)
+	colorDiskYellow = adaptive(p.diskYellow)
+	colorFg = adaptive(p.fg)
+	colorFgMuted = adaptive(p.muted)
+	colorOnAccent = adaptive(p.accent)
+	colorHeaderBg = adaptive(p.header)
+	colorSurface = adaptive(p.surface)
+	colorCursorBg = adaptive(p.cursor)
+	colorMarkedBg = adaptive(p.marked)
+	colorBase = lipgloss.Color(p.base)
 }
 
 // SetTheme configures all TUI colors before Bubble Tea starts.
 // This method updates cached package-level styles as well as per-cell colors.
 func SetTheme(theme string) error {
-    switch theme {
-    case "latte", "frappe", "macchiato", "mocha":
-        p := catppuccinThemes[theme]
-        lipgloss.SetHasDarkBackground(theme != "latte")
-        applyThemeColors(p)
-        hasCustomTheme = true
-    case "auto", "":
-        // Retain the original adaptive palette for explicit auto mode.
-        lipgloss.SetHasDarkBackground(lipgloss.HasDarkBackground())
-        applyThemeColorsAuto()
-        hasCustomTheme = false
-    case "light", "dark":
-        lipgloss.SetHasDarkBackground(theme == "dark")
-        applyThemeColorsAuto()
-        hasCustomTheme = false
-    default:
-        return fmt.Errorf("invalid theme %q: must be mocha, macchiato, frappe, latte, auto, light, or dark", theme)
-    }
-    refreshStyles()
-    return nil
+	switch theme {
+	case "latte", "frappe", "macchiato", "mocha":
+		p := catppuccinThemes[theme]
+		lipgloss.SetHasDarkBackground(theme != "latte")
+		applyThemeColors(p)
+		hasCustomTheme = true
+	case "auto", "":
+		// Retain the original adaptive palette for explicit auto mode.
+		lipgloss.SetHasDarkBackground(lipgloss.HasDarkBackground())
+		applyThemeColorsAuto()
+		hasCustomTheme = false
+	case "light", "dark":
+		lipgloss.SetHasDarkBackground(theme == "dark")
+		applyThemeColorsAuto()
+		hasCustomTheme = false
+	default:
+		return fmt.Errorf("invalid theme %q: must be mocha, macchiato, frappe, latte, auto, light, or dark", theme)
+	}
+	refreshStyles()
+	return nil
 }
 
 func applyThemeColorsAuto() {
-    colorGreen = lipgloss.AdaptiveColor{Light: "#059669", Dark: "#10b981"}
-    colorYellow = lipgloss.AdaptiveColor{Light: "#b45309", Dark: "#f59e0b"}
-    colorRed = lipgloss.AdaptiveColor{Light: "#dc2626", Dark: "#ef4444"}
-    colorGray = lipgloss.AdaptiveColor{Light: "#64748b", Dark: "#6b7280"}
-    colorBlue = lipgloss.AdaptiveColor{Light: "#2563eb", Dark: "#3b82f6"}
-    colorCyan = lipgloss.AdaptiveColor{Light: "#0e7490", Dark: "#06b6d4"}
-    colorPurple = lipgloss.AdaptiveColor{Light: "#7c3aed", Dark: "#8b5cf6"}
-    colorIndigo = lipgloss.AdaptiveColor{Light: "#4f46e5", Dark: "#6366f1"}
-    colorOrange = lipgloss.AdaptiveColor{Light: "#c2410c", Dark: "#f97316"}
-    colorDiskYellow = lipgloss.AdaptiveColor{Light: "#a16207", Dark: "#eab308"}
-    colorFg = lipgloss.AdaptiveColor{Light: "#0f172a", Dark: "#f8fafc"}
-    colorFgMuted = lipgloss.AdaptiveColor{Light: "#334155", Dark: "#cbd5e1"}
-    colorOnAccent = lipgloss.AdaptiveColor{Light: "#ffffff", Dark: "#1e293b"}
-    colorHeaderBg = lipgloss.AdaptiveColor{Light: "#e2e8f0", Dark: "#1e293b"}
-    colorSurface = lipgloss.AdaptiveColor{Light: "#f1f5f9", Dark: "#0f172a"}
-    colorCursorBg = lipgloss.AdaptiveColor{Light: "#bfdbfe", Dark: "#1e3a5f"}
-    colorMarkedBg = lipgloss.AdaptiveColor{Light: "#c7d2fe", Dark: "#3730a3"}
-    colorBase = nil
+	colorGreen = lipgloss.AdaptiveColor{Light: "#059669", Dark: "#10b981"}
+	colorYellow = lipgloss.AdaptiveColor{Light: "#b45309", Dark: "#f59e0b"}
+	colorRed = lipgloss.AdaptiveColor{Light: "#dc2626", Dark: "#ef4444"}
+	colorGray = lipgloss.AdaptiveColor{Light: "#64748b", Dark: "#6b7280"}
+	colorBlue = lipgloss.AdaptiveColor{Light: "#2563eb", Dark: "#3b82f6"}
+	colorCyan = lipgloss.AdaptiveColor{Light: "#0e7490", Dark: "#06b6d4"}
+	colorPurple = lipgloss.AdaptiveColor{Light: "#7c3aed", Dark: "#8b5cf6"}
+	colorIndigo = lipgloss.AdaptiveColor{Light: "#4f46e5", Dark: "#6366f1"}
+	colorOrange = lipgloss.AdaptiveColor{Light: "#c2410c", Dark: "#f97316"}
+	colorDiskYellow = lipgloss.AdaptiveColor{Light: "#a16207", Dark: "#eab308"}
+	colorFg = lipgloss.AdaptiveColor{Light: "#0f172a", Dark: "#f8fafc"}
+	colorFgMuted = lipgloss.AdaptiveColor{Light: "#334155", Dark: "#cbd5e1"}
+	colorOnAccent = lipgloss.AdaptiveColor{Light: "#ffffff", Dark: "#1e293b"}
+	colorHeaderBg = lipgloss.AdaptiveColor{Light: "#e2e8f0", Dark: "#1e293b"}
+	colorSurface = lipgloss.AdaptiveColor{Light: "#f1f5f9", Dark: "#0f172a"}
+	colorCursorBg = lipgloss.AdaptiveColor{Light: "#bfdbfe", Dark: "#1e3a5f"}
+	colorMarkedBg = lipgloss.AdaptiveColor{Light: "#c7d2fe", Dark: "#3730a3"}
+	colorBase = nil
 }
 
 func refreshStyles() {
-    StyleStatusGreen = lipgloss.NewStyle().Bold(true).Foreground(colorGreen)
-    StyleStatusYellow = lipgloss.NewStyle().Bold(true).Foreground(colorYellow)
-    StyleStatusRed = lipgloss.NewStyle().Bold(true).Foreground(colorRed)
-    StyleStatusUnknown = lipgloss.NewStyle().Foreground(colorGray)
-    StyleHeader = lipgloss.NewStyle().Background(colorHeaderBg).Foreground(colorFg).Padding(0, 1)
-    StyleOverviewCard = lipgloss.NewStyle().Background(colorSurface).Foreground(colorFg).Padding(0, 1).Margin(0).Align(lipgloss.Center)
-    StyleTableHeader = lipgloss.NewStyle().Bold(true).Underline(true).Foreground(colorGray)
-    StyleTableRow = lipgloss.NewStyle().Foreground(colorFg)
-    StyleTableRowAlt = lipgloss.NewStyle().Foreground(colorFgMuted)
-    StyleError = lipgloss.NewStyle().Foreground(colorRed).Bold(true)
-    StyleDim = lipgloss.NewStyle().Foreground(colorGray)
-    StyleGreen = lipgloss.NewStyle().Foreground(colorGreen)
-    StyleYellow = lipgloss.NewStyle().Foreground(colorYellow)
-    StyleOrange = lipgloss.NewStyle().Foreground(colorOrange)
-    StyleBlue = lipgloss.NewStyle().Foreground(colorBlue)
-    StyleCyan = lipgloss.NewStyle().Foreground(colorCyan)
-    StylePurple = lipgloss.NewStyle().Foreground(colorPurple)
-    StyleRed = lipgloss.NewStyle().Foreground(colorRed)
+	StyleStatusGreen = lipgloss.NewStyle().Bold(true).Foreground(colorGreen)
+	StyleStatusYellow = lipgloss.NewStyle().Bold(true).Foreground(colorYellow)
+	StyleStatusRed = lipgloss.NewStyle().Bold(true).Foreground(colorRed)
+	StyleStatusUnknown = lipgloss.NewStyle().Foreground(colorGray)
+	StyleHeader = lipgloss.NewStyle().Background(colorHeaderBg).Foreground(colorFg).Padding(0, 1)
+	StyleOverviewCard = lipgloss.NewStyle().Background(colorSurface).Foreground(colorFg).Padding(0, 1).Margin(0).Align(lipgloss.Center)
+	StyleTableHeader = lipgloss.NewStyle().Bold(true).Underline(true).Foreground(colorGray)
+	StyleTableRow = lipgloss.NewStyle().Foreground(colorFg)
+	StyleTableRowAlt = lipgloss.NewStyle().Foreground(colorFgMuted)
+	StyleError = lipgloss.NewStyle().Foreground(colorRed).Bold(true)
+	StyleDim = lipgloss.NewStyle().Foreground(colorGray)
+	StyleGreen = lipgloss.NewStyle().Foreground(colorGreen)
+	StyleYellow = lipgloss.NewStyle().Foreground(colorYellow)
+	StyleOrange = lipgloss.NewStyle().Foreground(colorOrange)
+	StyleBlue = lipgloss.NewStyle().Foreground(colorBlue)
+	StyleCyan = lipgloss.NewStyle().Foreground(colorCyan)
+	StylePurple = lipgloss.NewStyle().Foreground(colorPurple)
+	StyleRed = lipgloss.NewStyle().Foreground(colorRed)
 }
 
 // Status styles — bold foreground, used for cluster health indicator.
