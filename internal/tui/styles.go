@@ -34,10 +34,6 @@ var (
 	colorMarkedBg = lipgloss.AdaptiveColor{Light: "#c7d2fe", Dark: "#3730a3"} // multi-selected rows
 )
 
-// SetTheme selects the light or dark palette. "auto" (or "") detects the
-// terminal background; detection can be wrong under tmux/screen or some SSH
-// setups, hence the explicit overrides. Must be called before tea.NewProgram:
-// detection queries the terminal, which would race with Bubble Tea's input reader.
 // Catppuccin palette v1.8.0: https://github.com/catppuccin/palette
 // Keep palette values centralized and mapped to semantic TUI roles.
 type themeColors struct {
@@ -90,8 +86,12 @@ func statusCardForeground(status string) lipgloss.TerminalColor {
 	return colorOnAccent
 }
 
-// SetTheme configures all TUI colors before Bubble Tea starts.
-// This method updates cached package-level styles as well as per-cell colors.
+// SetTheme selects a Catppuccin palette (mocha, macchiato, frappe, latte) or the
+// adaptive light/dark palette. "auto" (or "") detects the terminal background;
+// detection can be wrong under tmux/screen or some SSH setups, hence the explicit
+// light/dark overrides. Must be called before tea.NewProgram: detection queries
+// the terminal, which would race with Bubble Tea's input reader. Also rebuilds
+// the cached package-level styles.
 func SetTheme(theme string) error {
 	switch theme {
 	case "latte", "frappe", "macchiato", "mocha":

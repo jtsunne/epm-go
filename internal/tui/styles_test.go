@@ -214,20 +214,32 @@ func TestCursorDistinctFromSurface(t *testing.T) {
 }
 
 func TestLatteRedStatusContrast(t *testing.T) {
-	if err := SetTheme("latte"); err != nil { t.Fatal(err) }
+	if err := SetTheme("latte"); err != nil {
+		t.Fatal(err)
+	}
 	t.Cleanup(func() { _ = SetTheme("auto") })
 	fg, ok := statusCardForeground("red").(lipgloss.Color)
-	if !ok { t.Fatal("expected explicit status foreground") }
+	if !ok {
+		t.Fatal("expected explicit status foreground")
+	}
 	if ratio := contrastRatio(string(fg), catppuccinThemes["latte"].red); ratio < 4.5 {
 		t.Fatalf("Latte red status contrast %.2f:1", ratio)
 	}
 }
 
 func TestAutoResetsExplicitRendererOverride(t *testing.T) {
-	if err := SetTheme("latte"); err != nil { t.Fatal(err) }
-	if err := SetTheme("auto"); err != nil { t.Fatal(err) }
-	if hasCustomTheme { t.Fatal("auto must clear custom theme") }
-	if colorBase != nil { t.Fatal("auto must clear custom background") }
+	if err := SetTheme("latte"); err != nil {
+		t.Fatal(err)
+	}
+	if err := SetTheme("auto"); err != nil {
+		t.Fatal(err)
+	}
+	if hasCustomTheme {
+		t.Fatal("auto must clear custom theme")
+	}
+	if colorBase != nil {
+		t.Fatal("auto must clear custom background")
+	}
 	// A fresh default renderer must no longer retain Latte's forced light setting.
 	// Actual terminal detection is environment-dependent and is not asserted here.
 }
