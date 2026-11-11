@@ -258,3 +258,14 @@ docs/plans/completed/  implementation plans (phases 1–7)
 ## License
 
 MIT. See [LICENSE](LICENSE) for details.
+
+### Color themes
+
+Catppuccin themes: `mocha` (default), `macchiato`, `frappe`, and `latte`.
+
+```sh
+epm --theme latte http://localhost:9200
+epm --theme mocha http://localhost:9200
+```
+
+For the previous adaptive color scheme, use `--theme auto` (automatic terminal background detection), `--theme light`, or `--theme dark`. Palette values are from [Catppuccin palette v1.8.0](https://github.com/catppuccin/palette).

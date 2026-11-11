@@ -19,7 +19,7 @@ var sparkBlocks = []rune{'▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'}
 //   - All zeros → return all '▁' (floor level)
 //   - Values longer than width → use last width values
 //   - Fewer values than width → left-pad with spaces
-func RenderSparkline(values []float64, width int, color lipgloss.Color) string {
+func RenderSparkline(values []float64, width int, color lipgloss.TerminalColor) string {
 	if width <= 0 {
 		return ""
 	}

@@ -350,7 +350,7 @@ func renderSettingsForm(app *App) string {
 	var lines []string
 	lines = append(lines, "") // top padding
 
-	selectedBg := lipgloss.NewStyle().Background(colorSelectedBg)
+	selectedBg := lipgloss.NewStyle().Background(colorCursorBg)
 
 	for i := firstVisible; i < len(form.fields); i++ {
 		if len(lines) >= availH {

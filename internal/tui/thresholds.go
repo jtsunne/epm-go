@@ -76,15 +76,15 @@ func severityToStyle(s severity) lipgloss.Style {
 }
 
 // severityFg returns the foreground color for a severity level.
-// Normal → white, Warning → yellow, Critical → red.
-func severityFg(s severity) lipgloss.Color {
+// Normal → primary text, Warning → yellow, Critical → red.
+func severityFg(s severity) lipgloss.TerminalColor {
 	switch s {
 	case severityWarning:
 		return colorYellow
 	case severityCritical:
 		return colorRed
 	default:
-		return colorWhite
+		return colorFg
 	}
 }
 
