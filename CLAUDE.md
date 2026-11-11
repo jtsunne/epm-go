@@ -5,14 +5,18 @@ Go TUI reimplementation of the Chrome extension "Elasticsearch Performance Monit
 ## Usage
 
 ```bash
-epm [--interval 10s] [--insecure] [--user USER] [--password PASS] [--theme auto|light|dark] <elasticsearch-uri>
+epm [--interval 10s] [--insecure] [--user USER] [--password PASS] [--theme mocha|macchiato|frappe|latte|auto|light|dark] <elasticsearch-uri>
 
 # Examples
 epm http://localhost:9200
 epm --insecure https://elastic:changeme@prod.example.com:9200
 epm --interval 30s http://localhost:9200
 
-# Color theme: auto-detects terminal background by default; force when detection is wrong (tmux/screen/SSH)
+# Color theme: Catppuccin Mocha by default (paints full-screen background); latte for light terminals
+epm --theme latte http://localhost:9200
+
+# Previous adaptive palette: auto detects terminal background; force light/dark when detection is wrong (tmux/screen/SSH)
+epm --theme auto http://localhost:9200
 epm --theme light http://localhost:9200
 
 # Credentials with special characters (# ? % etc.) — use flags instead of URI
